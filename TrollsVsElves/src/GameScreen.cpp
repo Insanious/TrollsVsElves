@@ -42,10 +42,6 @@ void GameScreen::init()
 
 void GameScreen::draw()
 {
-    BeginDrawing();
-
-    ClearBackground(RAYWHITE);
-
     BeginMode3D(camera);
 
     for (Layer* layer: layers)
@@ -58,8 +54,6 @@ void GameScreen::draw()
         floatingBuilding->draw();
 
     EndMode3D();
-
-    EndDrawing();
 }
 
 void GameScreen::update()
