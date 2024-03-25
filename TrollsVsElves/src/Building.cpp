@@ -8,6 +8,8 @@ Building::Building(Vector3 position, Vector3 size, Color color)
 {
     defaultColor = color;
     cube = new Cube(position, size, color);
+    sold = false;
+    level = 1;
 }
 
 Building::~Building()
@@ -43,4 +45,24 @@ void Building::select()
 void Building::deselect()
 {
     cube->color = defaultColor;
+}
+
+void Building::sell()
+{
+    sold = true;
+}
+
+bool Building::isSold()
+{
+    return sold;
+}
+
+void Building::upgrade()
+{
+    level += 1;
+}
+
+int Building::getLevel()
+{
+    return level;
 }

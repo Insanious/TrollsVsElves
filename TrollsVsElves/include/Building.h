@@ -10,6 +10,9 @@ private:
 
     Color defaultColor;
 
+    bool sold;
+    int level;
+
 public:
     Building();
     Building(Vector3 position, Vector3 size, Color color);
@@ -23,6 +26,12 @@ public:
 
     void select();
     void deselect();
+
+    void sell();
+    bool isSold();
+    void upgrade();
+
+    int getLevel();
 };
 
 #endif

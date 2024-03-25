@@ -8,22 +8,27 @@
 #include "BaseScreen.h"
 #include "Layer.h"
 #include "Building.h"
+#include "BuildingUI.h"
 #include <vector>
 
 class GameScreen: public BaseScreen
 {
     private:
+        Vector2i screenSize;
+
+        std::vector<Layer*> layers;
         Vector2i gridSize;
         Vector3 cubeSize;
         Color defaultCubeColor;
+
+        std::vector<Building*> buildings;
         Color defaultBuildingColor;
         Vector3 buildingSize;
 
-        std::vector<Layer*> layers;
-        std::vector<Building*> buildings;
-
         Building* floatingBuilding;
         Building* selectedBuilding;
+
+        BuildingUI buildingUI;
 
         Camera3D camera;
 
@@ -31,11 +36,12 @@ class GameScreen: public BaseScreen
         GameScreen();
         ~GameScreen();
 
-        void init();
+        void init(Vector2i screenSize);
         void draw();
         void update();
         void updateCamera();
         void updateFloatingBuilding();
+        void updateSelectedBuilding();
 
         Building* raycastToNearestBuilding();
 };

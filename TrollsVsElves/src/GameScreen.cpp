@@ -17,8 +17,11 @@ GameScreen::~GameScreen()
         delete floatingBuilding;
 }
 
-void GameScreen::init()
+void GameScreen::init(Vector2i screenSize)
 {
+    this->screenSize = screenSize;
+    buildingUI.setScreenSize(screenSize);
+
     cubeSize = { 4.f, 4.f, 4.f };
     gridSize = (Vector2i){ .x = 32, .y = 32 };
     defaultCubeColor = DARKGRAY;
@@ -29,7 +32,7 @@ void GameScreen::init()
     layers.push_back(groundLayer);
 
     buildingSize = { cubeSize.x * 2, cubeSize.y, cubeSize.z * 2 };
-    defaultBuildingColor = MAGENTA;
+    defaultBuildingColor = WHITE;
     floatingBuilding = nullptr;
 
     camera = { 0 };
@@ -53,12 +56,35 @@ void GameScreen::draw()
     if (floatingBuilding)
         floatingBuilding->draw();
 
+    buildingUI.draw();
+
     EndMode3D();
 }
 
 void GameScreen::update()
 {
     updateCamera();
+
+    if (selectedBuilding && selectedBuilding->isSold()) // delete selectedBuilding and pop from buildings vector
+        {
+            int index = 0;
+            for (int i = 0; i < buildings.size(); i++)
+                if (buildings[i] == selectedBuilding)
+                {
+                    index = i;
+                    break;
+                }
+
+            if (buildings[index] != buildings.back())
+                std::swap(buildings[index], buildings.back());
+
+            buildings.pop_back();
+            buildings.shrink_to_fit();
+
+            delete selectedBuilding;
+            selectedBuilding = nullptr;
+            buildingUI.hide();
+        }
 
     if (IsKeyPressed(KEY_B))
         floatingBuilding = new Building(Vector3Zero(), buildingSize, defaultBuildingColor);
@@ -68,36 +94,15 @@ void GameScreen::update()
 
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
     {
-        if (floatingBuilding)
+        if (buildingUI.isHovering()) { /* do nothing... */ }
+        else if (floatingBuilding)
         {
             buildings.push_back(floatingBuilding);
             floatingBuilding = nullptr;
         }
         else if (!floatingBuilding)
         {
-            Building* nearestBuilding = raycastToNearestBuilding();
-            if (!nearestBuilding)
-            {
-                if (selectedBuilding) // remove select
-                {
-                    selectedBuilding->deselect();
-                    selectedBuilding = nullptr;
-                }
-            }
-            else if (nearestBuilding)
-            {
-                if (!selectedBuilding) // new select
-                {
-                    selectedBuilding = nearestBuilding;
-                    selectedBuilding->select();
-                }
-                else if (selectedBuilding && selectedBuilding != nearestBuilding) // switch select
-                {
-                    selectedBuilding->deselect();
-                    selectedBuilding = nearestBuilding;
-                    selectedBuilding->select();
-                }
-            }
+            updateSelectedBuilding();
         }
     }
 }
@@ -210,6 +215,48 @@ void GameScreen::updateFloatingBuilding()
     else
         printf("didnt work\n");
 
+}
+
+void GameScreen::updateSelectedBuilding()
+{
+    Building* nearestBuilding = raycastToNearestBuilding();
+
+    if (!nearestBuilding && selectedBuilding) // remove select
+    {
+        printf("!nearestBuilding && selectedBuilding\n");
+        selectedBuilding->deselect();
+        selectedBuilding = nullptr;
+
+        buildingUI.hide();
+        return;
+    }
+
+    if (nearestBuilding)
+    {
+        printf("nearestBuilding\n");
+        if (!selectedBuilding) // new select
+        {
+            printf("nearestBuilding && !selectedBuilding\n");
+            selectedBuilding = nearestBuilding;
+            selectedBuilding->select();
+
+            buildingUI.init(selectedBuilding);
+            buildingUI.show();
+            return;
+        }
+
+        if (selectedBuilding && selectedBuilding != nearestBuilding) // switch select
+        {
+            printf("nearestBuilding && selectedBuilding && selectedBuilding != nearestBuilding\n");
+            selectedBuilding->deselect();
+            selectedBuilding = nearestBuilding;
+            selectedBuilding->select();
+
+            buildingUI.init(selectedBuilding);
+            buildingUI.show();
+            return;
+        }
+    }
 }
 
 Building* GameScreen::raycastToNearestBuilding()
