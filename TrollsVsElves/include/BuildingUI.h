@@ -3,7 +3,7 @@
 
 #include "imgui.h"
 #include "rlImGui.h"
-#include "globals.h"
+#include "utils.h"
 #include "Building.h"
 
 class BuildingUI

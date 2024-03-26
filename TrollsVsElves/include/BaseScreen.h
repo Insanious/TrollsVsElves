@@ -1,7 +1,7 @@
 #ifndef BASE_SCREEN_H
 #define BASE_SCREEN_H
 
-#include "globals.h"
+#include "structs.h"
 class BaseScreen
 {
 private:

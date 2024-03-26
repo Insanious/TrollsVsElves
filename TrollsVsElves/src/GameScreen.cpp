@@ -13,8 +13,11 @@ GameScreen::~GameScreen()
     for (int i = 0; i < buildings.size(); i++)
         delete buildings[i];
 
-    if (floatingBuilding)
-        delete floatingBuilding;
+    if (ghostBuilding)
+        delete ghostBuilding;
+
+    if (player)
+        delete player;
 }
 
 void GameScreen::init(Vector2i screenSize)
@@ -33,10 +36,21 @@ void GameScreen::init(Vector2i screenSize)
 
     buildingSize = { cubeSize.x * 2, cubeSize.y, cubeSize.z * 2 };
     defaultBuildingColor = WHITE;
-    floatingBuilding = nullptr;
+    ghostBuilding = nullptr;
+    selectedBuilding = nullptr;
+
+    player = new Player();
+    Vector3 startPos = { 10.f, cubeSize.y + cubeSize.y/2, 10.f };
+    Vector3 endPos = { 10.f, cubeSize.y + 8.f, 10.f };
+    float radius = 3.f;
+    int slices = 16;
+    int rings = 16;
+    Color playerColor = BLUE;
+    Vector3 playerSpeed = Vector3Scale(Vector3One(), 40);
+    player->init(Capsule(startPos, endPos, radius, slices, rings, playerColor), playerSpeed);
 
     camera = { 0 };
-    camera.position = (Vector3){ 35.0f, 36.0f, 35.0f }; // Camera position
+    camera.position = (Vector3){ 30.0f, 60.0f, 30.0f }; // Camera position
     camera.target = (Vector3){ 0.f, 0.f, 0.f };         // Camera looking at point
     camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };          // Camera up vector (rotation towards target)
     camera.fovy = 90.0f;                                // Camera field-of-view Y
@@ -53,10 +67,21 @@ void GameScreen::draw()
     for (Building* building: buildings)
         building->draw();
 
-    if (floatingBuilding)
-        floatingBuilding->draw();
+    for (Building* building: buildQueue)
+    {
+        Color oldColor = building->getCube()->color;
+        building->getCube()->color = RED;
+        building->draw();
+        building->getCube()->color = oldColor;
+    }
+
+    if (ghostBuilding)
+        ghostBuilding->draw();
 
     buildingUI.draw();
+
+    if (player)
+        player->draw();
 
     EndMode3D();
 }
@@ -64,6 +89,26 @@ void GameScreen::draw()
 void GameScreen::update()
 {
     updateCamera();
+
+    if (player->isIdle() && buildQueue.size())
+    {
+        Building* building = buildQueue.front();
+        printf("building1: %p\n", building);
+        buildQueue.pop_front();
+        building->build();
+        buildings.push_back(building);
+
+        printf("buildQueue.size(): %d\n", buildQueue.size());
+        if (buildQueue.size()) // if more in queue, walk to next
+        {
+            building = buildQueue.front();
+            printf("building2: %p\n", building);
+            Vector3 targetPosition = calculateTargetPositionToBuildingFromPlayer(building);
+            player->setTargetPosition(targetPosition);
+        }
+    }
+
+    player->update();
 
     if (selectedBuilding && selectedBuilding->isSold()) // delete selectedBuilding and pop from buildings vector
         {
@@ -87,20 +132,46 @@ void GameScreen::update()
         }
 
     if (IsKeyPressed(KEY_B))
-        floatingBuilding = new Building(Vector3Zero(), buildingSize, defaultBuildingColor);
+        ghostBuilding = new Building(Vector3Zero(), buildingSize, defaultBuildingColor);
 
-    if (floatingBuilding)
-        updateFloatingBuilding();
+    if (ghostBuilding)
+        updateghostBuilding();
+
+    if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
+    {
+        RayCollision collision = raycastToGround();
+        if (collision.hit)
+        {
+            if (ghostBuilding) // remove building and just walk the player to the location instead
+            {
+                delete ghostBuilding;
+                ghostBuilding = nullptr;
+            }
+            player->setTargetPosition({ collision.point.x, player->getPosition().y, collision.point.z });
+        }
+    }
 
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
     {
         if (buildingUI.isHovering()) { /* do nothing... */ }
-        else if (floatingBuilding)
+        else if (ghostBuilding)
         {
-            buildings.push_back(floatingBuilding);
-            floatingBuilding = nullptr;
+            RayCollision collision = raycastToGround();
+            if (collision.hit)
+            {
+                if (player->isIdle())
+                {
+                    Vector3 targetPosition = calculateTargetPositionToBuildingFromPlayer(ghostBuilding);
+                    player->setTargetPosition(targetPosition);
+                }
+                buildQueue.push_back(ghostBuilding);
+            }
+            else
+                delete ghostBuilding;
+
+            ghostBuilding = nullptr;
         }
-        else if (!floatingBuilding)
+        else if (!ghostBuilding)
         {
             updateSelectedBuilding();
         }
@@ -165,7 +236,7 @@ void GameScreen::updateCamera()
     // }
 
     // Scroll logic
-    float maxDistance = 80.f;
+    float maxDistance = 120.f;
     float minDistance = 10.f;
     float scrollAmount = 1.f;
     float scroll = -GetMouseWheelMove(); // inverted for a reason
@@ -188,20 +259,13 @@ void GameScreen::updateCamera()
     }
 }
 
-void GameScreen::updateFloatingBuilding()
+void GameScreen::updateghostBuilding()
 {
     float halfCubeSize = cubeSize.y / 2;
     const float max = 10000.f;
     // Check mouse collision against a plane spanning from -max to max, with y the same as the ground cubes
     // halfCubeSize is used here since the middle of the ground cube is at y=0
-    RayCollision collision = GetRayCollisionQuad(
-        GetMouseRay(GetMousePosition(), camera),
-        (Vector3){ -max, halfCubeSize, -max },
-        (Vector3){ -max, halfCubeSize,  max },
-        (Vector3){  max, halfCubeSize,  max },
-        (Vector3){  max, halfCubeSize, -max }
-    );
-
+    RayCollision collision = raycastToGround();
     if (collision.hit)
     {
         Vector3 nearestIncrementedPosition = { // Round to nearest cube multiple
@@ -210,11 +274,8 @@ void GameScreen::updateFloatingBuilding()
             nearestIncrement(collision.point.z, cubeSize.z) + halfCubeSize,
         };
 
-        floatingBuilding->setPosition(nearestIncrementedPosition);
+        ghostBuilding->setPosition(nearestIncrementedPosition);
     }
-    else
-        printf("didnt work\n");
-
 }
 
 void GameScreen::updateSelectedBuilding()
@@ -277,4 +338,35 @@ Building* GameScreen::raycastToNearestBuilding()
     }
 
     return nearestBuilding;
+}
+
+RayCollision GameScreen::raycastToGround()
+{
+    float halfCubeSize = cubeSize.y / 2;
+    const float max = 10000.f;
+    // Check mouse collision against a plane spanning from -max to max, with y the same as the ground cubes
+    // halfCubeSize is used here since the middle of the ground cube is at y=0
+    return GetRayCollisionQuad(
+        GetMouseRay(GetMousePosition(), camera),
+        (Vector3){ -max, halfCubeSize, -max },
+        (Vector3){ -max, halfCubeSize,  max },
+        (Vector3){  max, halfCubeSize,  max },
+        (Vector3){  max, halfCubeSize, -max }
+    );
+}
+
+Vector3 GameScreen::calculateTargetPositionToBuildingFromPlayer(Building* building)
+{
+    Vector3 buildingPos = building->getCube()->position;
+    Vector3 playerPos = player->getPosition();
+    Vector3 direction = { buildingPos.x - playerPos.x, 0.f, buildingPos.z - playerPos.z }; // ignore y
+    Vector3 normalizedDirection = Vector3Normalize(direction);
+
+    float distance = Vector3Length(direction);
+    distance -= getCubeDiagonalLength(*building->getCube()) / 2;
+    distance -= player->getCapsule().radius;
+    printf("distance: %f\n", distance);
+
+    Vector3 finalDirection = Vector3Scale(normalizedDirection, distance);
+    return Vector3Add(playerPos, finalDirection);
 }

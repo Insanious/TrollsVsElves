@@ -6,8 +6,9 @@ Building::Building()
 
 Building::Building(Vector3 position, Vector3 size, Color color)
 {
-    defaultColor = color;
     cube = new Cube(position, size, color);
+    buildStage = GHOST;
+    defaultColor = color;
     sold = false;
     level = 1;
 }
@@ -15,6 +16,14 @@ Building::Building(Vector3 position, Vector3 size, Color color)
 Building::~Building()
 {
     delete cube;
+}
+
+void Building::build()
+{
+    printf("Building::build()\n");
+    assert(buildStage == GHOST); // sanity check
+
+    buildStage = IN_PROGRESS;
 }
 
 void Building::draw()

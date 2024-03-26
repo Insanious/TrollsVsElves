@@ -1,7 +1,7 @@
 #ifndef GAME_SCREEN_H
 #define GAME_SCREEN_H
 
-#include "globals.h"
+#include "structs.h"
 
 #include "rcamera.h"
 
@@ -9,7 +9,9 @@
 #include "Layer.h"
 #include "Building.h"
 #include "BuildingUI.h"
+#include "Player.h"
 #include <vector>
+#include <deque>
 
 class GameScreen: public BaseScreen
 {
@@ -22,13 +24,16 @@ class GameScreen: public BaseScreen
         Color defaultCubeColor;
 
         std::vector<Building*> buildings;
+        std::deque<Building*> buildQueue;
         Color defaultBuildingColor;
         Vector3 buildingSize;
 
-        Building* floatingBuilding;
+        Building* ghostBuilding;
         Building* selectedBuilding;
 
         BuildingUI buildingUI;
+
+        Player* player;
 
         Camera3D camera;
 
@@ -40,10 +45,13 @@ class GameScreen: public BaseScreen
         void draw();
         void update();
         void updateCamera();
-        void updateFloatingBuilding();
+        void updateghostBuilding();
         void updateSelectedBuilding();
 
         Building* raycastToNearestBuilding();
+        RayCollision raycastToGround();
+
+        Vector3 calculateTargetPositionToBuildingFromPlayer(Building* building);
 };
 
 #endif

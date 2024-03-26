@@ -2,7 +2,7 @@
 #define LAYER_H
 
 #include <vector>
-#include "globals.h"
+#include "structs.h"
 
 class Layer
 {

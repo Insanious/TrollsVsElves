@@ -1,12 +1,16 @@
 #ifndef BUILDING_H
 #define BUILDING_H
 
-#include "globals.h"
+#include "structs.h"
+#include <cassert>
+
+enum BUILD_STAGE { GHOST = 0, IN_PROGRESS, FINISHED };
 
 class Building
 {
 private:
     Cube* cube;
+    BUILD_STAGE buildStage;
 
     Color defaultColor;
 
@@ -19,6 +23,8 @@ public:
     ~Building();
 
     void draw();
+
+    void build();
 
     void setPosition(Vector3 position);
     Vector3 getPosition();
