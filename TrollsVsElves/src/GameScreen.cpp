@@ -76,7 +76,12 @@ void GameScreen::draw()
     }
 
     if (ghostBuilding)
+    {
+        Color oldColor = ghostBuilding->getCube().color;
+        ghostBuilding->getCube().color = BLUE;
         ghostBuilding->draw();
+        ghostBuilding->getCube().color = oldColor;
+    }
 
     buildingUI.draw();
 
@@ -90,25 +95,23 @@ void GameScreen::update()
 {
     updateCamera();
 
+    player->update(); // must come before checking isIdle
+
     if (player->isIdle() && buildQueue.size())
     {
         Building* building = buildQueue.front();
-        printf("building1: %p\n", building);
         buildQueue.pop_front();
         building->build();
         buildings.push_back(building);
 
-        printf("buildQueue.size(): %d\n", buildQueue.size());
         if (buildQueue.size()) // if more in queue, walk to next
         {
+            assert(building != buildQueue.front()); // sanity check
             building = buildQueue.front();
-            printf("building2: %p\n", building);
             Vector3 targetPosition = calculateTargetPositionToBuildingFromPlayer(building);
             player->setTargetPosition(targetPosition);
         }
     }
-
-    player->update();
 
     if (selectedBuilding && selectedBuilding->isSold()) // delete selectedBuilding and pop from buildings vector
         {
@@ -365,7 +368,6 @@ Vector3 GameScreen::calculateTargetPositionToBuildingFromPlayer(Building* buildi
     float distance = Vector3Length(direction);
     distance -= getCubeDiagonalLength(building->getCube()) / 2;
     distance -= player->getCapsule().radius;
-    printf("calculateTargetPositionToBuildingFromPlayer distance: %f\n", distance);
 
     Vector3 finalDirection = Vector3Scale(normalizedDirection, distance);
     return Vector3Add(playerPos, finalDirection);
