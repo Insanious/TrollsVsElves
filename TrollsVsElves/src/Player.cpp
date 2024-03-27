@@ -33,7 +33,6 @@ void Player::updateMovement()
     Vector3 target = { targetPosition.x, 0.f, targetPosition.z }; // ignore y for now
     Vector3 current = { capsule.endPos.x, 0.f, capsule.endPos.z }; // ignore y for now
     Vector3 direction = Vector3Subtract(target, current);
-    printf("in updateMovement Vector3Length(direction): %f\n", Vector3Length(direction));
     if (Vector3Length(direction) > defaultTargetMargin)
     {
         Vector3 directionNormalized = Vector3Normalize(direction);
@@ -41,7 +40,7 @@ void Player::updateMovement()
 
         Vector3 newEndPos = Vector3Add(capsule.endPos, velocity);
         Vector3 nextDirection = Vector3Subtract(target, { newEndPos.x, 0.f, newEndPos.z });
-        if (Vector3Length(nextDirection) < defaultTargetMargin) // gonna clip in target
+        if (Vector3Length(nextDirection) < defaultTargetMargin) // gonna clip in target, tp to target
         {
             Vector3 targetVector = Vector3Scale(directionNormalized, defaultTargetMargin);
             capsule.startPos = { target.x, capsule.startPos.y, target.z };

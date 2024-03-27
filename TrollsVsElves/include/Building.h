@@ -9,7 +9,7 @@ enum BUILD_STAGE { GHOST = 0, IN_PROGRESS, FINISHED };
 class Building
 {
 private:
-    Cube* cube;
+    Cube cube;
     BUILD_STAGE buildStage;
 
     Color defaultColor;
@@ -28,7 +28,7 @@ public:
 
     void setPosition(Vector3 position);
     Vector3 getPosition();
-    Cube* getCube();
+    Cube& getCube();
 
     void select();
     void deselect();

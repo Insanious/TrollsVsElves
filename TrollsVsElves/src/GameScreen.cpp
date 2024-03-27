@@ -69,10 +69,10 @@ void GameScreen::draw()
 
     for (Building* building: buildQueue)
     {
-        Color oldColor = building->getCube()->color;
-        building->getCube()->color = RED;
+        Color oldColor = building->getCube().color;
+        building->getCube().color = RED;
         building->draw();
-        building->getCube()->color = oldColor;
+        building->getCube().color = oldColor;
     }
 
     if (ghostBuilding)
@@ -135,7 +135,7 @@ void GameScreen::update()
         ghostBuilding = new Building(Vector3Zero(), buildingSize, defaultBuildingColor);
 
     if (ghostBuilding)
-        updateghostBuilding();
+        updateGhostBuilding();
 
     if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
     {
@@ -259,7 +259,7 @@ void GameScreen::updateCamera()
     }
 }
 
-void GameScreen::updateghostBuilding()
+void GameScreen::updateGhostBuilding()
 {
     float halfCubeSize = cubeSize.y / 2;
     const float max = 10000.f;
@@ -328,8 +328,8 @@ Building* GameScreen::raycastToNearestBuilding()
 
     for (Building* building: buildings)
     {
-        Cube* cube = building->getCube();
-        RayCollision collision = GetRayCollisionBox(ray, getCubeBoundingBox(*cube));
+        Cube cube = building->getCube();
+        RayCollision collision = GetRayCollisionBox(ray, getCubeBoundingBox(cube));
 
         if (collision.hit && collision.distance < closestCollisionDistance) {
             closestCollisionDistance = collision.distance;
@@ -357,15 +357,15 @@ RayCollision GameScreen::raycastToGround()
 
 Vector3 GameScreen::calculateTargetPositionToBuildingFromPlayer(Building* building)
 {
-    Vector3 buildingPos = building->getCube()->position;
+    Vector3 buildingPos = building->getCube().position;
     Vector3 playerPos = player->getPosition();
     Vector3 direction = { buildingPos.x - playerPos.x, 0.f, buildingPos.z - playerPos.z }; // ignore y
     Vector3 normalizedDirection = Vector3Normalize(direction);
 
     float distance = Vector3Length(direction);
-    distance -= getCubeDiagonalLength(*building->getCube()) / 2;
+    distance -= getCubeDiagonalLength(building->getCube()) / 2;
     distance -= player->getCapsule().radius;
-    printf("distance: %f\n", distance);
+    printf("calculateTargetPositionToBuildingFromPlayer distance: %f\n", distance);
 
     Vector3 finalDirection = Vector3Scale(normalizedDirection, distance);
     return Vector3Add(playerPos, finalDirection);

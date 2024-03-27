@@ -13,28 +13,8 @@ Layer::~Layer()
 void Layer::draw()
 {
     for (Cube* cube: grid)
-        drawCube(cube);
+        drawCube(*cube);
 }
-
-
-// Cube* Layer::raycastToClosestCube(Camera camera, std::vector<Cube*> cubes)
-// {
-//     Ray ray = GetMouseRay(GetMousePosition(), camera);
-//     float closestCollisionDistance = std::numeric_limits<float>::infinity();;
-//     Cube* closestCube = nullptr;
-
-//     for (Cube* cube: grid)
-//     {
-//         RayCollision collision = GetRayCollisionBox(ray, getCubeBoundingBox(*cube));
-
-//         if (collision.hit && collision.distance < closestCollisionDistance) {
-//             closestCollisionDistance = collision.distance;
-//             closestCube = cube;
-//         }
-//     }
-
-//     return closestCube;
-// }
 
 void Layer::createGrid(Vector2i gridSize, Vector3 cubeSize, Color defaultCubeColor, float height)
 {

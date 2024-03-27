@@ -6,7 +6,7 @@ Building::Building()
 
 Building::Building(Vector3 position, Vector3 size, Color color)
 {
-    cube = new Cube(position, size, color);
+    cube = Cube(position, size, color);
     buildStage = GHOST;
     defaultColor = color;
     sold = false;
@@ -15,7 +15,6 @@ Building::Building(Vector3 position, Vector3 size, Color color)
 
 Building::~Building()
 {
-    delete cube;
 }
 
 void Building::build()
@@ -28,32 +27,32 @@ void Building::build()
 
 void Building::draw()
 {
-    if (cube) drawCube(cube);
+    drawCube(cube);
 }
 
 void Building::setPosition(Vector3 position)
 {
-    cube->position = position;
+    cube.position = position;
 }
 
 Vector3 Building::getPosition()
 {
-    return cube->position;
+    return cube.position;
 }
 
-Cube* Building::getCube()
+Cube& Building::getCube()
 {
     return cube;
 }
 
 void Building::select()
 {
-    cube->color = RED;
+    cube.color = RED;
 }
 
 void Building::deselect()
 {
-    cube->color = defaultColor;
+    cube.color = defaultColor;
 }
 
 void Building::sell()

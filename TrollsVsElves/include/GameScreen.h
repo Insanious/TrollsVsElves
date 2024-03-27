@@ -45,7 +45,7 @@ class GameScreen: public BaseScreen
         void draw();
         void update();
         void updateCamera();
-        void updateghostBuilding();
+        void updateGhostBuilding();
         void updateSelectedBuilding();
 
         Building* raycastToNearestBuilding();

@@ -11,6 +11,8 @@ struct Cube
     Vector3 size = Vector3Zero();
     Color color = WHITE;
 
+    Cube(): position(), size(), color() {};
+
     Cube(Vector3 _position, Vector3 _size, Color _color)
         : position(_position), size(_size), color(_color) {};
 };
@@ -26,10 +28,10 @@ inline float getCubeDiagonalLength(Cube cube)
     return sqrt(pow(cube.size.x, 2) + pow(cube.size.z, 2));
 }
 
-inline void drawCube(Cube* cube)
+inline void drawCube(Cube cube)
 {
-    DrawCubeV(cube->position, cube->size, cube->color);
-    DrawCubeWiresV(cube->position, cube->size, GRAY);
+    DrawCubeV(cube.position, cube.size, cube.color);
+    DrawCubeWiresV(cube.position, cube.size, GRAY);
 }
 
 struct Capsule
