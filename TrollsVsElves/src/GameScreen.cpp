@@ -114,25 +114,12 @@ void GameScreen::update()
     }
 
     if (selectedBuilding && selectedBuilding->isSold()) // delete selectedBuilding and pop from buildings vector
-        {
-            int index = 0;
-            for (int i = 0; i < buildings.size(); i++)
-                if (buildings[i] == selectedBuilding)
-                {
-                    index = i;
-                    break;
-                }
-
-            if (buildings[index] != buildings.back())
-                std::swap(buildings[index], buildings.back());
-
-            buildings.pop_back();
-            buildings.shrink_to_fit();
-
-            delete selectedBuilding;
-            selectedBuilding = nullptr;
-            buildingUI.hide();
-        }
+    {
+        swapAndPop(buildings, selectedBuilding);
+        delete selectedBuilding;
+        selectedBuilding = nullptr;
+        buildingUI.hide();
+    }
 
     if (IsKeyPressed(KEY_B))
         ghostBuilding = new Building(Vector3Zero(), buildingSize, defaultBuildingColor);

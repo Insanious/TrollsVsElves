@@ -49,10 +49,10 @@ struct Capsule
         : startPos(_startPos), endPos(_endPos), radius(_radius), slices(_slices), rings(_rings), color(_color) {};
 };
 
-inline void drawCapsule(Capsule* capsule)
+inline void drawCapsule(Capsule capsule)
 {
-    DrawCapsule(capsule->startPos, capsule->endPos, capsule->radius, capsule->slices, capsule->rings, capsule->color);
-    DrawCapsuleWires(capsule->startPos, capsule->endPos, capsule->radius, capsule->slices, capsule->rings, GRAY);
+    DrawCapsule(capsule.startPos, capsule.endPos, capsule.radius, capsule.slices, capsule.rings, capsule.color);
+    DrawCapsuleWires(capsule.startPos, capsule.endPos, capsule.radius, capsule.slices, capsule.rings, GRAY);
 }
 
 struct Vector2i

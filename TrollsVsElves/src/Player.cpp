@@ -20,7 +20,7 @@ void Player::init(Capsule capsule, Vector3 speed)
 
 void Player::draw()
 {
-    drawCapsule(&capsule);
+    drawCapsule(capsule);
 }
 
 void Player::update()
