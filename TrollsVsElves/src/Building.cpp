@@ -12,7 +12,7 @@ Building::Building()
     sold = false;
     level = 1;
 
-    buildTime = 1.f;
+    buildTime = 2.f;
     buildTimer = 0.f;
 }
 
@@ -38,7 +38,8 @@ void Building::update()
     if (buildStage == IN_PROGRESS)
     {
         buildTimer += GetFrameTime();
-        cube.color = colorLerp(ghostColor, targetColor, buildTimer);
+        float adjusted = buildTimer/buildTime;
+        cube.color = colorLerp(ghostColor, targetColor, adjusted);
 
         if (buildTimer >= buildTime)
         {
@@ -81,12 +82,14 @@ Cube& Building::getCube()
 
 void Building::select()
 {
-    cube.color = selectedColor;
+    if (buildStage != IN_PROGRESS)
+        cube.color = selectedColor;
 }
 
 void Building::deselect()
 {
-    cube.color = targetColor;
+    if (buildStage != IN_PROGRESS)
+        cube.color = targetColor;
 }
 
 void Building::sell()

@@ -8,13 +8,14 @@
 
 #include "Building.h"
 
-enum PLAYER_STATE { IDLE, RUNNING };
+enum PLAYER_STATE { IDLE, RUNNING, RUNNING_TO_BUILD };
 
 class Player
 {
 private:
     Capsule capsule;
     PLAYER_STATE state;
+    PLAYER_STATE previousState;
 
     Vector3 speed;
 
@@ -33,8 +34,11 @@ public:
     Vector3 getPosition();
     Capsule getCapsule();
 
-    bool isIdle();
-    bool isRunning();
+    void setState(PLAYER_STATE newState);
+    PLAYER_STATE getState();
+    PLAYER_STATE getPreviousState();
+
+    void setRunningToBuild();
 };
 
 #endif

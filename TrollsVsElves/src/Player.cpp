@@ -3,6 +3,7 @@
 Player::Player()
 {
     state = IDLE;
+    previousState = IDLE;
     speed = Vector3Zero();
     targetPosition = Vector3Zero();
     defaultTargetMargin = 0.5f;
@@ -40,12 +41,12 @@ void Player::updateMovement()
 
         Vector3 newEndPos = Vector3Add(capsule.endPos, velocity);
         Vector3 nextDirection = Vector3Subtract(target, { newEndPos.x, 0.f, newEndPos.z });
-        if (Vector3Length(nextDirection) < defaultTargetMargin) // gonna clip in target, tp to target
+        if (Vector3Length(nextDirection) <= defaultTargetMargin) // gonna clip in target, tp to target
         {
             Vector3 targetVector = Vector3Scale(directionNormalized, defaultTargetMargin);
             capsule.startPos = { target.x, capsule.startPos.y, target.z };
             capsule.endPos = { target.x, capsule.endPos.y, target.z };
-            state = IDLE;
+            setState(IDLE);
         }
         else
         {
@@ -53,16 +54,11 @@ void Player::updateMovement()
             capsule.endPos = Vector3Add(capsule.endPos, velocity);
         }
     }
-    else // reached destination
-    {
-        state = IDLE;
-    }
-
 }
 
 void Player::setTargetPosition(Vector3 position)
 {
-    state = RUNNING;
+    if (state != RUNNING) setState(RUNNING);
     targetPosition = position;
 }
 
@@ -76,12 +72,23 @@ Capsule Player::getCapsule()
     return capsule;
 }
 
-bool Player::isIdle()
+void Player::setState(PLAYER_STATE newState)
 {
-    return state == IDLE;
+    previousState = state;
+    state = newState;
 }
 
-bool Player::isRunning()
+PLAYER_STATE Player::getState()
 {
-    return state == RUNNING;
+    return state;
+}
+
+PLAYER_STATE Player::getPreviousState()
+{
+    return previousState;
+}
+
+void Player::setRunningToBuild()
+{
+    setState(RUNNING_TO_BUILD);
 }

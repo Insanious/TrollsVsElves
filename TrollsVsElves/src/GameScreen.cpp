@@ -90,23 +90,9 @@ void GameScreen::update()
     for (Building* building: buildQueue)
         building->update();
 
-    player->update(); // must come before checking player->isIdle()
-
-    if (player->isIdle() && buildQueue.size()) // player has walked to the target, and there is a building in queue
-    {
-        Building* building = buildQueue.front();
-        buildQueue.pop_front();
-        building->build();
-        buildings.push_back(building);
-
-        if (buildQueue.size()) // if more in queue, walk to the next target
-        {
-            assert(building != buildQueue.front()); // sanity check
-            building = buildQueue.front();
-            Vector3 targetPosition = calculateTargetPositionToBuildingFromPlayer(building);
-            player->setTargetPosition(targetPosition);
-        }
-    }
+    player->update();
+    if (buildQueue.size()) // something is getting built
+        updateBuildQueue();
 
     if (selectedBuilding && selectedBuilding->isSold()) // delete selectedBuilding and pop from buildings vector
     {
@@ -135,6 +121,15 @@ void GameScreen::update()
                 delete ghostBuilding;
                 ghostBuilding = nullptr;
             }
+            if (player->getState() == RUNNING_TO_BUILD) // player was running to build something
+            {
+                while(buildQueue.size())
+                {
+                    delete buildQueue.back();
+                    buildQueue.pop_back();
+                }
+            }
+
             player->setTargetPosition({ collision.point.x, player->getPosition().y, collision.point.z });
         }
     }
@@ -147,12 +142,15 @@ void GameScreen::update()
             RayCollision collision = raycastToGround();
             if (collision.hit)
             {
-                if (player->isIdle())
+                PLAYER_STATE currentState = player->getState();
+                if (currentState == IDLE || currentState == RUNNING)
                 {
                     Vector3 targetPosition = calculateTargetPositionToBuildingFromPlayer(ghostBuilding);
                     player->setTargetPosition(targetPosition);
+                    player->setState(RUNNING_TO_BUILD);
                 }
-                ghostBuilding->scheduleBuild(); // sets build stage
+
+                ghostBuilding->scheduleBuild();
                 buildQueue.push_back(ghostBuilding);
             }
             else
@@ -175,25 +173,13 @@ void GameScreen::updateCamera()
     float cameraPan = 2.2f;
     // float cameraPan = 0.2f;
 
-    if (IsKeyDown(KEY_A))
-    {
-        CameraMoveRight(&camera, -cameraPan, true);
-    }
-    else if (IsKeyDown(KEY_D))
-    {
-        CameraMoveRight(&camera, cameraPan, true);
-    }
+    if (IsKeyDown(KEY_A))      CameraMoveRight(&camera, -cameraPan, true);
+    else if (IsKeyDown(KEY_D)) CameraMoveRight(&camera, cameraPan, true);
 
-    if (IsKeyDown(KEY_W))
-    {
-        CameraMoveForward(&camera, cameraPan, true);
-    }
-    else if (IsKeyDown(KEY_S))
-    {
-        CameraMoveForward(&camera, -cameraPan, true);
-    }
+    if (IsKeyDown(KEY_W))      CameraMoveForward(&camera, cameraPan, true);
+    else if (IsKeyDown(KEY_S)) CameraMoveForward(&camera, -cameraPan, true);
 
-    // This code enables panning with the mouse at the edges
+    // This code enables panning with the mouse at the edges, but its a bit awkward right now
     // int edgeOfScreenMargin = 40;
     // Vector2 mousePos = GetMousePosition();
 
@@ -224,7 +210,7 @@ void GameScreen::updateCamera()
     //     if (mouseIsAtEdgeOfScreenDown) SetMousePosition(mousePos.x, screenHeight - edgeOfScreenMargin);
     // }
 
-    // Scroll logic
+    // Zoom logic
     float maxDistance = 120.f;
     float minDistance = 10.f;
     float scrollAmount = 1.f;
@@ -296,6 +282,25 @@ void GameScreen::updateSelectedBuilding()
 
             buildingUI.showBuilding(selectedBuilding);
             return;
+        }
+    }
+}
+
+void GameScreen::updateBuildQueue()
+{
+    if (player->getState() == IDLE && player->getPreviousState() == RUNNING_TO_BUILD) // was running and reached target
+    {
+        Building* building = buildQueue.front();
+        buildQueue.pop_front();
+        building->build();
+        buildings.push_back(building);
+
+        if (buildQueue.size()) // if more in queue, walk to the next target
+        {
+            building = buildQueue.front();
+            Vector3 targetPosition = calculateTargetPositionToBuildingFromPlayer(building);
+            player->setTargetPosition(targetPosition);
+            player->setState(RUNNING_TO_BUILD);
         }
     }
 }
