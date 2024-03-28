@@ -22,7 +22,7 @@ struct Cube
 inline BoundingBox getCubeBoundingBox(Cube cube)
 {
     Vector3 halfSize = Vector3Scale(cube.size, 0.5f);
-    return (BoundingBox) { Vector3Add(cube.position, halfSize), Vector3Subtract(cube.position, halfSize) };
+    return { Vector3Add(cube.position, halfSize), Vector3Subtract(cube.position, halfSize) };
 }
 
 inline float getCubeDiagonalLength(Cube cube)

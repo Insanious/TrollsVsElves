@@ -26,7 +26,7 @@ void GameScreen::init(Vector2i screenSize)
     buildingUI.setScreenSize(screenSize);
 
     cubeSize = { 4.f, 4.f, 4.f };
-    gridSize = (Vector2i){ .x = 32, .y = 32 };
+    gridSize = { 32, 32 };
     defaultCubeColor = DARKGRAY;
 
     Layer* groundLayer = new Layer();
@@ -50,9 +50,9 @@ void GameScreen::init(Vector2i screenSize)
     player->init(Capsule(startPos, endPos, radius, slices, rings, playerColor), playerSpeed);
 
     camera = { 0 };
-    camera.position = (Vector3){ 30.0f, 60.0f, 30.0f }; // Camera position
-    camera.target = (Vector3){ 0.f, 0.f, 0.f };         // Camera looking at point
-    camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };          // Camera up vector (rotation towards target)
+    camera.position = { 30.0f, 60.0f, 30.0f }; // Camera position
+    camera.target = { 0.f, 0.f, 0.f };         // Camera looking at point
+    camera.up = { 0.0f, 1.0f, 0.0f };          // Camera up vector (rotation towards target)
     camera.fovy = 90.0f;                                // Camera field-of-view Y
     camera.projection = CAMERA_PERSPECTIVE;             // Camera projection type
 }
@@ -251,9 +251,6 @@ void GameScreen::updateCamera()
 void GameScreen::updateGhostBuilding()
 {
     float halfCubeSize = cubeSize.y / 2;
-    const float max = 10000.f;
-    // Check mouse collision against a plane spanning from -max to max, with y the same as the ground cubes
-    // halfCubeSize is used here since the middle of the ground cube is at y=0
     RayCollision collision = raycastToGround();
     if (collision.hit)
     {
@@ -273,7 +270,6 @@ void GameScreen::updateSelectedBuilding()
 
     if (!nearestBuilding && selectedBuilding) // remove select
     {
-        printf("!nearestBuilding && selectedBuilding\n");
         selectedBuilding->deselect();
         selectedBuilding = nullptr;
 
@@ -283,27 +279,22 @@ void GameScreen::updateSelectedBuilding()
 
     if (nearestBuilding)
     {
-        printf("nearestBuilding\n");
         if (!selectedBuilding) // new select
         {
-            printf("nearestBuilding && !selectedBuilding\n");
             selectedBuilding = nearestBuilding;
             selectedBuilding->select();
 
-            buildingUI.init(selectedBuilding);
-            buildingUI.show();
+            buildingUI.showBuilding(selectedBuilding);
             return;
         }
 
         if (selectedBuilding && selectedBuilding != nearestBuilding) // switch select
         {
-            printf("nearestBuilding && selectedBuilding && selectedBuilding != nearestBuilding\n");
             selectedBuilding->deselect();
             selectedBuilding = nearestBuilding;
             selectedBuilding->select();
 
-            buildingUI.init(selectedBuilding);
-            buildingUI.show();
+            buildingUI.showBuilding(selectedBuilding);
             return;
         }
     }
@@ -337,10 +328,10 @@ RayCollision GameScreen::raycastToGround()
     // halfCubeSize is used here since the middle of the ground cube is at y=0
     return GetRayCollisionQuad(
         GetMouseRay(GetMousePosition(), camera),
-        (Vector3){ -max, halfCubeSize, -max },
-        (Vector3){ -max, halfCubeSize,  max },
-        (Vector3){  max, halfCubeSize,  max },
-        (Vector3){  max, halfCubeSize, -max }
+        { -max, halfCubeSize, -max },
+        { -max, halfCubeSize,  max },
+        {  max, halfCubeSize,  max },
+        {  max, halfCubeSize, -max }
     );
 }
 

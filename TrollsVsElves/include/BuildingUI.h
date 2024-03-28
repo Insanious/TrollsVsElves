@@ -20,13 +20,12 @@ public:
     BuildingUI();
     ~BuildingUI();
 
-    void init(Building* building);
     void update();
     void draw();
 
     void setScreenSize(Vector2i size);
 
-    void show();
+    void showBuilding(Building* building);
     void hide();
     bool isHovering();
 

@@ -11,12 +11,6 @@ BuildingUI::~BuildingUI()
 {
 }
 
-void BuildingUI::init(Building* building)
-{
-    this->building = building;
-    printf("BuildingUI::init\n");
-}
-
 void BuildingUI::update()
 {
     printf("BuildingUI::update\n");
@@ -95,16 +89,15 @@ void BuildingUI::setScreenSize(Vector2i size)
     screenSize = size;
 }
 
-void BuildingUI::show()
+void BuildingUI::showBuilding(Building* building)
 {
+    this->building = building;
     visible = true;
-    printf("BuildingUI::show\n");
 }
 
 void BuildingUI::hide()
 {
     visible = false;
-    printf("BuildingUI::hide\n");
 }
 
 bool BuildingUI::isHovering()

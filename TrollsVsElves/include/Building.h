@@ -46,6 +46,7 @@ public:
     void upgrade();
 
     int getLevel();
+    BUILD_STAGE getBuildStage();
 };
 
 #endif

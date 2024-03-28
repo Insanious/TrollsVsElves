@@ -108,3 +108,9 @@ int Building::getLevel()
 {
     return level;
 }
+
+BUILD_STAGE Building::getBuildStage()
+{
+    return buildStage;
+}
+
