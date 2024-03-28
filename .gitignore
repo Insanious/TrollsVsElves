@@ -6,3 +6,8 @@ _bin
 /build
 Makefile
 obj
+*.sln
+*.vcxproj*
+*.bat
+*.exe
+*.ini
