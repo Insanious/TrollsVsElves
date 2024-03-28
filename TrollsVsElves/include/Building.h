@@ -4,7 +4,7 @@
 #include "structs.h"
 #include <cassert>
 
-enum BUILD_STAGE { GHOST = 0, IN_PROGRESS, FINISHED };
+enum BUILD_STAGE { FLOATING = 0, GHOST, IN_PROGRESS, FINISHED };
 
 class Building
 {
@@ -12,18 +12,26 @@ private:
     Cube cube;
     BUILD_STAGE buildStage;
 
-    Color defaultColor;
+    Color floatingColor;
+    Color ghostColor;
+    Color selectedColor;
+    Color targetColor;
+
+    float buildTime;
+    float buildTimer;
 
     bool sold;
     int level;
 
 public:
     Building();
-    Building(Vector3 position, Vector3 size, Color color);
     ~Building();
 
+    void init(Cube cube);
     void draw();
+    void update();
 
+    void scheduleBuild();
     void build();
 
     void setPosition(Vector3 position);

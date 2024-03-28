@@ -13,6 +13,8 @@ struct Cube
 
     Cube(): position(), size(), color() {};
 
+    Cube(Vector3 _size): size(_size) {};
+
     Cube(Vector3 _position, Vector3 _size, Color _color)
         : position(_position), size(_size), color(_color) {};
 };

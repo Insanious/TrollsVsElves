@@ -2,32 +2,66 @@
 
 Building::Building()
 {
-}
+    buildStage = FLOATING;
 
-Building::Building(Vector3 position, Vector3 size, Color color)
-{
-    cube = Cube(position, size, color);
-    buildStage = GHOST;
-    defaultColor = color;
+    floatingColor = { 0, 121, 241, 100 };
+    ghostColor = { 255, 255, 255, 100 };
+    selectedColor = YELLOW;
+    targetColor = GREEN;
+
     sold = false;
     level = 1;
+
+    buildTime = 1.f;
+    buildTimer = 0.f;
 }
 
 Building::~Building()
 {
 }
 
-void Building::build()
+void Building::init(Cube cube)
 {
-    printf("Building::build()\n");
-    assert(buildStage == GHOST); // sanity check
+    this->cube = cube;
 
-    buildStage = IN_PROGRESS;
+    buildStage = FLOATING;
+    this->cube.color = floatingColor;
 }
 
 void Building::draw()
 {
     drawCube(cube);
+}
+
+void Building::update()
+{
+    if (buildStage == IN_PROGRESS)
+    {
+        buildTimer += GetFrameTime();
+        cube.color = colorLerp(ghostColor, targetColor, buildTimer);
+
+        if (buildTimer >= buildTime)
+        {
+            cube.color = targetColor;
+            buildTimer = 0.f;
+            buildStage = FINISHED;
+        }
+    }
+}
+
+void Building::scheduleBuild()
+{
+    assert(buildStage == FLOATING); // sanity check
+
+    buildStage = GHOST;
+    cube.color = ghostColor;
+}
+
+void Building::build()
+{
+    assert(buildStage == GHOST); // sanity check
+
+    buildStage = IN_PROGRESS;
 }
 
 void Building::setPosition(Vector3 position)
@@ -47,12 +81,12 @@ Cube& Building::getCube()
 
 void Building::select()
 {
-    cube.color = RED;
+    cube.color = selectedColor;
 }
 
 void Building::deselect()
 {
-    cube.color = defaultColor;
+    cube.color = targetColor;
 }
 
 void Building::sell()

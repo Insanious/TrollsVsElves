@@ -68,20 +68,10 @@ void GameScreen::draw()
         building->draw();
 
     for (Building* building: buildQueue)
-    {
-        Color oldColor = building->getCube().color;
-        building->getCube().color = RED;
         building->draw();
-        building->getCube().color = oldColor;
-    }
 
     if (ghostBuilding)
-    {
-        Color oldColor = ghostBuilding->getCube().color;
-        ghostBuilding->getCube().color = BLUE;
         ghostBuilding->draw();
-        ghostBuilding->getCube().color = oldColor;
-    }
 
     buildingUI.draw();
 
@@ -95,16 +85,21 @@ void GameScreen::update()
 {
     updateCamera();
 
-    player->update(); // must come before checking isIdle
+    for (Building* building: buildings)
+        building->update();
+    for (Building* building: buildQueue)
+        building->update();
 
-    if (player->isIdle() && buildQueue.size())
+    player->update(); // must come before checking player->isIdle()
+
+    if (player->isIdle() && buildQueue.size()) // player has walked to the target, and there is a building in queue
     {
         Building* building = buildQueue.front();
         buildQueue.pop_front();
         building->build();
         buildings.push_back(building);
 
-        if (buildQueue.size()) // if more in queue, walk to next
+        if (buildQueue.size()) // if more in queue, walk to the next target
         {
             assert(building != buildQueue.front()); // sanity check
             building = buildQueue.front();
@@ -122,7 +117,10 @@ void GameScreen::update()
     }
 
     if (IsKeyPressed(KEY_B))
-        ghostBuilding = new Building(Vector3Zero(), buildingSize, defaultBuildingColor);
+    {
+        ghostBuilding = new Building();
+        ghostBuilding->init(Cube(buildingSize));
+    }
 
     if (ghostBuilding)
         updateGhostBuilding();
@@ -154,6 +152,7 @@ void GameScreen::update()
                     Vector3 targetPosition = calculateTargetPositionToBuildingFromPlayer(ghostBuilding);
                     player->setTargetPosition(targetPosition);
                 }
+                ghostBuilding->scheduleBuild(); // sets build stage
                 buildQueue.push_back(ghostBuilding);
             }
             else
