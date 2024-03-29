@@ -128,7 +128,7 @@ void GameScreen::drawUI()
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, buttonPadding);
 
         if (selectedBuilding)
-            selectedBuilding->drawUIButtons(windowPadding, buttonPadding);
+            selectedBuilding->drawUIButtons(windowPadding, buttonSize);
         else if (showPlayer)
         {
             int buttonsPerLine = 2;
