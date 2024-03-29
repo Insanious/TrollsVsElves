@@ -1,9 +1,6 @@
 #include "GameScreen.h"
 
-GameScreen::GameScreen()
-{
-    printf("GameScreen()\n");
-}
+GameScreen::GameScreen() {}
 
 GameScreen::~GameScreen()
 {
@@ -23,7 +20,6 @@ GameScreen::~GameScreen()
 void GameScreen::init(Vector2i screenSize)
 {
     this->screenSize = screenSize;
-    buildingUI.setScreenSize(screenSize);
 
     cubeSize = { 4.f, 4.f, 4.f };
     gridSize = { 32, 32 };
@@ -39,6 +35,13 @@ void GameScreen::init(Vector2i screenSize)
     ghostBuilding = nullptr;
     selectedBuilding = nullptr;
 
+    hoveringUI = false;
+
+    buildingTypeMappings = {
+        { CASTLE, { KEY_ONE, "Castle" } },
+        { ROCK, { KEY_TWO, "Rock" } },
+    };
+
     player = new Player();
     Vector3 startPos = { 10.f, cubeSize.y + cubeSize.y/2, 10.f };
     Vector3 endPos = { 10.f, cubeSize.y + 8.f, 10.f };
@@ -48,13 +51,16 @@ void GameScreen::init(Vector2i screenSize)
     Color playerColor = BLUE;
     Vector3 playerSpeed = Vector3Scale(Vector3One(), 40);
     player->init(Capsule(startPos, endPos, radius, slices, rings, playerColor), playerSpeed);
+    showPlayer = false;
 
-    camera = { 0 };
-    camera.position = { 30.0f, 60.0f, 30.0f }; // Camera position
-    camera.target = { 0.f, 0.f, 0.f };         // Camera looking at point
-    camera.up = { 0.0f, 1.0f, 0.0f };          // Camera up vector (rotation towards target)
-    camera.fovy = 90.0f;                                // Camera field-of-view Y
-    camera.projection = CAMERA_PERSPECTIVE;             // Camera projection type
+
+    camera = {
+        .position = { 30.0f, 60.0f, 30.0f },
+        .target = { 0.f, 0.f, 0.f },
+        .up = { 0.0f, 1.0f, 0.0f },
+        .fovy = 90.0f,
+        .projection = CAMERA_PERSPECTIVE,
+    };
 }
 
 void GameScreen::draw()
@@ -73,12 +79,79 @@ void GameScreen::draw()
     if (ghostBuilding)
         ghostBuilding->draw();
 
-    buildingUI.draw();
-
     if (player)
         player->draw();
 
+    drawUI();
+
     EndMode3D();
+}
+
+void GameScreen::drawUI()
+{
+    hoveringUI = false;
+
+    bool drawWindow = !selectedBuilding != !showPlayer; // xor
+    if (drawWindow)
+    {
+        bool bottomRightWindow = true;
+        int bottomRightWindowFlags = 0;
+        bottomRightWindowFlags |= ImGuiWindowFlags_NoTitleBar;
+        bottomRightWindowFlags |= ImGuiWindowFlags_NoResize;
+        bottomRightWindowFlags |= ImGuiWindowFlags_NoMove;
+
+        ImVec2 windowSize(200, 200);
+        ImVec2 windowPos(
+            screenSize.x - windowSize.x,
+            screenSize.y - windowSize.y
+        );
+
+        ImVec2 windowPadding(8, 8);
+        ImVec2 buttonPadding(8, 8);
+        ImVec2 buttonSize(
+            windowSize.x / 2 - windowPadding.x - buttonPadding.x / 2,
+            windowSize.y / 2 - windowPadding.y - buttonPadding.x / 2
+        );
+
+        // Draw bottom right window
+        ImGui::SetNextWindowSize(windowSize);
+        ImGui::SetNextWindowPos(windowPos);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, windowPadding);
+        ImGui::Begin("Bottom right window", &bottomRightWindow, bottomRightWindowFlags);
+        ImGui::PopStyleVar();
+
+        hoveringUI = ImGui::IsMouseHoveringRect(
+            windowPos,
+            ImVec2(windowPos.x + windowSize.x, windowPos.y + windowSize.y)
+        );
+
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, buttonPadding);
+
+        if (selectedBuilding)
+            selectedBuilding->drawUIButtons(windowPadding, buttonPadding);
+        else if (showPlayer)
+        {
+            int buttonsPerLine = 2;
+            for (int i = 1; i < BUILDING_TYPE::COUNT; i += buttonsPerLine) // start at 1 since 0 = NONE
+            {
+                for (int j = 0; j < buttonsPerLine; j++)
+                {
+                    if ((BUILDING_TYPE)(i+j) == BUILDING_TYPE::COUNT) break; // safeguard if not a multiple of buttonsPerLine
+
+                    BUILDING_TYPE buildingType = (BUILDING_TYPE)(i+j);
+                    UIMapping mapping = buildingTypeMappings[buildingType];
+                    if (ImGui::Button(mapping.buttonText.c_str(), buttonSize))
+                        createNewGhostBuilding(buildingType);
+
+                    if (j != buttonsPerLine - 1) ImGui::SameLine(); // apply on all except the last
+                }
+            }
+        }
+
+        ImGui::PopStyleVar();
+        ImGui::End();
+    }
+
 }
 
 void GameScreen::update()
@@ -91,6 +164,7 @@ void GameScreen::update()
         building->update();
 
     player->update();
+
     if (buildQueue.size()) // something is getting built
         updateBuildQueue();
 
@@ -99,70 +173,39 @@ void GameScreen::update()
         swapAndPop(buildings, selectedBuilding);
         delete selectedBuilding;
         selectedBuilding = nullptr;
-        buildingUI.hide();
     }
 
     if (IsKeyPressed(KEY_B))
     {
-        ghostBuilding = new Building();
-        ghostBuilding->init(Cube(buildingSize));
+        if (selectedBuilding)
+        {
+            selectedBuilding->deselect();
+            selectedBuilding = nullptr;
+        }
+
+        showPlayer = !showPlayer;
+    }
+
+    if (showPlayer) // Check additional mapping keys
+    {
+        for (int i = 1; i < BUILDING_TYPE::COUNT; i += 1) // start at 1 since 0 = NONE
+        {
+            BUILDING_TYPE buildingType = (BUILDING_TYPE)i;
+            UIMapping mapping = buildingTypeMappings[buildingType];
+
+            if (IsKeyPressed(mapping.key))
+                createNewGhostBuilding(buildingType);
+        }
     }
 
     if (ghostBuilding)
         updateGhostBuilding();
 
     if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
-    {
-        RayCollision collision = raycastToGround();
-        if (collision.hit)
-        {
-            if (ghostBuilding) // remove building and just walk the player to the location instead
-            {
-                delete ghostBuilding;
-                ghostBuilding = nullptr;
-            }
-            if (player->getState() == RUNNING_TO_BUILD) // player was running to build something
-            {
-                while(buildQueue.size())
-                {
-                    delete buildQueue.back();
-                    buildQueue.pop_back();
-                }
-            }
-
-            player->setTargetPosition({ collision.point.x, player->getPosition().y, collision.point.z });
-        }
-    }
+        handleRightMouseButton();
 
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
-    {
-        if (buildingUI.isHovering()) { /* do nothing... */ }
-        else if (ghostBuilding)
-        {
-            RayCollision collision = raycastToGround();
-            if (collision.hit)
-            {
-                PLAYER_STATE currentState = player->getState();
-                if (currentState == IDLE || currentState == RUNNING)
-                {
-                    Vector3 targetPosition = calculateTargetPositionToBuildingFromPlayer(ghostBuilding);
-                    player->setTargetPosition(targetPosition);
-                    player->setState(RUNNING_TO_BUILD);
-                }
-
-                ghostBuilding->scheduleBuild();
-                buildQueue.push_back(ghostBuilding);
-            }
-            else
-                delete ghostBuilding;
-
-            ghostBuilding = nullptr;
-        }
-        else if (!ghostBuilding)
-        {
-            updateSelectedBuilding();
-        }
-    }
+        handleLeftMouseButton();
 }
 
 void GameScreen::updateCamera()
@@ -252,37 +295,35 @@ void GameScreen::updateGhostBuilding()
 
 void GameScreen::updateSelectedBuilding()
 {
-    Building* nearestBuilding = raycastToNearestBuilding();
+    Building* building = raycastToBuilding();
 
-    if (!nearestBuilding && selectedBuilding) // remove select
+    if (!building && !selectedBuilding) return;
+
+    if (!building && selectedBuilding) // remove select
     {
         selectedBuilding->deselect();
         selectedBuilding = nullptr;
 
-        buildingUI.hide();
+        showPlayer = false;
         return;
     }
 
-    if (nearestBuilding)
+    if (!selectedBuilding) // new select
     {
-        if (!selectedBuilding) // new select
-        {
-            selectedBuilding = nearestBuilding;
-            selectedBuilding->select();
+        selectedBuilding = building;
+        selectedBuilding->select();
 
-            buildingUI.showBuilding(selectedBuilding);
-            return;
-        }
+        showPlayer = false;
+        return;
+    }
 
-        if (selectedBuilding && selectedBuilding != nearestBuilding) // switch select
-        {
-            selectedBuilding->deselect();
-            selectedBuilding = nearestBuilding;
-            selectedBuilding->select();
+    if (selectedBuilding && selectedBuilding != building) // switch select
+    {
+        selectedBuilding->deselect();
+        selectedBuilding = building;
+        selectedBuilding->select();
 
-            buildingUI.showBuilding(selectedBuilding);
-            return;
-        }
+        return;
     }
 }
 
@@ -305,7 +346,73 @@ void GameScreen::updateBuildQueue()
     }
 }
 
-Building* GameScreen::raycastToNearestBuilding()
+void GameScreen::handleLeftMouseButton()
+{
+    if (hoveringUI) return;
+
+    if (!ghostBuilding)
+    {
+        updateSelectedBuilding();
+        return;
+    }
+
+    RayCollision collision = raycastToGround();
+    if (!collision.hit)
+    {
+        delete ghostBuilding;
+        ghostBuilding = nullptr;
+        return;
+    }
+
+    if (player->getState() != RUNNING_TO_BUILD)
+    {
+        Vector3 targetPosition = calculateTargetPositionToBuildingFromPlayer(ghostBuilding);
+        player->setTargetPosition(targetPosition);
+        player->setState(RUNNING_TO_BUILD);
+    }
+
+    ghostBuilding->scheduleBuild();
+    buildQueue.push_back(ghostBuilding);
+    ghostBuilding = nullptr;
+}
+
+void GameScreen::handleRightMouseButton()
+{
+    RayCollision collision = raycastToGround();
+    if (!collision.hit) return;
+
+    if (ghostBuilding) // remove building and just walk the player to the location instead
+    {
+        delete ghostBuilding;
+        ghostBuilding = nullptr;
+        return;
+    }
+
+    if (player->getState() == RUNNING_TO_BUILD) // player was currently running to build something
+    {
+        while(buildQueue.size()) // clear the whole buildQueue
+        {
+            delete buildQueue.back();
+            buildQueue.pop_back();
+        }
+    }
+
+    player->setTargetPosition({ collision.point.x, player->getPosition().y, collision.point.z });
+}
+
+void GameScreen::createNewGhostBuilding(BUILDING_TYPE buildingType)
+{
+    if (ghostBuilding)
+    {
+        delete ghostBuilding;
+        ghostBuilding = nullptr;
+    }
+
+    ghostBuilding = new Building();
+    ghostBuilding->init(Cube(buildingSize), buildingType);
+}
+
+Building* GameScreen::raycastToBuilding()
 {
     Ray ray = GetMouseRay(GetMousePosition(), camera);
     float closestCollisionDistance = std::numeric_limits<float>::infinity();;

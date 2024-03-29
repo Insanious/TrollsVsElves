@@ -36,6 +36,31 @@ inline void drawCube(Cube cube)
     DrawCubeWiresV(cube.position, cube.size, GRAY);
 }
 
+struct Cylinder
+{
+    Vector3 position = Vector3Zero();
+    float radiusTop = 0;
+    float radiusBottom = 0;
+    float height = 0;
+    int slices = 0;
+    Color color = WHITE;
+
+    Cylinder(): position(), radiusTop(), radiusBottom(), height(), slices(), color() {};
+
+    Cylinder(Vector3 _position, float _radius, float _height, int _slices, Color _color) :
+        position(_position),
+        radiusTop(_radius),
+        radiusBottom(_radius),
+        height(_height),
+        slices(_slices),
+        color(_color) {};
+};
+
+inline void drawCylinder(Cylinder c)
+{
+    DrawCylinder(c.position, c.radiusTop, c.radiusBottom, c.height, c.slices, c.color);
+}
+
 struct Capsule
 {
     Vector3 startPos = Vector3Zero();

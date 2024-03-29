@@ -39,7 +39,7 @@ inline void swapAndPop(std::vector<T>& vector, const T& element)
     vector.pop_back();
 }
 
-inline Color colorLerp(Color c1, Color c2, float amount)
+inline Color lerpColor(Color c1, Color c2, float amount)
 {
     return {
         static_cast<unsigned char>(c1.r + amount * (c2.r - c1.r)),

@@ -19,8 +19,10 @@ private:
 
     Vector3 speed;
 
-    Vector3 targetPosition;
     float defaultTargetMargin;
+    Vector3 targetPosition;
+    Cylinder targetMarker;
+
 public:
     Player();
     ~Player();
@@ -37,8 +39,6 @@ public:
     void setState(PLAYER_STATE newState);
     PLAYER_STATE getState();
     PLAYER_STATE getPreviousState();
-
-    void setRunningToBuild();
 };
 
 #endif

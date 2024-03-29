@@ -8,10 +8,21 @@
 #include "BaseScreen.h"
 #include "Layer.h"
 #include "Building.h"
-#include "BuildingUI.h"
 #include "Player.h"
 #include <vector>
 #include <deque>
+#include <map>
+
+struct UIMapping
+{
+    KeyboardKey key = KEY_NULL;
+    std::string buttonText = "";
+
+    UIMapping(): key(), buttonText() {};
+
+    UIMapping(KeyboardKey _key, std::string _buttonText)
+        : key(_key), buttonText(_buttonText) {};
+};
 
 class GameScreen: public BaseScreen
 {
@@ -31,9 +42,12 @@ class GameScreen: public BaseScreen
         Building* ghostBuilding;
         Building* selectedBuilding;
 
-        BuildingUI buildingUI;
+        std::map<BUILDING_TYPE, UIMapping> buildingTypeMappings;
+
+        bool hoveringUI;
 
         Player* player;
+        bool showPlayer;
 
         Camera3D camera;
 
@@ -43,13 +57,19 @@ class GameScreen: public BaseScreen
 
         void init(Vector2i screenSize);
         void draw();
+        void drawUI();
         void update();
         void updateCamera();
         void updateGhostBuilding();
         void updateSelectedBuilding();
         void updateBuildQueue();
 
-        Building* raycastToNearestBuilding();
+        void handleLeftMouseButton();
+        void handleRightMouseButton();
+
+        void createNewGhostBuilding(BUILDING_TYPE buildingType);
+
+        Building* raycastToBuilding();
         RayCollision raycastToGround();
 
         Vector3 calculateTargetPositionToBuildingFromPlayer(Building* building);

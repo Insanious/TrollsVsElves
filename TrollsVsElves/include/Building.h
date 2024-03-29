@@ -2,15 +2,19 @@
 #define BUILDING_H
 
 #include "structs.h"
+#include "imgui.h"
+#include "rlImGui.h"
 #include <cassert>
 
 enum BUILD_STAGE { FLOATING = 0, GHOST, IN_PROGRESS, FINISHED };
+enum BUILDING_TYPE { NONE = 0, CASTLE, ROCK, COUNT };
 
 class Building
 {
 private:
     Cube cube;
     BUILD_STAGE buildStage;
+    BUILDING_TYPE buildingType;
 
     Color floatingColor;
     Color ghostColor;
@@ -27,8 +31,9 @@ public:
     Building();
     ~Building();
 
-    void init(Cube cube);
+    void init(Cube cube, BUILDING_TYPE buildingType);
     void draw();
+    void drawUIButtons(ImVec2 windowPadding, ImVec2 buttonSize);
     void update();
 
     void scheduleBuild();

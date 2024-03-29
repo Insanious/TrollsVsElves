@@ -20,17 +20,29 @@ Building::~Building()
 {
 }
 
-void Building::init(Cube cube)
+void Building::init(Cube cube, BUILDING_TYPE buildingType)
 {
     this->cube = cube;
+    this->buildingType = buildingType;
 
     buildStage = FLOATING;
     this->cube.color = floatingColor;
+
+    this->targetColor = buildingType == ROCK ? (Color){ 60, 60, 60, 255 } : GOLD;
 }
 
 void Building::draw()
 {
     drawCube(cube);
+}
+
+void Building::drawUIButtons(ImVec2 windowPadding, ImVec2 buttonSize)
+{
+    if (ImGui::Button("Upgrade", buttonSize))
+        upgrade();
+    ImGui::SameLine();
+    if (ImGui::Button("Sell", buttonSize))
+        sell();
 }
 
 void Building::update()
@@ -39,7 +51,7 @@ void Building::update()
     {
         buildTimer += GetFrameTime();
         float adjusted = buildTimer/buildTime;
-        cube.color = colorLerp(ghostColor, targetColor, adjusted);
+        cube.color = lerpColor(ghostColor, targetColor, adjusted);
 
         if (buildTimer >= buildTime)
         {
