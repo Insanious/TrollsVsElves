@@ -33,6 +33,7 @@ public:
     void updateMovement();
 
     void setTargetPosition(Vector3 position);
+    Vector3 getTargetPosition();
     Vector3 getPosition();
     Capsule getCapsule();
 

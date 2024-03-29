@@ -2,13 +2,14 @@
 
 Building::Building()
 {
-    buildStage = FLOATING;
+    buildStage = GHOST;
 
-    floatingColor = { 0, 121, 241, 100 };
-    ghostColor = { 255, 255, 255, 100 };
-    selectedColor = YELLOW;
-    targetColor = GREEN;
+    ghostColor = { 0, 121, 241, 100 };
+    inProgressColor = { 255, 255, 255, 100 };
+    targetColor = { 0 };
+    selectedColor = { 0 };
 
+    selected = false;
     sold = false;
     level = 1;
 
@@ -25,10 +26,12 @@ void Building::init(Cube cube, BUILDING_TYPE buildingType)
     this->cube = cube;
     this->buildingType = buildingType;
 
-    buildStage = FLOATING;
-    this->cube.color = floatingColor;
+    buildStage = GHOST;
+    this->cube.color = ghostColor;
 
-    this->targetColor = buildingType == ROCK ? Color{ 60, 60, 60, 255 } : GOLD;
+    this->targetColor = buildingType == ROCK ? Color{ 60, 60, 60, 255 } : BEIGE;
+    Vector3 targetColorHSL = ColorToHSV(this->targetColor);
+    selectedColor = ColorFromHSV(targetColorHSL.x, targetColorHSL.y, targetColorHSL.z - 0.2f);
 }
 
 void Building::draw()
@@ -51,11 +54,11 @@ void Building::update()
     {
         buildTimer += GetFrameTime();
         float adjusted = buildTimer/buildTime;
-        cube.color = lerpColor(ghostColor, targetColor, adjusted);
+        cube.color = lerpColor(inProgressColor, targetColor, adjusted);
 
         if (buildTimer >= buildTime)
         {
-            cube.color = targetColor;
+            cube.color = selected ? selectedColor : targetColor;
             buildTimer = 0.f;
             buildStage = FINISHED;
         }
@@ -64,15 +67,15 @@ void Building::update()
 
 void Building::scheduleBuild()
 {
-    assert(buildStage == FLOATING); // sanity check
+    assert(buildStage == GHOST); // sanity check
 
-    buildStage = GHOST;
-    cube.color = ghostColor;
+    buildStage = SCHEDULED;
+    cube.color = inProgressColor;
 }
 
 void Building::build()
 {
-    assert(buildStage == GHOST); // sanity check
+    assert(buildStage == SCHEDULED); // sanity check
 
     buildStage = IN_PROGRESS;
 }
@@ -92,19 +95,21 @@ Cube& Building::getCube()
     return cube;
 }
 
-Color Building::getFloatingColor()
+Color Building::getGhostColor()
 {
-    return floatingColor;
+    return ghostColor;
 }
 
 void Building::select()
 {
+    selected = true;
     if (buildStage != IN_PROGRESS)
         cube.color = selectedColor;
 }
 
 void Building::deselect()
 {
+    selected = false;
     if (buildStage != IN_PROGRESS)
         cube.color = targetColor;
 }

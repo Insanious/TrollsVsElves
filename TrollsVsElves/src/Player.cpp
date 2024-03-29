@@ -40,7 +40,11 @@ void Player::updateMovement()
     Vector3 current = { capsule.endPos.x, 0.f, capsule.endPos.z }; // ignore y for now
     Vector3 direction = Vector3Subtract(target, current);
 
-    if (Vector3Length(direction) <= defaultTargetMargin) return; // target already reached, do nothing
+    if (Vector3Length(direction) <= defaultTargetMargin) // target reached, do nothing
+    {
+        if (state != IDLE) setState(IDLE);
+        return;
+    }
 
     Vector3 directionNormalized = Vector3Normalize(direction);
     directionNormalized.y = 0.f; // ignore y for now
@@ -64,11 +68,13 @@ void Player::updateMovement()
 
 void Player::setTargetPosition(Vector3 position)
 {
-    if (state != RUNNING)
-        setState(RUNNING);
-
     targetPosition = position;
     targetMarker.position = { position.x, 2.f, position.z };
+}
+
+Vector3 Player::getTargetPosition()
+{
+    return targetPosition;
 }
 
 Vector3 Player::getPosition()
@@ -85,6 +91,9 @@ void Player::setState(PLAYER_STATE newState)
 {
     previousState = state;
     state = newState;
+
+    std::string newStateString;
+    std::string previousStateString;
 }
 
 PLAYER_STATE Player::getState()

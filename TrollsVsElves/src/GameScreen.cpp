@@ -293,7 +293,7 @@ void GameScreen::updateGhostBuilding()
     isGhostBuildingColliding = checkBuildingCollisionsAgainstTarget(buildings, ghostBuilding)
         || checkBuildingCollisionsAgainstTarget(buildQueue, ghostBuilding);
 
-    ghostBuilding->getCube().color = isGhostBuildingColliding ? RED : ghostBuilding->getFloatingColor();
+    ghostBuilding->getCube().color = isGhostBuildingColliding ? RED : ghostBuilding->getGhostColor();
 }
 
 void GameScreen::updateSelectedBuilding()
@@ -364,18 +364,26 @@ void GameScreen::handleLeftMouseButton()
     {
         delete ghostBuilding;
         ghostBuilding = nullptr;
+
         return;
     }
 
     if (isGhostBuildingColliding) return;
 
-    if (player->getState() != RUNNING_TO_BUILD)
+    if (player->getState() == RUNNING_TO_BUILD)
     {
-        Vector3 targetPosition = calculateTargetPositionToBuildingFromPlayer(ghostBuilding);
-        player->setTargetPosition(targetPosition);
-        player->setState(RUNNING_TO_BUILD);
+        ghostBuilding->scheduleBuild();
+        buildQueue.push_back(ghostBuilding);
+        ghostBuilding = nullptr;
+
+        return;
     }
 
+    Vector3 targetPosition = calculateTargetPositionToBuildingFromPlayer(ghostBuilding);
+    if (!Vector3Equals(targetPosition, player->getTargetPosition()))
+        player->setTargetPosition(targetPosition);
+
+    player->setState(RUNNING_TO_BUILD);
     ghostBuilding->scheduleBuild();
     buildQueue.push_back(ghostBuilding);
     ghostBuilding = nullptr;
@@ -403,6 +411,7 @@ void GameScreen::handleRightMouseButton()
     }
 
     player->setTargetPosition({ collision.point.x, player->getPosition().y, collision.point.z });
+    player->setState(RUNNING);
 }
 
 void GameScreen::createNewGhostBuilding(BUILDING_TYPE buildingType)

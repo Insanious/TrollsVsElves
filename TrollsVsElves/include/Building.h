@@ -6,7 +6,7 @@
 #include "rlImGui.h"
 #include <cassert>
 
-enum BUILD_STAGE { FLOATING = 0, GHOST, IN_PROGRESS, FINISHED };
+enum BUILD_STAGE { GHOST = 0, SCHEDULED, IN_PROGRESS, FINISHED };
 enum BUILDING_TYPE { NONE = 0, CASTLE, ROCK, COUNT };
 
 class Building
@@ -16,14 +16,15 @@ private:
     BUILD_STAGE buildStage;
     BUILDING_TYPE buildingType;
 
-    Color floatingColor;
     Color ghostColor;
+    Color inProgressColor;
     Color selectedColor;
     Color targetColor;
 
     float buildTime;
     float buildTimer;
 
+    bool selected;
     bool sold;
     int level;
 
@@ -42,7 +43,7 @@ public:
     void setPosition(Vector3 position);
     Vector3 getPosition();
     Cube& getCube();
-    Color getFloatingColor();
+    Color getGhostColor();
 
     void select();
     void deselect();
