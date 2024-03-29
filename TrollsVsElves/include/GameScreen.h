@@ -64,7 +64,6 @@ class GameScreen: public BaseScreen
         void updateGhostBuilding();
         void updateSelectedBuilding();
         void updateBuildQueue();
-        void ghostBuildingCollision();
 
         void handleLeftMouseButton();
         void handleRightMouseButton();
@@ -75,6 +74,9 @@ class GameScreen: public BaseScreen
         RayCollision raycastToGround();
 
         Vector3 calculateTargetPositionToBuildingFromPlayer(Building* building);
+
+        template<typename Container>
+        bool checkBuildingCollisionsAgainstTarget(const Container& buildings, Building* targetBuilding);
 };
 
 #endif

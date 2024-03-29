@@ -42,6 +42,7 @@ public:
     void setPosition(Vector3 position);
     Vector3 getPosition();
     Cube& getCube();
+    Color getFloatingColor();
 
     void select();
     void deselect();
@@ -52,6 +53,7 @@ public:
 
     int getLevel();
     BUILD_STAGE getBuildStage();
+
 };
 
 #endif

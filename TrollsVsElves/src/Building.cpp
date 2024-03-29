@@ -28,7 +28,7 @@ void Building::init(Cube cube, BUILDING_TYPE buildingType)
     buildStage = FLOATING;
     this->cube.color = floatingColor;
 
-    this->targetColor = buildingType == ROCK ? (Color){ 60, 60, 60, 255 } : GOLD;
+    this->targetColor = buildingType == ROCK ? Color{ 60, 60, 60, 255 } : GOLD;
 }
 
 void Building::draw()
@@ -90,6 +90,11 @@ Vector3 Building::getPosition()
 Cube& Building::getCube()
 {
     return cube;
+}
+
+Color Building::getFloatingColor()
+{
+    return floatingColor;
 }
 
 void Building::select()
