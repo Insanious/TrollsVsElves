@@ -50,6 +50,7 @@ class GameScreen: public BaseScreen
         bool showPlayer;
 
         Camera3D camera;
+        bool isGhostBuildingColliding = false;
 
     public:
         GameScreen();
@@ -63,6 +64,7 @@ class GameScreen: public BaseScreen
         void updateGhostBuilding();
         void updateSelectedBuilding();
         void updateBuildQueue();
+        void ghostBuildingCollision();
 
         void handleLeftMouseButton();
         void handleRightMouseButton();

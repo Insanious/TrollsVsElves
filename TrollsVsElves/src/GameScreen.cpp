@@ -290,6 +290,7 @@ void GameScreen::updateGhostBuilding()
         };
 
         ghostBuilding->setPosition(nearestIncrementedPosition);
+        ghostBuildingCollision();
     }
 }
 
@@ -461,3 +462,38 @@ Vector3 GameScreen::calculateTargetPositionToBuildingFromPlayer(Building* buildi
     Vector3 finalDirection = Vector3Scale(normalizedDirection, distance);
     return Vector3Add(playerPos, finalDirection);
 }
+
+void GameScreen::ghostBuildingCollision()
+{
+    BoundingBox ghostBoundingBox;
+    BoundingBox compareBoundingBox;
+    isGhostBuildingColliding = false;
+    ghostBuilding->getCube().color = { 0, 121, 241, 100 };
+
+    for (int i = 0; i < buildings.size(); i++) //Check collision with existing building
+    {
+        //Lower scale so that we can placebuilding beside each other beside
+        ghostBoundingBox = getCubeBoundingBox(ghostBuilding->getCube(),0.8f);
+        compareBoundingBox = getCubeBoundingBox(buildings.at(i)->getCube());
+
+        if (CheckCollisionBoxes(ghostBoundingBox, compareBoundingBox)) {
+            isGhostBuildingColliding = true;
+            ghostBuilding->getCube().color = RED;
+            break;
+        }
+    }
+
+    for (int i = 0; i < buildQueue.size(); i++) //Check collision with building in the build queue
+    {
+        ghostBoundingBox = getCubeBoundingBox(ghostBuilding->getCube(), 0.8f);
+        compareBoundingBox = getCubeBoundingBox(buildQueue.at(i)->getCube());
+        if (CheckCollisionBoxes(ghostBoundingBox, compareBoundingBox)) {
+            isGhostBuildingColliding = true;
+            ghostBuilding->getCube().color = RED;
+            break;
+        }
+    }
+}
+
+
+
