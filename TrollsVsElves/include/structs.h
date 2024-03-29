@@ -19,10 +19,10 @@ struct Cube
         : position(_position), size(_size), color(_color) {};
 };
 
-inline BoundingBox getCubeBoundingBox(Cube cube)
+inline BoundingBox getCubeBoundingBox(Cube cube, float scale = 1.0f)
 {
-    Vector3 halfSize = Vector3Scale(cube.size, 0.5f);
-    return { Vector3Add(cube.position, halfSize), Vector3Subtract(cube.position, halfSize) };
+    Vector3 halfSize = Vector3Scale(cube.size, (0.5f*scale));
+    return { Vector3Subtract(cube.position, halfSize), Vector3Add(cube.position, halfSize) };
 }
 
 inline float getCubeDiagonalLength(Cube cube)

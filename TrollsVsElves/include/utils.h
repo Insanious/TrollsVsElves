@@ -16,6 +16,12 @@ inline void printVector3(std::string prefix, Vector3 vec)
     printf("%s: %f, %f, %f\n", prefix.c_str(), vec.x, vec.y, vec.z);
 }
 
+inline void printBoundingBox(std::string prefix, BoundingBox box)
+{
+    printVector3(prefix, box.max);
+    printVector3(prefix, box.min);
+}
+
 inline void printColor(std::string prefix, Color color)
 {
     printf("%s: %u, %u, %u, %u\n", prefix.c_str(), color.r, color.g, color.b, color.a);

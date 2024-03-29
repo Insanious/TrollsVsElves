@@ -36,6 +36,7 @@ class GameScreen: public BaseScreen
         Player* player;
 
         Camera3D camera;
+        bool isGhostBuildingColliding = false;
 
     public:
         GameScreen();
@@ -48,6 +49,7 @@ class GameScreen: public BaseScreen
         void updateGhostBuilding();
         void updateSelectedBuilding();
         void updateBuildQueue();
+        void ghostBuildingCollision();
 
         Building* raycastToNearestBuilding();
         RayCollision raycastToGround();
