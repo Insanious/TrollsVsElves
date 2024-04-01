@@ -6,7 +6,7 @@
 #include "limits.h"
 #include <list>
 #include <unordered_map>
-#include <boost/heap/fibonacci_heap.hpp>
+#include <queue>
 
 struct Node
 {

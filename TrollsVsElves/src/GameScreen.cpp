@@ -22,8 +22,7 @@ void GameScreen::init(Vector2i screenSize)
     this->screenSize = screenSize;
 
     cubeSize = { 4.f, 4.f, 4.f };
-    gridSize = { 9, 9 };
-    // gridSize = { 32, 32 };
+    gridSize = { 32, 32 };
     defaultCubeColor = DARKGRAY;
 
     layer = new Layer();

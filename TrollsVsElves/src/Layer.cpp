@@ -56,16 +56,6 @@ void Layer::recalculateObstacles(std::vector<Vector2i> indices)
 {
     // this is needed so the player doesn't walk between the edges of two buildings
     // check whether two edges are touching and if they are, fill in the gaps
-    for (auto index: indices)
-        printVector2i("index", index);
-    for (int y = 0; y < actualObstacles.size(); y++)
-    {
-        for (int x = 0; x < actualObstacles[0].size(); x++)
-        {
-            printf("%d", int(actualObstacles[y][x]));
-        }
-        printf("\n");
-    }
     std::copy(obstacles.begin(), obstacles.end(), actualObstacles.begin());
     for (int y = 0; y < gridSize.y - 1; ++y)
     {
@@ -95,25 +85,11 @@ void Layer::recalculateObstacles(std::vector<Vector2i> indices)
             }
         }
     }
-
-    printf("\n");
-    for (int y = 0; y < actualObstacles.size(); y++)
-    {
-        for (int x = 0; x < actualObstacles[0].size(); x++)
-        {
-            printf("%d", int(actualObstacles[y][x]));
-        }
-        printf("\n");
-    }
 }
 
 void Layer::addObstacle(Cube cube)
 {
-    printVector3("cube", cube.position);
-    printVector3("size", cube.size);
     std::vector<Vector2i> indices = getCubeIndices(cube);
-    for (auto index: indices)
-        printVector2i("index", index);
     for (Vector2i index: indices)
         obstacles[index.y][index.x] = true;
     recalculateObstacles(indices);

@@ -66,7 +66,7 @@ std::list<Vector2i> PathFinding::findPath(Vector2i start, Vector2i goal, const s
         { 1, -1}, // diagonals
     };
 
-    boost::heap::fibonacci_heap<Node, boost::heap::compare<CompareNode>> notVisitedHeap;
+    std::priority_queue<Node, std::vector<Node>, CompareNode> notVisitedHeap;
     std::unordered_map<Vector2i, Node, HashVector2i> notVisitedMap;
     std::unordered_map<Vector2i, Node, HashVector2i> visited;
     std::list<Vector2i> path;
