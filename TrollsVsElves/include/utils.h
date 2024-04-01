@@ -1,6 +1,7 @@
 #pragma once
 
 #include "raylib.h"
+#include "structs.h"
 #include <cstdio>
 #include <string>
 #include <vector>
@@ -27,10 +28,14 @@ inline void printColor(std::string prefix, Color color)
     printf("%s: %u, %u, %u, %u\n", prefix.c_str(), color.r, color.g, color.b, color.a);
 }
 
+inline float nearestIncrementOld(float value, float increment)
+{
+    return float(int(value) / int(increment)) * increment;
+}
+
 inline float nearestIncrement(float value, float increment)
 {
-    float truncated = float(int(value) / int(increment));
-    return truncated * increment;
+    return std::round(value / increment) * increment;
 }
 
 template <class T>

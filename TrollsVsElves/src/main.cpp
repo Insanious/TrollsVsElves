@@ -16,7 +16,7 @@ int main ()
 
     SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_VSYNC_HINT | FLAG_WINDOW_RESIZABLE);
     InitWindow(screenSize.x, screenSize.y, "Hello Raylib");
-    SetTargetFPS(144);
+    SetTargetFPS(60);
     rlImGuiSetup(true);
 
     while (!WindowShouldClose())
@@ -29,6 +29,7 @@ int main ()
             rlImGuiBegin();
 
             currentScreen->draw();
+            DrawFPS(0, 0);
 
             rlImGuiEnd();
         EndDrawing();

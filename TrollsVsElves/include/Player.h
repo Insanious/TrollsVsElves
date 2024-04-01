@@ -2,6 +2,7 @@
 #define PLAYER_H
 
 #include <cmath>
+#include <deque>
 
 #include "utils.h"
 #include "structs.h"
@@ -20,8 +21,8 @@ private:
     Vector3 speed;
 
     float defaultTargetMargin;
-    Vector3 targetPosition;
     Cylinder targetMarker;
+    std::deque<Vector3> paths;
 
 public:
     Player();
@@ -32,10 +33,9 @@ public:
     void update();
     void updateMovement();
 
-    void setTargetPosition(Vector3 position);
-    Vector3 getTargetPosition();
     Vector3 getPosition();
     Capsule getCapsule();
+    void setPositions(std::vector<Vector3> positions, PLAYER_STATE newState);
 
     void setState(PLAYER_STATE newState);
     PLAYER_STATE getState();

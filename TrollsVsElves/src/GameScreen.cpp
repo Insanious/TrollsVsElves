@@ -4,8 +4,8 @@ GameScreen::GameScreen() {}
 
 GameScreen::~GameScreen()
 {
-    for (int i = 0; i < layers.size(); i++)
-        delete layers[i];
+    if (layer)
+        delete layer;
 
     for (int i = 0; i < buildings.size(); i++)
         delete buildings[i];
@@ -22,13 +22,12 @@ void GameScreen::init(Vector2i screenSize)
     this->screenSize = screenSize;
 
     cubeSize = { 4.f, 4.f, 4.f };
-    gridSize = { 32, 32 };
+    gridSize = { 9, 9 };
+    // gridSize = { 32, 32 };
     defaultCubeColor = DARKGRAY;
 
-    Layer* groundLayer = new Layer();
-    groundLayer->createGrid(gridSize, cubeSize, DARKGRAY, 0.f);
-
-    layers.push_back(groundLayer);
+    layer = new Layer();
+    layer->createGrid(gridSize, cubeSize, DARKGRAY, 0.f);
 
     buildingSize = { cubeSize.x * 2, cubeSize.y, cubeSize.z * 2 };
     defaultBuildingColor = WHITE;
@@ -43,16 +42,17 @@ void GameScreen::init(Vector2i screenSize)
     };
 
     player = new Player();
-    Vector3 startPos = { 10.f, cubeSize.y + cubeSize.y/2, 10.f };
-    Vector3 endPos = { 10.f, cubeSize.y + 8.f, 10.f };
-    float radius = 3.f;
+    Vector3 startPos = { 0.f, cubeSize.y, 0.f };
+    Vector3 endPos = { 0.f, cubeSize.y + 8.f, 0.f };
+    startPos.x = endPos.x = gridSize.x/2 * cubeSize.x;
+    startPos.z = endPos.z = gridSize.y/2 * cubeSize.z;
+    float radius = 2.f;
     int slices = 16;
     int rings = 16;
     Color playerColor = BLUE;
     Vector3 playerSpeed = Vector3Scale(Vector3One(), 40);
     player->init(Capsule(startPos, endPos, radius, slices, rings, playerColor), playerSpeed);
     showPlayer = false;
-
 
     camera = {
         .position = { 30.0f, 60.0f, 30.0f },
@@ -67,8 +67,7 @@ void GameScreen::draw()
 {
     BeginMode3D(camera);
 
-    for (Layer* layer: layers)
-        layer->draw();
+    layer->draw();
 
     for (Building* building: buildings)
         building->draw();
@@ -171,6 +170,7 @@ void GameScreen::update()
     if (selectedBuilding && selectedBuilding->isSold()) // delete selectedBuilding and pop from buildings vector
     {
         swapAndPop(buildings, selectedBuilding);
+        layer->removeObstacle(selectedBuilding->getCube());
         delete selectedBuilding;
         selectedBuilding = nullptr;
     }
@@ -280,15 +280,26 @@ void GameScreen::updateCamera()
 void GameScreen::updateGhostBuilding()
 {
     RayCollision collision = raycastToGround();
-    if (!collision.hit) return;
+    if (!collision.hit)
+        return;
 
-    float halfCubeSize = cubeSize.y / 2;
-    Vector3 nearestIncrementedPosition = { // Round to nearest cube multiple
-        nearestIncrement(collision.point.x, cubeSize.x) + halfCubeSize,
-        layers[0]->getHeight() + cubeSize.y / 2 + buildingSize.y / 2,
-        nearestIncrement(collision.point.z, cubeSize.z) + halfCubeSize,
+    // should be edge of cube or middle of cube depending on building size multiple of a cube
+    float cubeOffset = (int(buildingSize.x / cubeSize.x)) % 2 == 0
+        ? cubeSize.y / 2
+        : cubeSize.y;
+
+    Vector2 snapped = {
+        nearestIncrement(collision.point.x + cubeOffset, cubeSize.x),
+        nearestIncrement(collision.point.z + cubeOffset, cubeSize.z)
     };
-    ghostBuilding->setPosition(nearestIncrementedPosition);
+    Vector2 offset = {
+        (cubeSize.x - buildingSize.x) / 2.0f,
+        (cubeSize.z - buildingSize.z) / 2.0f,
+    };
+    Vector2 adjusted = Vector2Add(snapped, offset);
+    Vector3 final = { adjusted.x, buildingSize.y / 2, adjusted.y };
+
+    ghostBuilding->setPosition(final);
 
     isGhostBuildingColliding = checkBuildingCollisionsAgainstTarget(buildings, ghostBuilding)
         || checkBuildingCollisionsAgainstTarget(buildQueue, ghostBuilding);
@@ -300,7 +311,8 @@ void GameScreen::updateSelectedBuilding()
 {
     Building* building = raycastToBuilding();
 
-    if (!building && !selectedBuilding) return;
+    if (!building && !selectedBuilding)
+        return;
 
     if (!building && selectedBuilding) // remove select
     {
@@ -339,12 +351,14 @@ void GameScreen::updateBuildQueue()
         building->build();
         buildings.push_back(building);
 
+        layer->addObstacle(building->getCube());
+
         if (buildQueue.size()) // if more in queue, walk to the next target
         {
             building = buildQueue.front();
             Vector3 targetPosition = calculateTargetPositionToBuildingFromPlayer(building);
-            player->setTargetPosition(targetPosition);
-            player->setState(RUNNING_TO_BUILD);
+            std::vector<Vector3> positions = pathfindPositions(player->getPosition(), targetPosition);
+            player->setPositions(positions, RUNNING_TO_BUILD);
         }
     }
 }
@@ -380,10 +394,9 @@ void GameScreen::handleLeftMouseButton()
     }
 
     Vector3 targetPosition = calculateTargetPositionToBuildingFromPlayer(ghostBuilding);
-    if (!Vector3Equals(targetPosition, player->getTargetPosition()))
-        player->setTargetPosition(targetPosition);
+    std::vector<Vector3> positions = pathfindPositions(player->getPosition(), targetPosition);
+    player->setPositions(positions, RUNNING_TO_BUILD);
 
-    player->setState(RUNNING_TO_BUILD);
     ghostBuilding->scheduleBuild();
     buildQueue.push_back(ghostBuilding);
     ghostBuilding = nullptr;
@@ -392,7 +405,8 @@ void GameScreen::handleLeftMouseButton()
 void GameScreen::handleRightMouseButton()
 {
     RayCollision collision = raycastToGround();
-    if (!collision.hit) return;
+    if (!collision.hit)
+        return;
 
     if (ghostBuilding) // remove building and just walk the player to the location instead
     {
@@ -410,8 +424,8 @@ void GameScreen::handleRightMouseButton()
         }
     }
 
-    player->setTargetPosition({ collision.point.x, player->getPosition().y, collision.point.z });
-    player->setState(RUNNING);
+    std::vector<Vector3> positions = pathfindPositions(player->getPosition(), collision.point);
+    player->setPositions(positions, RUNNING);
 }
 
 void GameScreen::createNewGhostBuilding(BUILDING_TYPE buildingType)
@@ -437,7 +451,8 @@ Building* GameScreen::raycastToBuilding()
         Cube cube = building->getCube();
         RayCollision collision = GetRayCollisionBox(ray, getCubeBoundingBox(cube));
 
-        if (collision.hit && collision.distance < closestCollisionDistance) {
+        if (collision.hit && collision.distance < closestCollisionDistance)
+        {
             closestCollisionDistance = collision.distance;
             nearestBuilding = building;
         }
@@ -448,32 +463,41 @@ Building* GameScreen::raycastToBuilding()
 
 RayCollision GameScreen::raycastToGround()
 {
-    float halfCubeSize = cubeSize.y / 2;
+    float ground = layer->getHeight();
     const float max = 10000.f;
     // Check mouse collision against a plane spanning from -max to max, with y the same as the ground cubes
     // halfCubeSize is used here since the middle of the ground cube is at y=0
     return GetRayCollisionQuad(
         GetMouseRay(GetMousePosition(), camera),
-        { -max, halfCubeSize, -max },
-        { -max, halfCubeSize,  max },
-        {  max, halfCubeSize,  max },
-        {  max, halfCubeSize, -max }
+        { -max, ground, -max },
+        { -max, ground,  max },
+        {  max, ground,  max },
+        {  max, ground, -max }
     );
 }
 
 Vector3 GameScreen::calculateTargetPositionToBuildingFromPlayer(Building* building)
 {
-    Vector3 buildingPos = building->getCube().position;
-    Vector3 playerPos = player->getPosition();
-    Vector3 direction = { buildingPos.x - playerPos.x, 0.f, buildingPos.z - playerPos.z }; // ignore y
-    Vector3 normalizedDirection = Vector3Normalize(direction);
+    std::vector<Vector2i> indices = layer->getNeighboringIndices(building->getCube());
+    std::vector<Vector3> positions;
+    Vector3 playerPosition = player->getPosition();
+    Vector3 position;
+    for (Vector2i index: indices)
+    {
+        position = layer->indexToWorldPosition(index);
+        if (position.x == playerPosition.x && position.z == playerPosition.z)
+            return position;
 
-    float distance = Vector3Length(direction);
-    distance -= getCubeDiagonalLength(building->getCube()) / 2;
-    distance -= player->getCapsule().radius;
+        positions.push_back(position);
+    }
 
-    Vector3 finalDirection = Vector3Scale(normalizedDirection, distance);
-    return Vector3Add(playerPos, finalDirection);
+    if (positions.empty())
+    {
+        printf("Found no valid positions, should probably do something about this later, but not now\n");
+        return Vector3Zero();
+    }
+
+    return positions[0]; // just grab the first one, don't care which one right now
 }
 
 template<typename Container>
@@ -488,3 +512,18 @@ bool GameScreen::checkBuildingCollisionsAgainstTarget(const Container& buildings
     return false;
 }
 
+std::vector<Vector3> GameScreen::pathfindPositions(Vector3 start, Vector3 goal)
+{
+    Vector2i startIndex = layer->worldPositionToIndex(start);
+    Vector2i goalIndex = layer->worldPositionToIndex(goal);
+
+    std::list<Vector2i> paths = PathFinding::get().findPath(startIndex, goalIndex, layer->getActualObstacles());
+    std::vector<Vector3> positions;
+
+    layer->colorTiles(paths);
+
+    for (Vector2i index: paths)
+        positions.push_back(layer->indexToWorldPosition(index));
+
+    return positions;
+}
