@@ -7,7 +7,6 @@ Player::Player()
     speed = Vector3Zero();
 
     defaultTargetMargin = 0.5f;
-    targetPosition = Vector3Zero();
     targetMarker = Cylinder(Vector3Zero(), 4.f, 0.1f, 8, { 255, 255, 255, 30 });
 }
 
@@ -31,28 +30,30 @@ void Player::draw()
 
 void Player::update()
 {
-    updateMovement();
+    if (state != IDLE) updateMovement();
 }
 
 void Player::updateMovement()
 {
-    Vector3 target = { targetPosition.x, 0.f, targetPosition.z }; // ignore y for now
-    Vector3 current = { capsule.endPos.x, 0.f, capsule.endPos.z }; // ignore y for now
-    Vector3 direction = Vector3Subtract(target, current);
-
-    if (Vector3Length(direction) <= defaultTargetMargin) // target reached, do nothing
+    if (paths.empty()) // was already standing in the correct location
     {
-        if (state != IDLE) setState(IDLE);
+        setState(IDLE);
         return;
     }
 
+    Vector3 pos = paths.front();
+    Vector3 target = { pos.x, 0.f, pos.z };                         // ignore y for now
+    Vector3 current = { capsule.endPos.x, 0.f, capsule.endPos.z };  // ignore y for now
+    Vector3 direction = Vector3Subtract(target, current);
+
     Vector3 directionNormalized = Vector3Normalize(direction);
-    directionNormalized.y = 0.f; // ignore y for now
+    directionNormalized.y = 0.f;                                    // ignore y for now
     Vector3 velocity = Vector3Scale(Vector3Multiply(directionNormalized, speed), GetFrameTime());
 
     Vector3 newEndPos = Vector3Add(capsule.endPos, velocity);
     Vector3 nextDirection = Vector3Subtract(target, { newEndPos.x, 0.f, newEndPos.z });
-    if (Vector3Length(nextDirection) > defaultTargetMargin) // keep walking to target
+
+    if (Vector3Length(nextDirection) > defaultTargetMargin)         // keep walking to target
     {
         capsule.startPos = Vector3Add(capsule.startPos, velocity);
         capsule.endPos = Vector3Add(capsule.endPos, velocity);
@@ -60,21 +61,12 @@ void Player::updateMovement()
     }
 
     // gonna clip in target, just tp to it
-    Vector3 targetVector = Vector3Scale(directionNormalized, defaultTargetMargin);
     capsule.startPos = { target.x, capsule.startPos.y, target.z };
     capsule.endPos = { target.x, capsule.endPos.y, target.z };
-    setState(IDLE);
-}
 
-void Player::setTargetPosition(Vector3 position)
-{
-    targetPosition = position;
-    targetMarker.position = { position.x, 2.f, position.z };
-}
-
-Vector3 Player::getTargetPosition()
-{
-    return targetPosition;
+    paths.pop_front(); // reached the end of this path
+    if (paths.empty())
+        setState(IDLE);
 }
 
 Vector3 Player::getPosition()
@@ -87,13 +79,19 @@ Capsule Player::getCapsule()
     return capsule;
 }
 
+void Player::setPositions(std::vector<Vector3> positions, PLAYER_STATE newState)
+{
+    paths.clear();
+    paths.insert(paths.end(), positions.begin(), positions.end());
+    targetMarker.position = { paths.back().x, 2.f, paths.back().z };
+
+    setState(newState);
+}
+
 void Player::setState(PLAYER_STATE newState)
 {
     previousState = state;
     state = newState;
-
-    std::string newStateString;
-    std::string previousStateString;
 }
 
 PLAYER_STATE Player::getState()

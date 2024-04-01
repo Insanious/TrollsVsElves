@@ -4,6 +4,7 @@
 #include "raymath.h"
 #include "utils.h"
 #include <cmath>
+#include <string>
 
 struct Cube
 {
@@ -86,4 +87,14 @@ struct Vector2i
 {
     int x = 0;
     int y = 0;
+
+    bool operator==(const Vector2i& rhs) const
+    {
+        return this->x == rhs.x && this->y == rhs.y;
+    }
 };
+
+inline void printVector2i(std::string prefix, Vector2i vec)
+{
+    printf("%s: %d, %d\n", prefix.c_str(), vec.x, vec.y);
+}

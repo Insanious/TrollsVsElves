@@ -9,6 +9,7 @@
 #include "Layer.h"
 #include "Building.h"
 #include "Player.h"
+#include "PathFinding.h"
 #include <vector>
 #include <deque>
 #include <map>
@@ -29,7 +30,7 @@ class GameScreen: public BaseScreen
     private:
         Vector2i screenSize;
 
-        std::vector<Layer*> layers;
+        Layer* layer;
         Vector2i gridSize;
         Vector3 cubeSize;
         Color defaultCubeColor;
@@ -77,6 +78,8 @@ class GameScreen: public BaseScreen
 
         template<typename Container>
         bool checkBuildingCollisionsAgainstTarget(const Container& buildings, Building* targetBuilding);
+
+        std::vector<Vector3> pathfindPositions(Vector3 start, Vector3 goal);
 };
 
 #endif
