@@ -53,36 +53,54 @@ void GameScreen::init(Vector2i screenSize)
     player->init(Capsule(startPos, endPos, radius, slices, rings, playerColor), playerSpeed);
     showPlayer = false;
 
-    camera = {
+    camera3D = {
         .position = { 30.0f, 60.0f, 30.0f },
         .target = { 0.f, 0.f, 0.f },
         .up = { 0.0f, 1.0f, 0.0f },
         .fovy = 90.0f,
         .projection = CAMERA_PERSPECTIVE,
     };
+    camera2D = {
+        .offset = { 0.f, 0.f },
+        .target = { 0.f, 0.f },
+        .rotation = 0.f,
+        .zoom = 1.f
+    };
+
+    isSelecting = false;
 }
 
 void GameScreen::draw()
 {
-    BeginMode3D(camera);
+    BeginMode3D(camera3D);
 
-    layer->draw();
+        layer->draw();
 
-    for (Building* building: buildings)
-        building->draw();
+        for (Building* building: buildings)
+            building->draw();
 
-    for (Building* building: buildQueue)
-        building->draw();
+        for (Building* building: buildQueue)
+            building->draw();
 
-    if (ghostBuilding)
-        ghostBuilding->draw();
+        if (ghostBuilding)
+            ghostBuilding->draw();
 
-    if (player)
-        player->draw();
+        if (player)
+            player->draw();
 
-    drawUI();
+        drawUI();
 
     EndMode3D();
+
+    BeginMode2D(camera2D);
+
+        if (isSelecting)
+        {
+            DrawRectangleRec(selectionRectangle, { 0, 255, 0, 25 });
+            DrawRectangleLinesEx(selectionRectangle, 1.f, { 0, 255, 0, 50 });
+        }
+
+    EndMode2D();
 }
 
 void GameScreen::drawUI()
@@ -203,8 +221,23 @@ void GameScreen::update()
     if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
         handleRightMouseButton();
 
-    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+    bool leftMouseButtonWasPressed = IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+    if (leftMouseButtonWasPressed)
         handleLeftMouseButton();
+
+    // This needs refining somehow, currently you can create a building and directly afterwards see the selectionRectangle
+    if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) && !leftMouseButtonWasPressed)
+    {
+        if (!isSelecting)
+        {
+            isSelecting = true;
+            selectionStartPosition = GetMousePosition();
+        }
+
+        updateSelectionRectangle();
+    }
+    else
+        isSelecting = false;
 }
 
 void GameScreen::updateCamera()
@@ -215,11 +248,11 @@ void GameScreen::updateCamera()
     float cameraPan = 2.2f;
     // float cameraPan = 0.2f;
 
-    if (IsKeyDown(KEY_A))      CameraMoveRight(&camera, -cameraPan, true);
-    else if (IsKeyDown(KEY_D)) CameraMoveRight(&camera, cameraPan, true);
+    if (IsKeyDown(KEY_A))      CameraMoveRight(&camera3D, -cameraPan, true);
+    else if (IsKeyDown(KEY_D)) CameraMoveRight(&camera3D, cameraPan, true);
 
-    if (IsKeyDown(KEY_W))      CameraMoveForward(&camera, cameraPan, true);
-    else if (IsKeyDown(KEY_S)) CameraMoveForward(&camera, -cameraPan, true);
+    if (IsKeyDown(KEY_W))      CameraMoveForward(&camera3D, cameraPan, true);
+    else if (IsKeyDown(KEY_S)) CameraMoveForward(&camera3D, -cameraPan, true);
 
     // This code enables panning with the mouse at the edges, but its a bit awkward right now
     // int edgeOfScreenMargin = 40;
@@ -232,23 +265,23 @@ void GameScreen::updateCamera()
 
     // if (mouseIsAtEdgeOfScreenLeft || IsKeyDown(KEY_A))
     // {
-    //     CameraMoveRight(&camera, -cameraPan, true);
+    //     CameraMoveRight(&camera3D, -cameraPan, true);
     //     if (mouseIsAtEdgeOfScreenLeft) SetMousePosition(edgeOfScreenMargin, mousePos.y);
     // }
     // else if (mouseIsAtEdgeOfScreenRight || IsKeyDown(KEY_D))
     // {
-    //     CameraMoveRight(&camera, cameraPan, true);
+    //     CameraMoveRight(&camera3D, cameraPan, true);
     //     if (mouseIsAtEdgeOfScreenRight) SetMousePosition(screenWidth - edgeOfScreenMargin, mousePos.y);
     // }
 
     // if (mouseIsAtEdgeOfScreenUp || IsKeyDown(KEY_W))
     // {
-    //     CameraMoveForward(&camera, cameraPan, true);
+    //     CameraMoveForward(&camera3D, cameraPan, true);
     //     if (mouseIsAtEdgeOfScreenUp) SetMousePosition(mousePos.x, edgeOfScreenMargin);
     // }
     // else if (mouseIsAtEdgeOfScreenDown || IsKeyDown(KEY_S))
     // {
-    //     CameraMoveForward(&camera, -cameraPan, true);
+    //     CameraMoveForward(&camera3D, -cameraPan, true);
     //     if (mouseIsAtEdgeOfScreenDown) SetMousePosition(mousePos.x, screenHeight - edgeOfScreenMargin);
     // }
 
@@ -260,7 +293,7 @@ void GameScreen::updateCamera()
     if (scroll)
     {
         bool scrollUp = scroll == 1;
-        float distance = Vector3Distance(camera.position, camera.target);
+        float distance = Vector3Distance(camera3D.position, camera3D.target);
 
         if (scrollUp)
         {
@@ -272,7 +305,7 @@ void GameScreen::updateCamera()
                 scroll = minDistance - distance;
         }
 
-        CameraMoveToTarget(&camera, scroll);
+        CameraMoveToTarget(&camera3D, scroll);
     }
 }
 
@@ -362,6 +395,34 @@ void GameScreen::updateBuildQueue()
     }
 }
 
+void GameScreen::updateSelectionRectangle()
+{
+    Vector2 mousePos = GetMousePosition();
+    Vector2 direction = Vector2Subtract(mousePos, selectionStartPosition);
+
+    if (direction.y >= 0)
+    {
+        selectionRectangle.y = selectionStartPosition.y;
+        selectionRectangle.height = direction.y;
+    }
+    else
+    {
+        selectionRectangle.y = mousePos.y;
+        selectionRectangle.height = -direction.y;
+    }
+
+    if (direction.x >= 0)
+    {
+        selectionRectangle.x = selectionStartPosition.x;
+        selectionRectangle.width = direction.x;
+    }
+    else
+    {
+        selectionRectangle.x = mousePos.x;
+        selectionRectangle.width = -direction.x;
+    }
+}
+
 void GameScreen::handleLeftMouseButton()
 {
     if (hoveringUI) return;
@@ -441,7 +502,7 @@ void GameScreen::createNewGhostBuilding(BUILDING_TYPE buildingType)
 
 Building* GameScreen::raycastToBuilding()
 {
-    Ray ray = GetMouseRay(GetMousePosition(), camera);
+    Ray ray = GetMouseRay(GetMousePosition(), camera3D);
     float closestCollisionDistance = std::numeric_limits<float>::infinity();;
     Building* nearestBuilding = nullptr;
 
@@ -467,7 +528,7 @@ RayCollision GameScreen::raycastToGround()
     // Check mouse collision against a plane spanning from -max to max, with y the same as the ground cubes
     // halfCubeSize is used here since the middle of the ground cube is at y=0
     return GetRayCollisionQuad(
-        GetMouseRay(GetMousePosition(), camera),
+        GetMouseRay(GetMousePosition(), camera3D),
         { -max, ground, -max },
         { -max, ground,  max },
         {  max, ground,  max },

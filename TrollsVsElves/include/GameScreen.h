@@ -50,8 +50,14 @@ class GameScreen: public BaseScreen
         Player* player;
         bool showPlayer;
 
-        Camera3D camera;
+        Camera3D camera3D;
+        Camera2D camera2D;
+
         bool isGhostBuildingColliding = false;
+
+        bool isSelecting;
+        Vector2 selectionStartPosition;
+        Rectangle selectionRectangle;
 
     public:
         GameScreen();
@@ -65,6 +71,7 @@ class GameScreen: public BaseScreen
         void updateGhostBuilding();
         void updateSelectedBuilding();
         void updateBuildQueue();
+        void updateSelectionRectangle();
 
         void handleLeftMouseButton();
         void handleRightMouseButton();
