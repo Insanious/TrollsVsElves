@@ -5,6 +5,7 @@ Player::Player()
     state = IDLE;
     previousState = IDLE;
     speed = Vector3Zero();
+    selected = false;
 
     defaultTargetMargin = 0.5f;
     targetMarker = Cylinder(Vector3Zero(), 4.f, 0.1f, 8, { 255, 255, 255, 30 });
@@ -79,27 +80,43 @@ Capsule Player::getCapsule()
     return capsule;
 }
 
-void Player::setPositions(std::vector<Vector3> positions, PLAYER_STATE newState)
+void Player::setPositions(std::vector<Vector3> positions, PlayerState newState)
 {
     paths.clear();
     paths.insert(paths.end(), positions.begin(), positions.end());
-    targetMarker.position = { paths.back().x, 2.f, paths.back().z };
+    if (paths.size())
+        targetMarker.position = { paths.back().x, 2.f, paths.back().z };
 
     setState(newState);
 }
 
-void Player::setState(PLAYER_STATE newState)
+void Player::setState(PlayerState newState)
 {
     previousState = state;
     state = newState;
 }
 
-PLAYER_STATE Player::getState()
+PlayerState Player::getState()
 {
     return state;
 }
 
-PLAYER_STATE Player::getPreviousState()
+PlayerState Player::getPreviousState()
 {
     return previousState;
+}
+
+void Player::select()
+{
+    selected = true;
+}
+
+void Player::deselect()
+{
+    selected = false;
+}
+
+bool Player::isSelected()
+{
+    return selected;
 }

@@ -43,21 +43,25 @@ class GameScreen: public BaseScreen
         Building* ghostBuilding;
         Building* selectedBuilding;
 
-        std::map<BUILDING_TYPE, UIMapping> buildingTypeMappings;
+        std::map<BuildingType, UIMapping> buildingTypeMappings;
 
         bool hoveringUI;
 
         Player* player;
-        bool showPlayer;
 
         Camera3D camera3D;
+        Matrix cameraViewMatrix;
         Camera2D camera2D;
 
         bool isGhostBuildingColliding = false;
 
         bool isSelecting;
+        bool canSelect;
         Vector2 selectionStartPosition;
         Rectangle selectionRectangle;
+
+        bool checkCollisionCapsuleRectangle(Capsule capsule, Rectangle rectangle, Camera3D camera);
+        float calculateCircleRadius2D(Vector3 position, float radius, Camera3D camera);
 
     public:
         GameScreen();
@@ -76,7 +80,7 @@ class GameScreen: public BaseScreen
         void handleLeftMouseButton();
         void handleRightMouseButton();
 
-        void createNewGhostBuilding(BUILDING_TYPE buildingType);
+        void createNewGhostBuilding(BuildingType buildingType);
 
         Building* raycastToBuilding();
         RayCollision raycastToGround();

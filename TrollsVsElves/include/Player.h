@@ -9,16 +9,18 @@
 
 #include "Building.h"
 
-enum PLAYER_STATE { IDLE, RUNNING, RUNNING_TO_BUILD };
+enum PlayerState { IDLE, RUNNING, RUNNING_TO_BUILD };
 
 class Player
 {
 private:
     Capsule capsule;
-    PLAYER_STATE state;
-    PLAYER_STATE previousState;
+    PlayerState state;
+    PlayerState previousState;
 
     Vector3 speed;
+
+    bool selected;
 
     float defaultTargetMargin;
     Cylinder targetMarker;
@@ -35,11 +37,15 @@ public:
 
     Vector3 getPosition();
     Capsule getCapsule();
-    void setPositions(std::vector<Vector3> positions, PLAYER_STATE newState);
+    void setPositions(std::vector<Vector3> positions, PlayerState newState);
 
-    void setState(PLAYER_STATE newState);
-    PLAYER_STATE getState();
-    PLAYER_STATE getPreviousState();
+    void setState(PlayerState newState);
+    PlayerState getState();
+    PlayerState getPreviousState();
+
+    void select();
+    void deselect();
+    bool isSelected();
 };
 
 #endif

@@ -45,9 +45,6 @@ std::list<Vector2i> PathFinding::findPath(Vector2i start, Vector2i goal, const s
     int allocations = 0;            // for debugging purposes
     bool printDebugInfo = false;    // for debugging purposes
 
-    printNode("start", start);
-    printNode("goal", goal);
-
     int maxY = obstacles.size();
     int maxX = obstacles[0].size();
     Node current, neighbor;

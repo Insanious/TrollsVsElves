@@ -21,7 +21,7 @@ Building::~Building()
 {
 }
 
-void Building::init(Cube cube, BUILDING_TYPE buildingType)
+void Building::init(Cube cube, BuildingType buildingType)
 {
     this->cube = cube;
     this->buildingType = buildingType;
@@ -134,7 +134,7 @@ int Building::getLevel()
     return level;
 }
 
-BUILD_STAGE Building::getBuildStage()
+BuildStage Building::getBuildStage()
 {
     return buildStage;
 }

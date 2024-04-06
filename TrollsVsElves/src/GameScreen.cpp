@@ -51,7 +51,6 @@ void GameScreen::init(Vector2i screenSize)
     Color playerColor = BLUE;
     Vector3 playerSpeed = Vector3Scale(Vector3One(), 40);
     player->init(Capsule(startPos, endPos, radius, slices, rings, playerColor), playerSpeed);
-    showPlayer = false;
 
     camera3D = {
         .position = { 30.0f, 60.0f, 30.0f },
@@ -60,6 +59,9 @@ void GameScreen::init(Vector2i screenSize)
         .fovy = 90.0f,
         .projection = CAMERA_PERSPECTIVE,
     };
+    // since we are using CAMERA_PERSPECTIVE, this is static apart from the position (m12, m13, m14)
+    cameraViewMatrix = GetCameraMatrix(camera3D);
+
     camera2D = {
         .offset = { 0.f, 0.f },
         .target = { 0.f, 0.f },
@@ -67,6 +69,7 @@ void GameScreen::init(Vector2i screenSize)
         .zoom = 1.f
     };
 
+    canSelect = true;
     isSelecting = false;
 }
 
@@ -98,6 +101,24 @@ void GameScreen::draw()
         {
             DrawRectangleRec(selectionRectangle, { 0, 255, 0, 25 });
             DrawRectangleLinesEx(selectionRectangle, 1.f, { 0, 255, 0, 50 });
+
+            if (true) // set to true to draw player capsule collision circles
+            {
+                Capsule cap = player->getCapsule();
+
+                Vector2 bottomCirclePosScreen = GetWorldToScreen(cap.startPos, camera3D);
+                Vector2 topCirclePosScreen = GetWorldToScreen(cap.endPos, camera3D);
+
+                float newBottomRadius = calculateCircleRadius2D(cap.startPos, cap.radius, camera3D);
+                float newTopRadius = calculateCircleRadius2D(cap.endPos, cap.radius, camera3D);
+
+                DrawCircleV(bottomCirclePosScreen, newBottomRadius, YELLOW);
+                DrawCircleLinesV(bottomCirclePosScreen, newBottomRadius, GRAY);
+
+                DrawCircleV(topCirclePosScreen, newTopRadius, YELLOW);
+                DrawCircleLinesV(topCirclePosScreen, newTopRadius, GRAY);
+            }
+
         }
 
     EndMode2D();
@@ -107,7 +128,7 @@ void GameScreen::drawUI()
 {
     hoveringUI = false;
 
-    bool drawWindow = !selectedBuilding != !showPlayer; // xor
+    bool drawWindow = !selectedBuilding != !player->isSelected(); // xor
     if (drawWindow)
     {
         bool bottomRightWindow = true;
@@ -145,16 +166,16 @@ void GameScreen::drawUI()
 
         if (selectedBuilding)
             selectedBuilding->drawUIButtons(windowPadding, buttonSize);
-        else if (showPlayer)
+        else if (player->isSelected())
         {
             int buttonsPerLine = 2;
-            for (int i = 1; i < BUILDING_TYPE::COUNT; i += buttonsPerLine) // start at 1 since 0 = NONE
+            for (int i = 1; i < BuildingType::COUNT; i += buttonsPerLine) // start at 1 since 0 = NONE
             {
                 for (int j = 0; j < buttonsPerLine; j++)
                 {
-                    if ((BUILDING_TYPE)(i+j) == BUILDING_TYPE::COUNT) break; // safeguard if not a multiple of buttonsPerLine
+                    if ((BuildingType)(i+j) == BuildingType::COUNT) break; // safeguard if not a multiple of buttonsPerLine
 
-                    BUILDING_TYPE buildingType = (BUILDING_TYPE)(i+j);
+                    BuildingType buildingType = (BuildingType)(i+j);
                     UIMapping mapping = buildingTypeMappings[buildingType];
                     if (ImGui::Button(mapping.buttonText.c_str(), buttonSize))
                         createNewGhostBuilding(buildingType);
@@ -192,22 +213,11 @@ void GameScreen::update()
         selectedBuilding = nullptr;
     }
 
-    if (IsKeyPressed(KEY_B))
+    if (player->isSelected()) // Check additional mapping keys
     {
-        if (selectedBuilding)
+        for (int i = 1; i < BuildingType::COUNT; i += 1) // start at 1 since 0 = NONE
         {
-            selectedBuilding->deselect();
-            selectedBuilding = nullptr;
-        }
-
-        showPlayer = !showPlayer;
-    }
-
-    if (showPlayer) // Check additional mapping keys
-    {
-        for (int i = 1; i < BUILDING_TYPE::COUNT; i += 1) // start at 1 since 0 = NONE
-        {
-            BUILDING_TYPE buildingType = (BUILDING_TYPE)i;
+            BuildingType buildingType = (BuildingType)i;
             UIMapping mapping = buildingTypeMappings[buildingType];
 
             if (IsKeyPressed(mapping.key))
@@ -221,23 +231,51 @@ void GameScreen::update()
     if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
         handleRightMouseButton();
 
+    if (!canSelect && IsMouseButtonReleased(MOUSE_BUTTON_LEFT))
+        canSelect = true;
+
     bool leftMouseButtonWasPressed = IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
     if (leftMouseButtonWasPressed)
         handleLeftMouseButton();
 
-    // This needs refining somehow, currently you can create a building and directly afterwards see the selectionRectangle
-    if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) && !leftMouseButtonWasPressed)
-    {
-        if (!isSelecting)
-        {
-            isSelecting = true;
-            selectionStartPosition = GetMousePosition();
-        }
 
-        updateSelectionRectangle();
+
+    if (canSelect && !hoveringUI && !ghostBuilding)
+    {
+        if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) && !leftMouseButtonWasPressed)
+        {
+            if (!isSelecting)
+            {
+                isSelecting = true;
+                selectionStartPosition = GetMousePosition();
+            }
+
+            updateSelectionRectangle();
+        }
+        else
+        {
+            if (isSelecting)
+            {
+                isSelecting = false;
+
+                if (checkCollisionCapsuleRectangle(player->getCapsule(), selectionRectangle, camera3D))
+                {
+                    player->select();
+                    printf("selecting player\n");
+
+                    if (selectedBuilding) // TODO: figure out logic for this guy...
+                    {
+                        selectedBuilding->deselect();
+                        selectedBuilding = nullptr;
+                    }
+                }
+                else
+                {
+                    player->deselect();
+                }
+            }
+        }
     }
-    else
-        isSelecting = false;
 }
 
 void GameScreen::updateCamera()
@@ -351,7 +389,7 @@ void GameScreen::updateSelectedBuilding()
         selectedBuilding->deselect();
         selectedBuilding = nullptr;
 
-        showPlayer = false;
+        player->deselect();
         return;
     }
 
@@ -360,7 +398,8 @@ void GameScreen::updateSelectedBuilding()
         selectedBuilding = building;
         selectedBuilding->select();
 
-        showPlayer = false;
+        player->deselect();
+        canSelect = false;
         return;
     }
 
@@ -370,6 +409,7 @@ void GameScreen::updateSelectedBuilding()
         selectedBuilding = building;
         selectedBuilding->select();
 
+        canSelect = false;
         return;
     }
 }
@@ -395,28 +435,56 @@ void GameScreen::updateBuildQueue()
     }
 }
 
+float GameScreen::calculateCircleRadius2D(Vector3 position, float radius, Camera3D camera)
+{
+    Vector3 right = { cameraViewMatrix.m0, cameraViewMatrix.m1, cameraViewMatrix.m2 };
+    Vector3 rightScaled = Vector3Scale(right, radius);
+    Vector3 edgeOfCircle = Vector3Add(position, rightScaled);
+
+    return Vector2Distance(
+        GetWorldToScreen(position, camera),
+        GetWorldToScreen(edgeOfCircle, camera)
+    );
+}
+
+bool GameScreen::checkCollisionCapsuleRectangle(Capsule capsule, Rectangle rectangle, Camera3D camera)
+{
+    Vector2 bottomCirclePosScreen = GetWorldToScreen(capsule.startPos, camera3D);
+    Vector2 topCirclePosScreen = GetWorldToScreen(capsule.endPos, camera3D);
+
+    float newBottomRadius = calculateCircleRadius2D(capsule.startPos, capsule.radius, camera3D);
+    float newTopRadius = calculateCircleRadius2D(capsule.endPos, capsule.radius, camera3D);
+
+    // TODO: add collision against cylinder bounding box lines
+    if (CheckCollisionCircleRec(bottomCirclePosScreen, newBottomRadius, rectangle)  // check against bottom circle
+    ||  CheckCollisionCircleRec(topCirclePosScreen, newTopRadius, rectangle))       // check against top circle
+        return true;
+
+    return false;
+}
+
 void GameScreen::updateSelectionRectangle()
 {
     Vector2 mousePos = GetMousePosition();
     Vector2 direction = Vector2Subtract(mousePos, selectionStartPosition);
 
-    if (direction.y >= 0)
+    if (direction.y >= 0) // draw from selectionStartPosition.y to direction.y
     {
         selectionRectangle.y = selectionStartPosition.y;
         selectionRectangle.height = direction.y;
     }
-    else
+    else // draw from mousePos.y to -direction.y instead, raylib doesn't like negative sizes
     {
         selectionRectangle.y = mousePos.y;
         selectionRectangle.height = -direction.y;
     }
 
-    if (direction.x >= 0)
+    if (direction.x >= 0) // draw from selectionStartPosition.x to direction.x
     {
         selectionRectangle.x = selectionStartPosition.x;
         selectionRectangle.width = direction.x;
     }
-    else
+    else // draw from mousePos.x to -direction.x instead, raylib doesn't like negative sizes
     {
         selectionRectangle.x = mousePos.x;
         selectionRectangle.width = -direction.x;
@@ -464,6 +532,9 @@ void GameScreen::handleLeftMouseButton()
 
 void GameScreen::handleRightMouseButton()
 {
+    if (!player->isSelected())
+        return;
+
     RayCollision collision = raycastToGround();
     if (!collision.hit)
         return;
@@ -488,7 +559,7 @@ void GameScreen::handleRightMouseButton()
     player->setPositions(positions, RUNNING);
 }
 
-void GameScreen::createNewGhostBuilding(BUILDING_TYPE buildingType)
+void GameScreen::createNewGhostBuilding(BuildingType buildingType)
 {
     if (ghostBuilding)
     {
@@ -498,6 +569,8 @@ void GameScreen::createNewGhostBuilding(BUILDING_TYPE buildingType)
 
     ghostBuilding = new Building();
     ghostBuilding->init(Cube(buildingSize), buildingType);
+
+    canSelect = false;
 }
 
 Building* GameScreen::raycastToBuilding()

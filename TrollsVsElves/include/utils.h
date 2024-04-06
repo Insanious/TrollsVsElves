@@ -23,6 +23,20 @@ inline void printBoundingBox(std::string prefix, BoundingBox box)
     printVector3(prefix, box.min);
 }
 
+inline void printMatrix(std::string prefix, Matrix m)
+{
+    std::string out = "";
+    out += std::to_string(m.m0) + ','; out += std::to_string(m.m4) + ','; out += std::to_string(m.m8) + ','; out += std::to_string(m.m12) + ',';
+    out += '\n';
+    out += std::to_string(m.m1) + ','; out += std::to_string(m.m5) + ','; out += std::to_string(m.m9) + ','; out += std::to_string(m.m13) + ',';
+    out += '\n';
+    out += std::to_string(m.m2) + ','; out += std::to_string(m.m6) + ','; out += std::to_string(m.m10) + ','; out += std::to_string(m.m14) + ',';
+    out += '\n';
+    out += std::to_string(m.m3) + ','; out += std::to_string(m.m7) + ','; out += std::to_string(m.m11) + ','; out += std::to_string(m.m15) + ',';
+    out += '\n';
+    printf("%s\n%s\n", prefix.c_str(), out.c_str());
+}
+
 inline void printColor(std::string prefix, Color color)
 {
     printf("%s: %u, %u, %u, %u\n", prefix.c_str(), color.r, color.g, color.b, color.a);

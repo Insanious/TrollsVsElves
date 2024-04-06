@@ -6,15 +6,15 @@
 #include "rlImGui.h"
 #include <cassert>
 
-enum BUILD_STAGE { GHOST = 0, SCHEDULED, IN_PROGRESS, FINISHED };
-enum BUILDING_TYPE { NONE = 0, CASTLE, ROCK, COUNT };
+enum BuildStage { GHOST = 0, SCHEDULED, IN_PROGRESS, FINISHED };
+enum BuildingType { NONE = 0, CASTLE, ROCK, COUNT };
 
 class Building
 {
 private:
     Cube cube;
-    BUILD_STAGE buildStage;
-    BUILDING_TYPE buildingType;
+    BuildStage buildStage;
+    BuildingType buildingType;
 
     Color ghostColor;
     Color inProgressColor;
@@ -32,7 +32,7 @@ public:
     Building();
     ~Building();
 
-    void init(Cube cube, BUILDING_TYPE buildingType);
+    void init(Cube cube, BuildingType buildingType);
     void draw();
     void drawUIButtons(ImVec2 windowPadding, ImVec2 buttonSize);
     void update();
@@ -53,7 +53,7 @@ public:
     void upgrade();
 
     int getLevel();
-    BUILD_STAGE getBuildStage();
+    BuildStage getBuildStage();
 
 };
 
