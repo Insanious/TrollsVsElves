@@ -42,6 +42,11 @@ void Layer::addCube(Vector3 position, Vector3 size, Color color)
     grid.push_back(new Cube(position, size, color));
 }
 
+Vector3 Layer::getCubeSize()
+{
+    return cubeSize;
+}
+
 float Layer::getHeight()
 {
     return height;

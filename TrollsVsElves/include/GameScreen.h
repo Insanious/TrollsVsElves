@@ -8,6 +8,7 @@
 #include "BaseScreen.h"
 #include "Layer.h"
 #include "Building.h"
+#include "BuildingManager.h"
 #include "Player.h"
 #include "PathFinding.h"
 #include <vector>
@@ -35,12 +36,7 @@ class GameScreen: public BaseScreen
         Vector3 cubeSize;
         Color defaultCubeColor;
 
-        std::vector<Building*> buildings;
-        std::deque<Building*> buildQueue;
-        Color defaultBuildingColor;
-        Vector3 buildingSize;
-
-        Building* ghostBuilding;
+        BuildingManager* buildingManager;
         Building* selectedBuilding;
 
         std::map<BuildingType, UIMapping> buildingTypeMappings;
@@ -72,23 +68,14 @@ class GameScreen: public BaseScreen
         void drawUI();
         void update();
         void updateCamera();
-        void updateGhostBuilding();
         void updateSelectedBuilding();
-        void updateBuildQueue();
         void updateSelectionRectangle();
 
         void handleLeftMouseButton();
         void handleRightMouseButton();
-
-        void createNewGhostBuilding(BuildingType buildingType);
-
-        Building* raycastToBuilding();
         RayCollision raycastToGround();
 
         Vector3 calculateTargetPositionToBuildingFromPlayer(Building* building);
-
-        template<typename Container>
-        bool checkBuildingCollisionsAgainstTarget(const Container& buildings, Building* targetBuilding);
 
         std::vector<Vector3> pathfindPositions(Vector3 start, Vector3 goal);
 };

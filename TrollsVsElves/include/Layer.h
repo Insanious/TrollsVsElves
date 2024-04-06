@@ -24,6 +24,7 @@ public:
 
     void createGrid(Vector2i gridSize, Vector3 cubeSize, Color defaultCubeColor, float height);
     void addCube(Vector3 position, Vector3 size, Color color);
+    Vector3 getCubeSize();
     float getHeight();
 
     std::vector<std::vector<bool>> getActualObstacles();

@@ -7,11 +7,8 @@ GameScreen::~GameScreen()
     if (layer)
         delete layer;
 
-    for (int i = 0; i < buildings.size(); i++)
-        delete buildings[i];
-
-    if (ghostBuilding)
-        delete ghostBuilding;
+    if (buildingManager)
+        delete buildingManager;
 
     if (player)
         delete player;
@@ -21,6 +18,23 @@ void GameScreen::init(Vector2i screenSize)
 {
     this->screenSize = screenSize;
 
+    camera3D = {
+        .position = { 30.0f, 60.0f, 30.0f },
+        .target = { 0.f, 0.f, 0.f },
+        .up = { 0.0f, 1.0f, 0.0f },
+        .fovy = 90.0f,
+        .projection = CAMERA_PERSPECTIVE,
+    };
+    // since we are using CAMERA_PERSPECTIVE, this is static apart from the position (m12, m13, m14)
+    cameraViewMatrix = GetCameraMatrix(camera3D);
+
+    camera2D = {
+        .offset = { 0.f, 0.f },
+        .target = { 0.f, 0.f },
+        .rotation = 0.f,
+        .zoom = 1.f
+    };
+
     cubeSize = { 4.f, 4.f, 4.f };
     gridSize = { 32, 32 };
     defaultCubeColor = DARKGRAY;
@@ -28,10 +42,13 @@ void GameScreen::init(Vector2i screenSize)
     layer = new Layer();
     layer->createGrid(gridSize, cubeSize, DARKGRAY, 0.f);
 
-    buildingSize = { cubeSize.x * 2, cubeSize.y, cubeSize.z * 2 };
-    defaultBuildingColor = WHITE;
-    ghostBuilding = nullptr;
     selectedBuilding = nullptr;
+    buildingManager = new BuildingManager(
+        { cubeSize.x * 2, cubeSize.y, cubeSize.z * 2 },
+        WHITE,
+        layer,
+        &camera3D
+    );
 
     hoveringUI = false;
 
@@ -52,23 +69,6 @@ void GameScreen::init(Vector2i screenSize)
     Vector3 playerSpeed = Vector3Scale(Vector3One(), 40);
     player->init(Capsule(startPos, endPos, radius, slices, rings, playerColor), playerSpeed);
 
-    camera3D = {
-        .position = { 30.0f, 60.0f, 30.0f },
-        .target = { 0.f, 0.f, 0.f },
-        .up = { 0.0f, 1.0f, 0.0f },
-        .fovy = 90.0f,
-        .projection = CAMERA_PERSPECTIVE,
-    };
-    // since we are using CAMERA_PERSPECTIVE, this is static apart from the position (m12, m13, m14)
-    cameraViewMatrix = GetCameraMatrix(camera3D);
-
-    camera2D = {
-        .offset = { 0.f, 0.f },
-        .target = { 0.f, 0.f },
-        .rotation = 0.f,
-        .zoom = 1.f
-    };
-
     canSelect = true;
     isSelecting = false;
 }
@@ -79,14 +79,8 @@ void GameScreen::draw()
 
         layer->draw();
 
-        for (Building* building: buildings)
-            building->draw();
-
-        for (Building* building: buildQueue)
-            building->draw();
-
-        if (ghostBuilding)
-            ghostBuilding->draw();
+        if (buildingManager)
+            buildingManager->draw();
 
         if (player)
             player->draw();
@@ -178,7 +172,10 @@ void GameScreen::drawUI()
                     BuildingType buildingType = (BuildingType)(i+j);
                     UIMapping mapping = buildingTypeMappings[buildingType];
                     if (ImGui::Button(mapping.buttonText.c_str(), buttonSize))
-                        createNewGhostBuilding(buildingType);
+                    {
+                        buildingManager->createNewGhostBuilding(buildingType);
+                        canSelect = false;
+                    }
 
                     if (j != buttonsPerLine - 1) ImGui::SameLine(); // apply on all except the last
                 }
@@ -194,22 +191,30 @@ void GameScreen::drawUI()
 void GameScreen::update()
 {
     updateCamera();
-
-    for (Building* building: buildings)
-        building->update();
-    for (Building* building: buildQueue)
-        building->update();
-
+    buildingManager->update();
     player->update();
 
-    if (buildQueue.size()) // something is getting built
-        updateBuildQueue();
+    if (buildingManager->buildQueueFront()) // something is getting built
+    {
+        if (player->getState() == IDLE && player->getPreviousState() == RUNNING_TO_BUILD) // was running and reached target
+        {
+            Building* building = buildingManager->yieldBuildQueue();
+            layer->addObstacle(building->getCube());
+
+            building = buildingManager->buildQueueFront();
+            if (building) // if more in queue, walk to the next target
+            {
+                Vector3 targetPosition = calculateTargetPositionToBuildingFromPlayer(building);
+                std::vector<Vector3> positions = pathfindPositions(player->getPosition(), targetPosition);
+                player->setPositions(positions, RUNNING_TO_BUILD);
+            }
+        }
+    }
 
     if (selectedBuilding && selectedBuilding->isSold()) // delete selectedBuilding and pop from buildings vector
     {
-        swapAndPop(buildings, selectedBuilding);
         layer->removeObstacle(selectedBuilding->getCube());
-        delete selectedBuilding;
+        buildingManager->removeBuilding(selectedBuilding);
         selectedBuilding = nullptr;
     }
 
@@ -221,12 +226,12 @@ void GameScreen::update()
             UIMapping mapping = buildingTypeMappings[buildingType];
 
             if (IsKeyPressed(mapping.key))
-                createNewGhostBuilding(buildingType);
+            {
+                buildingManager->createNewGhostBuilding(buildingType);
+                canSelect = false;
+            }
         }
     }
-
-    if (ghostBuilding)
-        updateGhostBuilding();
 
     if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
         handleRightMouseButton();
@@ -240,7 +245,7 @@ void GameScreen::update()
 
 
 
-    if (canSelect && !hoveringUI && !ghostBuilding)
+    if (canSelect && !hoveringUI && !buildingManager->ghostBuildingExists())
     {
         if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) && !leftMouseButtonWasPressed)
         {
@@ -347,40 +352,9 @@ void GameScreen::updateCamera()
     }
 }
 
-void GameScreen::updateGhostBuilding()
-{
-    RayCollision collision = raycastToGround();
-    if (!collision.hit)
-        return;
-
-    // should be edge of cube or middle of cube depending on building size multiple of a cube
-    float cubeOffset = (int(buildingSize.x / cubeSize.x)) % 2 == 0
-        ? cubeSize.y / 2
-        : cubeSize.y;
-
-    Vector2 snapped = {
-        nearestIncrement(collision.point.x + cubeOffset, cubeSize.x),
-        nearestIncrement(collision.point.z + cubeOffset, cubeSize.z)
-    };
-    Vector2 offset = {
-        (cubeSize.x - buildingSize.x) / 2.0f,
-        (cubeSize.z - buildingSize.z) / 2.0f,
-    };
-    Vector2 adjusted = Vector2Add(snapped, offset);
-    Vector3 final = { adjusted.x, buildingSize.y / 2, adjusted.y };
-
-    ghostBuilding->setPosition(final);
-
-    isGhostBuildingColliding = checkBuildingCollisionsAgainstTarget(buildings, ghostBuilding)
-        || checkBuildingCollisionsAgainstTarget(buildQueue, ghostBuilding);
-
-    ghostBuilding->getCube().color = isGhostBuildingColliding ? RED : ghostBuilding->getGhostColor();
-}
-
 void GameScreen::updateSelectedBuilding()
 {
-    Building* building = raycastToBuilding();
-
+    Building* building = buildingManager->raycastToBuilding();
     if (!building && !selectedBuilding)
         return;
 
@@ -411,27 +385,6 @@ void GameScreen::updateSelectedBuilding()
 
         canSelect = false;
         return;
-    }
-}
-
-void GameScreen::updateBuildQueue()
-{
-    if (player->getState() == IDLE && player->getPreviousState() == RUNNING_TO_BUILD) // was running and reached target
-    {
-        Building* building = buildQueue.front();
-        buildQueue.pop_front();
-        building->build();
-        buildings.push_back(building);
-
-        layer->addObstacle(building->getCube());
-
-        if (buildQueue.size()) // if more in queue, walk to the next target
-        {
-            building = buildQueue.front();
-            Vector3 targetPosition = calculateTargetPositionToBuildingFromPlayer(building);
-            std::vector<Vector3> positions = pathfindPositions(player->getPosition(), targetPosition);
-            player->setPositions(positions, RUNNING_TO_BUILD);
-        }
     }
 }
 
@@ -495,7 +448,7 @@ void GameScreen::handleLeftMouseButton()
 {
     if (hoveringUI) return;
 
-    if (!ghostBuilding)
+    if (!buildingManager->ghostBuildingExists())
     {
         updateSelectedBuilding();
         return;
@@ -504,30 +457,23 @@ void GameScreen::handleLeftMouseButton()
     RayCollision collision = raycastToGround();
     if (!collision.hit)
     {
-        delete ghostBuilding;
-        ghostBuilding = nullptr;
-
+        buildingManager->clearGhostBuilding();
         return;
     }
 
-    if (isGhostBuildingColliding) return;
+    if (!buildingManager->canScheduleGhostBuilding()) // can't schedule, do nothing
+        return;
 
-    if (player->getState() == RUNNING_TO_BUILD)
+    if (player->getState() == RUNNING_TO_BUILD) // already building, just schedule and leave player unchanged
     {
-        ghostBuilding->scheduleBuild();
-        buildQueue.push_back(ghostBuilding);
-        ghostBuilding = nullptr;
-
+        buildingManager->scheduleGhostBuilding();
         return;
     }
 
-    Vector3 targetPosition = calculateTargetPositionToBuildingFromPlayer(ghostBuilding);
+    Vector3 targetPosition = calculateTargetPositionToBuildingFromPlayer(buildingManager->getGhostBuilding());
     std::vector<Vector3> positions = pathfindPositions(player->getPosition(), targetPosition);
     player->setPositions(positions, RUNNING_TO_BUILD);
-
-    ghostBuilding->scheduleBuild();
-    buildQueue.push_back(ghostBuilding);
-    ghostBuilding = nullptr;
+    buildingManager->scheduleGhostBuilding();
 }
 
 void GameScreen::handleRightMouseButton()
@@ -539,59 +485,17 @@ void GameScreen::handleRightMouseButton()
     if (!collision.hit)
         return;
 
-    if (ghostBuilding) // remove building and just walk the player to the location instead
+    if (buildingManager->ghostBuildingExists()) // remove building and just walk the player to the location instead
     {
-        delete ghostBuilding;
-        ghostBuilding = nullptr;
+        buildingManager->clearGhostBuilding();
         return;
     }
 
-    if (player->getState() == RUNNING_TO_BUILD) // player was currently running to build something
-    {
-        while(buildQueue.size()) // clear the whole buildQueue
-        {
-            delete buildQueue.back();
-            buildQueue.pop_back();
-        }
-    }
+    if (player->getState() == RUNNING_TO_BUILD) // player was currently running to build something, clear queue
+        buildingManager->clearBuildQueue();
 
     std::vector<Vector3> positions = pathfindPositions(player->getPosition(), collision.point);
     player->setPositions(positions, RUNNING);
-}
-
-void GameScreen::createNewGhostBuilding(BuildingType buildingType)
-{
-    if (ghostBuilding)
-    {
-        delete ghostBuilding;
-        ghostBuilding = nullptr;
-    }
-
-    ghostBuilding = new Building();
-    ghostBuilding->init(Cube(buildingSize), buildingType);
-
-    canSelect = false;
-}
-
-Building* GameScreen::raycastToBuilding()
-{
-    Ray ray = GetMouseRay(GetMousePosition(), camera3D);
-    float closestCollisionDistance = std::numeric_limits<float>::infinity();;
-    Building* nearestBuilding = nullptr;
-
-    for (Building* building: buildings)
-    {
-        Cube cube = building->getCube();
-        RayCollision collision = GetRayCollisionBox(ray, getCubeBoundingBox(cube));
-
-        if (collision.hit && collision.distance < closestCollisionDistance)
-        {
-            closestCollisionDistance = collision.distance;
-            nearestBuilding = building;
-        }
-    }
-
-    return nearestBuilding;
 }
 
 RayCollision GameScreen::raycastToGround()
@@ -631,18 +535,6 @@ Vector3 GameScreen::calculateTargetPositionToBuildingFromPlayer(Building* buildi
     }
 
     return positions[0]; // just grab the first one, don't care which one right now
-}
-
-template<typename Container>
-bool GameScreen::checkBuildingCollisionsAgainstTarget(const Container& buildings, Building* targetBuilding)
-{
-    BoundingBox targetBoundingBox = getCubeBoundingBox(targetBuilding->getCube(), 0.8f);
-
-    for (Building* building: buildings)
-        if (CheckCollisionBoxes(targetBoundingBox, getCubeBoundingBox(building->getCube())))
-            return true;
-
-    return false;
 }
 
 std::vector<Vector3> GameScreen::pathfindPositions(Vector3 start, Vector3 goal)

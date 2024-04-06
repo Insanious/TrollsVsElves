@@ -4,6 +4,7 @@
 #include "raymath.h"
 #include "utils.h"
 #include <cmath>
+#include <cassert>
 #include <string>
 
 struct Cube

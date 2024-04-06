@@ -4,7 +4,6 @@
 #include "structs.h"
 #include "imgui.h"
 #include "rlImGui.h"
-#include <cassert>
 
 enum BuildStage { GHOST = 0, SCHEDULED, IN_PROGRESS, FINISHED };
 enum BuildingType { NONE = 0, CASTLE, ROCK, COUNT };
