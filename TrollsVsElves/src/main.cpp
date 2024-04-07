@@ -11,8 +11,7 @@ int main ()
     const int screenHeight = 800;
 
     Vector2i screenSize = { 1280, 800 };
-    BaseScreen* currentScreen = (BaseScreen*) new GameScreen();
-    currentScreen->init(screenSize);
+    BaseScreen* currentScreen = (BaseScreen*) new GameScreen(screenSize);
 
     SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_VSYNC_HINT | FLAG_WINDOW_RESIZABLE);
     InitWindow(screenSize.x, screenSize.y, "Hello Raylib");

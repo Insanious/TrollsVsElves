@@ -1,25 +1,19 @@
 #include "Player.h"
 
-Player::Player()
+Player::Player(Capsule capsule, Vector3 speed)
 {
     state = IDLE;
     previousState = IDLE;
-    speed = Vector3Zero();
     selected = false;
 
     defaultTargetMargin = 0.5f;
     targetMarker = Cylinder(Vector3Zero(), 4.f, 0.1f, 8, { 255, 255, 255, 30 });
-}
 
-Player::~Player()
-{
-}
-
-void Player::init(Capsule capsule, Vector3 speed)
-{
     this->capsule = capsule;
     this->speed = speed;
 }
+
+Player::~Player() {}
 
 void Player::draw()
 {

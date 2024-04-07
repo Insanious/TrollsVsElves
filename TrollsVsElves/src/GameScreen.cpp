@@ -1,20 +1,6 @@
 #include "GameScreen.h"
 
-GameScreen::GameScreen() {}
-
-GameScreen::~GameScreen()
-{
-    if (layer)
-        delete layer;
-
-    if (buildingManager)
-        delete buildingManager;
-
-    if (player)
-        delete player;
-}
-
-void GameScreen::init(Vector2i screenSize)
+GameScreen::GameScreen(Vector2i screenSize)
 {
     this->screenSize = screenSize;
 
@@ -35,20 +21,32 @@ void GameScreen::init(Vector2i screenSize)
         { ROCK, { KEY_TWO, "Rock" } },
     };
 
-    player = new Player();
     Vector3 startPos = { 0.f, cubeSize.y, 0.f };
     Vector3 endPos = { 0.f, cubeSize.y + 8.f, 0.f };
-    startPos.x = endPos.x = gridSize.x/2 * cubeSize.x;
-    startPos.z = endPos.z = gridSize.y/2 * cubeSize.z;
+    startPos.x = endPos.x = gridSize.x/2 * cubeSize.x - cubeSize.x;
+    startPos.z = endPos.z = gridSize.y/2 * cubeSize.z - cubeSize.z;
     float radius = 2.f;
     int slices = 16;
     int rings = 16;
     Color playerColor = BLUE;
     Vector3 playerSpeed = Vector3Scale(Vector3One(), 40);
-    player->init(Capsule(startPos, endPos, radius, slices, rings, playerColor), playerSpeed);
+    printVector3("playerSpeed", playerSpeed);
+    player = new Player(Capsule(startPos, endPos, radius, slices, rings, playerColor), playerSpeed);
 
     canSelect = true;
     isSelecting = false;
+}
+
+GameScreen::~GameScreen()
+{
+    if (layer)
+        delete layer;
+
+    if (buildingManager)
+        delete buildingManager;
+
+    if (player)
+        delete player;
 }
 
 void GameScreen::draw()

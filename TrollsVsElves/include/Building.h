@@ -28,10 +28,10 @@ private:
     int level;
 
 public:
-    Building();
+    Building() = delete;
+    Building(Cube cube, BuildingType buildingType);
     ~Building();
 
-    void init(Cube cube, BuildingType buildingType);
     void draw();
     void drawUIButtons(ImVec2 windowPadding, ImVec2 buttonSize);
     void update();

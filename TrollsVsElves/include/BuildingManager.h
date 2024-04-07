@@ -27,7 +27,7 @@ private:
     bool isColliding(const Container& buildings, Building* targetBuilding);
 
 public:
-    BuildingManager();
+    BuildingManager() = delete;
     BuildingManager(Vector3 defaultBuildingSize, Color defaultBuildingColor, Layer* layer);
     ~BuildingManager();
 

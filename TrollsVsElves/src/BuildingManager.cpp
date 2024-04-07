@@ -1,13 +1,5 @@
 #include "BuildingManager.h"
 
-BuildingManager::BuildingManager()
-{
-    this->defaultBuildingSize = Vector3Zero();
-    this->defaultBuildingColor = WHITE;
-
-    ghostBuilding = nullptr;
-}
-
 BuildingManager::BuildingManager(Vector3 defaultBuildingSize, Color defaultBuildingColor, Layer* layer)
 {
     this->defaultBuildingSize = defaultBuildingSize;
@@ -40,7 +32,7 @@ void BuildingManager::draw()
     if (ghostBuilding)
     {
         Cube& cube = ghostBuilding->getCube();
-        cube.position = Vector3AddValue(cube.position, 0.1f); // prevents z-fighting that occurs when overlapping buildings
+        cube.position = Vector3AddValue(cube.position, 0.1f); // prevents z-fighting that occurs when buildings overlap
         ghostBuilding->draw();
         cube.position = Vector3SubtractValue(cube.position, 0.1f); // revert change
     }
@@ -171,8 +163,7 @@ void BuildingManager::createNewGhostBuilding(BuildingType buildingType)
     if (ghostBuilding)
         delete ghostBuilding;
 
-    ghostBuilding = new Building();
-    ghostBuilding->init(Cube(defaultBuildingSize), buildingType);
+    ghostBuilding = new Building(Cube(defaultBuildingSize), buildingType);
 
     updateGhostBuilding(); // sets position correctly
 }

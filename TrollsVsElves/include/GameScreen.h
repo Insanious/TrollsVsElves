@@ -55,10 +55,10 @@ class GameScreen: public BaseScreen
         float calculateCircleRadius2D(Vector3 position, float radius);
 
     public:
-        GameScreen();
+        GameScreen() = delete;
+        GameScreen(Vector2i screenSize);
         ~GameScreen();
 
-        void init(Vector2i screenSize);
         void draw();
         void drawUI();
         void update();

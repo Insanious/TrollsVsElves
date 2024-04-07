@@ -8,10 +8,10 @@ private:
 
 public:
     BaseScreen();
+    BaseScreen(Vector2i screenSize);
     ~BaseScreen();
 
     virtual void draw() = 0;
-    virtual void init(Vector2i screenSize) = 0;
     virtual void update() = 0;
 };
 

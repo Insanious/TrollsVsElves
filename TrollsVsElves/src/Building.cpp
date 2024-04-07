@@ -1,13 +1,11 @@
 #include "Building.h"
 
-Building::Building()
+Building::Building(Cube cube, BuildingType buildingType)
 {
     buildStage = GHOST;
 
     ghostColor = { 0, 121, 241, 100 };
     inProgressColor = { 255, 255, 255, 100 };
-    targetColor = { 0 };
-    selectedColor = { 0 };
 
     selected = false;
     sold = false;
@@ -15,23 +13,18 @@ Building::Building()
 
     buildTime = 2.f;
     buildTimer = 0.f;
+
+    this->cube = cube;
+    this->buildingType = buildingType;
+    cube.color = ghostColor;
+
+    targetColor = buildingType == ROCK ? Color{ 60, 60, 60, 255 } : BEIGE;
+    Vector3 targetColorHSL = ColorToHSV(targetColor);
+    selectedColor = ColorFromHSV(targetColorHSL.x, targetColorHSL.y, targetColorHSL.z - 0.2f);
 }
 
 Building::~Building()
 {
-}
-
-void Building::init(Cube cube, BuildingType buildingType)
-{
-    this->cube = cube;
-    this->buildingType = buildingType;
-
-    buildStage = GHOST;
-    this->cube.color = ghostColor;
-
-    this->targetColor = buildingType == ROCK ? Color{ 60, 60, 60, 255 } : BEIGE;
-    Vector3 targetColorHSL = ColorToHSV(this->targetColor);
-    selectedColor = ColorFromHSV(targetColorHSL.x, targetColorHSL.y, targetColorHSL.z - 0.2f);
 }
 
 void Building::draw()

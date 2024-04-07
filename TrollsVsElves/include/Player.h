@@ -27,10 +27,10 @@ private:
     std::deque<Vector3> paths;
 
 public:
-    Player();
+    Player() = delete;
+    Player(Capsule capsule, Vector3 speed);
     ~Player();
 
-    void init(Capsule capsule, Vector3 speed);
     void draw();
     void update();
     void updateMovement();
