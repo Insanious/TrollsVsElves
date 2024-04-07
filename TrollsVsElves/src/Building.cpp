@@ -11,7 +11,8 @@ Building::Building(Cube cube, BuildingType buildingType)
     sold = false;
     level = 1;
 
-    buildTime = 2.f;
+    buildTime = 0.1f;
+    // buildTime = 2.f;
     buildTimer = 0.f;
 
     this->cube = cube;

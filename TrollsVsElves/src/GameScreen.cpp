@@ -313,14 +313,14 @@ RaycastHitType GameScreen::checkRaycastHitType()
         return RAYCAST_HIT_TYPE_GROUND;
 
     return RAYCAST_HIT_TYPE_OUT_OF_BOUNDS;
-
 }
 
 void GameScreen::handleLeftMouseButton()
 {
     RaycastHitType type = checkRaycastHitType();
 
-    if (type != RAYCAST_HIT_TYPE_BUILDING && selectedBuilding) // always deselect if not clicking a building
+    // deselect selectedBuilding if not clicking a building or UI
+    if (selectedBuilding && type != RAYCAST_HIT_TYPE_UI && type != RAYCAST_HIT_TYPE_BUILDING)
     {
         selectedBuilding->deselect();
         selectedBuilding = nullptr;
