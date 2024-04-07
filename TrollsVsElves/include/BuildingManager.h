@@ -7,6 +7,7 @@
 #include "utils.h"
 #include "Layer.h"
 #include "Building.h"
+#include "CameraManager.h"
 
 class BuildingManager
 {
@@ -14,7 +15,6 @@ private:
     Vector3 defaultBuildingSize;
     Color defaultBuildingColor;
     Layer* layer;
-    Camera3D* camera;
 
     std::vector<Building*> buildings;
     std::deque<Building*> buildQueue;
@@ -28,7 +28,7 @@ private:
 
 public:
     BuildingManager();
-    BuildingManager(Vector3 defaultBuildingSize, Color defaultBuildingColor, Layer* layer, Camera3D* camera);
+    BuildingManager(Vector3 defaultBuildingSize, Color defaultBuildingColor, Layer* layer);
     ~BuildingManager();
 
     void draw();

@@ -18,23 +18,6 @@ void GameScreen::init(Vector2i screenSize)
 {
     this->screenSize = screenSize;
 
-    camera3D = {
-        .position = { 30.0f, 60.0f, 30.0f },
-        .target = { 0.f, 0.f, 0.f },
-        .up = { 0.0f, 1.0f, 0.0f },
-        .fovy = 90.0f,
-        .projection = CAMERA_PERSPECTIVE,
-    };
-    // since we are using CAMERA_PERSPECTIVE, this is static apart from the position (m12, m13, m14)
-    cameraViewMatrix = GetCameraMatrix(camera3D);
-
-    camera2D = {
-        .offset = { 0.f, 0.f },
-        .target = { 0.f, 0.f },
-        .rotation = 0.f,
-        .zoom = 1.f
-    };
-
     cubeSize = { 4.f, 4.f, 4.f };
     gridSize = { 32, 32 };
     defaultCubeColor = DARKGRAY;
@@ -43,12 +26,7 @@ void GameScreen::init(Vector2i screenSize)
     layer->createGrid(gridSize, cubeSize, DARKGRAY, 0.f);
 
     selectedBuilding = nullptr;
-    buildingManager = new BuildingManager(
-        { cubeSize.x * 2, cubeSize.y, cubeSize.z * 2 },
-        WHITE,
-        layer,
-        &camera3D
-    );
+    buildingManager = new BuildingManager({ cubeSize.x * 2, cubeSize.y, cubeSize.z * 2 }, WHITE, layer);
 
     hoveringUI = false;
 
@@ -75,6 +53,9 @@ void GameScreen::init(Vector2i screenSize)
 
 void GameScreen::draw()
 {
+    Camera3D& camera3D = CameraManager::get().getCamera();
+    Camera2D& camera2D = CameraManager::get().getCamera2D();
+
     BeginMode3D(camera3D);
 
         layer->draw();
@@ -103,8 +84,8 @@ void GameScreen::draw()
                 Vector2 bottomCirclePosScreen = GetWorldToScreen(cap.startPos, camera3D);
                 Vector2 topCirclePosScreen = GetWorldToScreen(cap.endPos, camera3D);
 
-                float newBottomRadius = calculateCircleRadius2D(cap.startPos, cap.radius, camera3D);
-                float newTopRadius = calculateCircleRadius2D(cap.endPos, cap.radius, camera3D);
+                float newBottomRadius = calculateCircleRadius2D(cap.startPos, cap.radius);
+                float newTopRadius = calculateCircleRadius2D(cap.endPos, cap.radius);
 
                 DrawCircleV(bottomCirclePosScreen, newBottomRadius, YELLOW);
                 DrawCircleLinesV(bottomCirclePosScreen, newBottomRadius, GRAY);
@@ -190,7 +171,7 @@ void GameScreen::drawUI()
 
 void GameScreen::update()
 {
-    updateCamera();
+    CameraManager::get().update();
     buildingManager->update();
     player->update();
 
@@ -243,8 +224,6 @@ void GameScreen::update()
     if (leftMouseButtonWasPressed)
         handleLeftMouseButton();
 
-
-
     if (canSelect && !hoveringUI && !buildingManager->ghostBuildingExists())
     {
         if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) && !leftMouseButtonWasPressed)
@@ -263,7 +242,7 @@ void GameScreen::update()
             {
                 isSelecting = false;
 
-                if (checkCollisionCapsuleRectangle(player->getCapsule(), selectionRectangle, camera3D))
+                if (checkCollisionCapsuleRectangle(player->getCapsule(), selectionRectangle))
                 {
                     player->select();
                     printf("selecting player\n");
@@ -280,75 +259,6 @@ void GameScreen::update()
                 }
             }
         }
-    }
-}
-
-void GameScreen::updateCamera()
-{
-    // Pan logic
-    // printf("mousePos x, y: %f, %f\n", mousePos.x, mousePos.y);
-
-    float cameraPan = 2.2f;
-    // float cameraPan = 0.2f;
-
-    if (IsKeyDown(KEY_A))      CameraMoveRight(&camera3D, -cameraPan, true);
-    else if (IsKeyDown(KEY_D)) CameraMoveRight(&camera3D, cameraPan, true);
-
-    if (IsKeyDown(KEY_W))      CameraMoveForward(&camera3D, cameraPan, true);
-    else if (IsKeyDown(KEY_S)) CameraMoveForward(&camera3D, -cameraPan, true);
-
-    // This code enables panning with the mouse at the edges, but its a bit awkward right now
-    // int edgeOfScreenMargin = 40;
-    // Vector2 mousePos = GetMousePosition();
-
-    // bool mouseIsAtEdgeOfScreenLeft = mousePos.x < edgeOfScreenMargin;
-    // bool mouseIsAtEdgeOfScreenRight = screenWidth - mousePos.x < edgeOfScreenMargin;
-    // bool mouseIsAtEdgeOfScreenUp = mousePos.y < edgeOfScreenMargin;
-    // bool mouseIsAtEdgeOfScreenDown = screenHeight - mousePos.y < edgeOfScreenMargin;
-
-    // if (mouseIsAtEdgeOfScreenLeft || IsKeyDown(KEY_A))
-    // {
-    //     CameraMoveRight(&camera3D, -cameraPan, true);
-    //     if (mouseIsAtEdgeOfScreenLeft) SetMousePosition(edgeOfScreenMargin, mousePos.y);
-    // }
-    // else if (mouseIsAtEdgeOfScreenRight || IsKeyDown(KEY_D))
-    // {
-    //     CameraMoveRight(&camera3D, cameraPan, true);
-    //     if (mouseIsAtEdgeOfScreenRight) SetMousePosition(screenWidth - edgeOfScreenMargin, mousePos.y);
-    // }
-
-    // if (mouseIsAtEdgeOfScreenUp || IsKeyDown(KEY_W))
-    // {
-    //     CameraMoveForward(&camera3D, cameraPan, true);
-    //     if (mouseIsAtEdgeOfScreenUp) SetMousePosition(mousePos.x, edgeOfScreenMargin);
-    // }
-    // else if (mouseIsAtEdgeOfScreenDown || IsKeyDown(KEY_S))
-    // {
-    //     CameraMoveForward(&camera3D, -cameraPan, true);
-    //     if (mouseIsAtEdgeOfScreenDown) SetMousePosition(mousePos.x, screenHeight - edgeOfScreenMargin);
-    // }
-
-    // Zoom logic
-    float maxDistance = 120.f;
-    float minDistance = 10.f;
-    float scrollAmount = 1.f;
-    float scroll = -GetMouseWheelMove(); // inverted for a reason
-    if (scroll)
-    {
-        bool scrollUp = scroll == 1;
-        float distance = Vector3Distance(camera3D.position, camera3D.target);
-
-        if (scrollUp)
-        {
-            if (distance + scrollAmount > maxDistance)
-                scroll = maxDistance - distance;
-        }
-        else {
-            if (distance - scrollAmount < minDistance)
-                scroll = minDistance - distance;
-        }
-
-        CameraMoveToTarget(&camera3D, scroll);
     }
 }
 
@@ -388,25 +298,27 @@ void GameScreen::updateSelectedBuilding()
     }
 }
 
-float GameScreen::calculateCircleRadius2D(Vector3 position, float radius, Camera3D camera)
+float GameScreen::calculateCircleRadius2D(Vector3 position, float radius)
 {
-    Vector3 right = { cameraViewMatrix.m0, cameraViewMatrix.m1, cameraViewMatrix.m2 };
+    Matrix viewMatrix = CameraManager::get().getCameraViewMatrix();
+
+    Vector3 right = { viewMatrix.m0, viewMatrix.m1, viewMatrix.m2 };
     Vector3 rightScaled = Vector3Scale(right, radius);
     Vector3 edgeOfCircle = Vector3Add(position, rightScaled);
 
     return Vector2Distance(
-        GetWorldToScreen(position, camera),
-        GetWorldToScreen(edgeOfCircle, camera)
+        CameraManager::get().getWorldToScreen(position),
+        CameraManager::get().getWorldToScreen(edgeOfCircle)
     );
 }
 
-bool GameScreen::checkCollisionCapsuleRectangle(Capsule capsule, Rectangle rectangle, Camera3D camera)
+bool GameScreen::checkCollisionCapsuleRectangle(Capsule capsule, Rectangle rectangle)
 {
-    Vector2 bottomCirclePosScreen = GetWorldToScreen(capsule.startPos, camera3D);
-    Vector2 topCirclePosScreen = GetWorldToScreen(capsule.endPos, camera3D);
+    Vector2 bottomCirclePosScreen = CameraManager::get().getWorldToScreen(capsule.startPos);
+    Vector2 topCirclePosScreen = CameraManager::get().getWorldToScreen(capsule.endPos);
 
-    float newBottomRadius = calculateCircleRadius2D(capsule.startPos, capsule.radius, camera3D);
-    float newTopRadius = calculateCircleRadius2D(capsule.endPos, capsule.radius, camera3D);
+    float newBottomRadius = calculateCircleRadius2D(capsule.startPos, capsule.radius);
+    float newTopRadius = calculateCircleRadius2D(capsule.endPos, capsule.radius);
 
     // TODO: add collision against cylinder bounding box lines
     if (CheckCollisionCircleRec(bottomCirclePosScreen, newBottomRadius, rectangle)  // check against bottom circle
@@ -505,7 +417,7 @@ RayCollision GameScreen::raycastToGround()
     // Check mouse collision against a plane spanning from -max to max, with y the same as the ground cubes
     // halfCubeSize is used here since the middle of the ground cube is at y=0
     return GetRayCollisionQuad(
-        GetMouseRay(GetMousePosition(), camera3D),
+        CameraManager::get().getMouseRay(), // TODO: maybe move these collisions to CameraManager?
         { -max, ground, -max },
         { -max, ground,  max },
         {  max, ground,  max },

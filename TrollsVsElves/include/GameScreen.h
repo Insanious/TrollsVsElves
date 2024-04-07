@@ -3,14 +3,13 @@
 
 #include "structs.h"
 
-#include "rcamera.h"
-
 #include "BaseScreen.h"
 #include "Layer.h"
 #include "Building.h"
 #include "BuildingManager.h"
 #include "Player.h"
 #include "PathFinding.h"
+#include "CameraManager.h"
 #include <vector>
 #include <deque>
 #include <map>
@@ -45,10 +44,6 @@ class GameScreen: public BaseScreen
 
         Player* player;
 
-        Camera3D camera3D;
-        Matrix cameraViewMatrix;
-        Camera2D camera2D;
-
         bool isGhostBuildingColliding = false;
 
         bool isSelecting;
@@ -56,8 +51,8 @@ class GameScreen: public BaseScreen
         Vector2 selectionStartPosition;
         Rectangle selectionRectangle;
 
-        bool checkCollisionCapsuleRectangle(Capsule capsule, Rectangle rectangle, Camera3D camera);
-        float calculateCircleRadius2D(Vector3 position, float radius, Camera3D camera);
+        bool checkCollisionCapsuleRectangle(Capsule capsule, Rectangle rectangle);
+        float calculateCircleRadius2D(Vector3 position, float radius);
 
     public:
         GameScreen();
@@ -67,7 +62,6 @@ class GameScreen: public BaseScreen
         void draw();
         void drawUI();
         void update();
-        void updateCamera();
         void updateSelectedBuilding();
         void updateSelectionRectangle();
 

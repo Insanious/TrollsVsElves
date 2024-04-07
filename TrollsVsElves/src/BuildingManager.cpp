@@ -8,12 +8,11 @@ BuildingManager::BuildingManager()
     ghostBuilding = nullptr;
 }
 
-BuildingManager::BuildingManager(Vector3 defaultBuildingSize, Color defaultBuildingColor, Layer* layer, Camera3D* camera)
+BuildingManager::BuildingManager(Vector3 defaultBuildingSize, Color defaultBuildingColor, Layer* layer)
 {
     this->defaultBuildingSize = defaultBuildingSize;
     this->defaultBuildingColor = defaultBuildingColor;
     this->layer = layer;
-    this->camera = camera;
 
     ghostBuilding = nullptr;
     ghostBuildingIsColliding = false;
@@ -49,7 +48,7 @@ void BuildingManager::draw()
 
 Building* BuildingManager::raycastToBuilding()
 {
-    Ray ray = GetMouseRay(GetMousePosition(), *camera);
+    Ray ray = CameraManager::get().getMouseRay();
     float closestCollisionDistance = std::numeric_limits<float>::infinity();
     Building* nearestBuilding = nullptr;
 
@@ -120,10 +119,9 @@ void BuildingManager::updateGhostBuilding()
 {
     float ground = layer->getHeight();
     const float max = 10000.f;
-    // Check mouse collision against a plane spanning from -max to max, with y the same as the ground cubes
-    // halfCubeSize is used here since the middle of the ground cube is at y=0
+    // Check mouse collision against a plane spanning from -max to max, with y the same as the ground level
     RayCollision collision = GetRayCollisionQuad(
-        GetMouseRay(GetMousePosition(), *camera),
+        CameraManager::get().getMouseRay(),
         { -max, ground, -max },
         { -max, ground,  max },
         {  max, ground,  max },
@@ -209,5 +207,5 @@ bool BuildingManager::ghostBuildingExists()
 
 bool BuildingManager::canScheduleGhostBuilding()
 {
-    return ghostBuildingIsColliding;
+    return !ghostBuildingIsColliding;
 }
