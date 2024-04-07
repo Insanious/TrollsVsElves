@@ -4,9 +4,8 @@ GameScreen::GameScreen(Vector2i screenSize)
 {
     this->screenSize = screenSize;
 
-    cubeSize = { 4.f, 4.f, 4.f };
-    gridSize = { 32, 32 };
-    defaultCubeColor = DARKGRAY;
+    Vector3 cubeSize = { 4.f, 4.f, 4.f };
+    Vector2i gridSize = { 32, 32 };
 
     layer = new Layer();
     layer->createGrid(gridSize, cubeSize, DARKGRAY, 0.f);

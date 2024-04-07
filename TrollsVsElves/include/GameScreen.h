@@ -39,9 +39,6 @@ class GameScreen: public BaseScreen
         Vector2i screenSize;
 
         Layer* layer;
-        Vector2i gridSize;
-        Vector3 cubeSize;
-        Color defaultCubeColor;
 
         BuildingManager* buildingManager;
         Building* selectedBuilding;
