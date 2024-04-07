@@ -25,6 +25,14 @@ struct UIMapping
         : key(_key), buttonText(_buttonText) {};
 };
 
+enum RaycastHitType {
+    RAYCAST_HIT_TYPE_UI = 0,
+    RAYCAST_HIT_TYPE_PLAYER,
+    RAYCAST_HIT_TYPE_BUILDING,
+    RAYCAST_HIT_TYPE_GROUND,
+    RAYCAST_HIT_TYPE_OUT_OF_BOUNDS
+};
+
 class GameScreen: public BaseScreen
 {
     private:
@@ -40,18 +48,16 @@ class GameScreen: public BaseScreen
 
         std::map<BuildingType, UIMapping> buildingTypeMappings;
 
-        bool hoveringUI;
-
         Player* player;
 
         bool isGhostBuildingColliding = false;
 
-        bool isSelecting;
-        bool canSelect;
-        Vector2 selectionStartPosition;
-        Rectangle selectionRectangle;
+        bool isMultiSelecting;
+        Vector2 multiSelectionStartPosition;
+        Rectangle multiSelectionRectangle;
 
         bool checkCollisionCapsuleRectangle(Capsule capsule, Rectangle rectangle);
+        bool checkCollisionCapsulePoint(Capsule capsule, Vector2 point);
         float calculateCircleRadius2D(Vector3 position, float radius);
 
     public:
@@ -62,11 +68,12 @@ class GameScreen: public BaseScreen
         void draw();
         void drawUI();
         void update();
-        void updateSelectedBuilding();
-        void updateSelectionRectangle();
+        void updateMultiSelectionRectangle();
 
+        RaycastHitType checkRaycastHitType();
         void handleLeftMouseButton();
         void handleRightMouseButton();
+        bool raycastToPlayer();
         RayCollision raycastToGround();
 
         Vector3 calculateTargetPositionToBuildingFromPlayer(Building* building);

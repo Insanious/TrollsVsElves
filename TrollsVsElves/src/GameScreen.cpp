@@ -14,8 +14,6 @@ GameScreen::GameScreen(Vector2i screenSize)
     selectedBuilding = nullptr;
     buildingManager = new BuildingManager({ cubeSize.x * 2, cubeSize.y, cubeSize.z * 2 }, WHITE, layer);
 
-    hoveringUI = false;
-
     buildingTypeMappings = {
         { CASTLE, { KEY_ONE, "Castle" } },
         { ROCK, { KEY_TWO, "Rock" } },
@@ -33,8 +31,7 @@ GameScreen::GameScreen(Vector2i screenSize)
     printVector3("playerSpeed", playerSpeed);
     player = new Player(Capsule(startPos, endPos, radius, slices, rings, playerColor), playerSpeed);
 
-    canSelect = true;
-    isSelecting = false;
+    isMultiSelecting = false;
 }
 
 GameScreen::~GameScreen()
@@ -70,10 +67,10 @@ void GameScreen::draw()
 
     BeginMode2D(camera2D);
 
-        if (isSelecting)
+        if (isMultiSelecting)
         {
-            DrawRectangleRec(selectionRectangle, { 0, 255, 0, 25 });
-            DrawRectangleLinesEx(selectionRectangle, 1.f, { 0, 255, 0, 50 });
+            DrawRectangleRec(multiSelectionRectangle, { 0, 255, 0, 25 });
+            DrawRectangleLinesEx(multiSelectionRectangle, 1.f, { 0, 255, 0, 50 });
 
             if (true) // set to true to draw player capsule collision circles
             {
@@ -91,7 +88,6 @@ void GameScreen::draw()
                 DrawCircleV(topCirclePosScreen, newTopRadius, YELLOW);
                 DrawCircleLinesV(topCirclePosScreen, newTopRadius, GRAY);
             }
-
         }
 
     EndMode2D();
@@ -99,8 +95,6 @@ void GameScreen::draw()
 
 void GameScreen::drawUI()
 {
-    hoveringUI = false;
-
     bool drawWindow = !selectedBuilding != !player->isSelected(); // xor
     if (drawWindow)
     {
@@ -130,11 +124,6 @@ void GameScreen::drawUI()
         ImGui::Begin("Bottom right window", &bottomRightWindow, bottomRightWindowFlags);
         ImGui::PopStyleVar();
 
-        hoveringUI = ImGui::IsMouseHoveringRect(
-            windowPos,
-            ImVec2(windowPos.x + windowSize.x, windowPos.y + windowSize.y)
-        );
-
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, buttonPadding);
 
         if (selectedBuilding)
@@ -146,15 +135,14 @@ void GameScreen::drawUI()
             {
                 for (int j = 0; j < buttonsPerLine; j++)
                 {
-                    if ((BuildingType)(i+j) == BuildingType::COUNT) break; // safeguard if not a multiple of buttonsPerLine
+                    if ((BuildingType)(i+j) == BuildingType::COUNT) // safeguard if not a multiple of buttonsPerLine
+                        break;
 
                     BuildingType buildingType = (BuildingType)(i+j);
                     UIMapping mapping = buildingTypeMappings[buildingType];
+
                     if (ImGui::Button(mapping.buttonText.c_str(), buttonSize))
-                    {
                         buildingManager->createNewGhostBuilding(buildingType);
-                        canSelect = false;
-                    }
 
                     if (j != buttonsPerLine - 1) ImGui::SameLine(); // apply on all except the last
                 }
@@ -197,6 +185,26 @@ void GameScreen::update()
         selectedBuilding = nullptr;
     }
 
+    bool wasMultiSelecting = isMultiSelecting;
+
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))                        // LMB was clicked this frame
+        handleLeftMouseButton();                                        // this may update isMultiSelecting
+    else if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) && isMultiSelecting)  // keep updating rectangle
+        updateMultiSelectionRectangle();
+
+    if (!wasMultiSelecting && isMultiSelecting) // update only first time isMultiSelecting is set to true
+    {
+        multiSelectionStartPosition = GetMousePosition();
+        updateMultiSelectionRectangle();
+    }
+
+    if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && isMultiSelecting) // stop multi selection
+    {
+        isMultiSelecting = false;
+        if (checkCollisionCapsuleRectangle(player->getCapsule(), multiSelectionRectangle)) // player is inside multiSelectionRectangle
+            player->select();
+    }
+
     if (player->isSelected()) // Check additional mapping keys
     {
         for (int i = 1; i < BuildingType::COUNT; i += 1) // start at 1 since 0 = NONE
@@ -207,93 +215,13 @@ void GameScreen::update()
             if (IsKeyPressed(mapping.key))
             {
                 buildingManager->createNewGhostBuilding(buildingType);
-                canSelect = false;
+                break;
             }
         }
     }
 
     if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
         handleRightMouseButton();
-
-    if (!canSelect && IsMouseButtonReleased(MOUSE_BUTTON_LEFT))
-        canSelect = true;
-
-    bool leftMouseButtonWasPressed = IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
-    if (leftMouseButtonWasPressed)
-        handleLeftMouseButton();
-
-    if (canSelect && !hoveringUI && !buildingManager->ghostBuildingExists())
-    {
-        if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) && !leftMouseButtonWasPressed)
-        {
-            if (!isSelecting)
-            {
-                isSelecting = true;
-                selectionStartPosition = GetMousePosition();
-            }
-
-            updateSelectionRectangle();
-        }
-        else
-        {
-            if (isSelecting)
-            {
-                isSelecting = false;
-
-                if (checkCollisionCapsuleRectangle(player->getCapsule(), selectionRectangle))
-                {
-                    player->select();
-                    printf("selecting player\n");
-
-                    if (selectedBuilding) // TODO: figure out logic for this guy...
-                    {
-                        selectedBuilding->deselect();
-                        selectedBuilding = nullptr;
-                    }
-                }
-                else
-                {
-                    player->deselect();
-                }
-            }
-        }
-    }
-}
-
-void GameScreen::updateSelectedBuilding()
-{
-    Building* building = buildingManager->raycastToBuilding();
-    if (!building && !selectedBuilding)
-        return;
-
-    if (!building && selectedBuilding) // remove select
-    {
-        selectedBuilding->deselect();
-        selectedBuilding = nullptr;
-
-        player->deselect();
-        return;
-    }
-
-    if (!selectedBuilding) // new select
-    {
-        selectedBuilding = building;
-        selectedBuilding->select();
-
-        player->deselect();
-        canSelect = false;
-        return;
-    }
-
-    if (selectedBuilding && selectedBuilding != building) // switch select
-    {
-        selectedBuilding->deselect();
-        selectedBuilding = building;
-        selectedBuilding->select();
-
-        canSelect = false;
-        return;
-    }
 }
 
 float GameScreen::calculateCircleRadius2D(Vector3 position, float radius)
@@ -326,96 +254,195 @@ bool GameScreen::checkCollisionCapsuleRectangle(Capsule capsule, Rectangle recta
     return false;
 }
 
-void GameScreen::updateSelectionRectangle()
+bool GameScreen::checkCollisionCapsulePoint(Capsule capsule, Vector2 point)
+{
+    Vector2 bottomCirclePosScreen = CameraManager::get().getWorldToScreen(capsule.startPos);
+    Vector2 topCirclePosScreen = CameraManager::get().getWorldToScreen(capsule.endPos);
+
+    float newBottomRadius = calculateCircleRadius2D(capsule.startPos, capsule.radius);
+    float newTopRadius = calculateCircleRadius2D(capsule.endPos, capsule.radius);
+
+    // TODO: add collision against cylinder bounding box
+    if (CheckCollisionPointCircle(point, bottomCirclePosScreen, newBottomRadius)  // check against bottom circle
+    ||  CheckCollisionPointCircle(point, topCirclePosScreen, newTopRadius))       // check against top circle
+        return true;
+
+    return false;
+}
+
+void GameScreen::updateMultiSelectionRectangle()
 {
     Vector2 mousePos = GetMousePosition();
-    Vector2 direction = Vector2Subtract(mousePos, selectionStartPosition);
+    Vector2 direction = Vector2Subtract(mousePos, multiSelectionStartPosition);
 
-    if (direction.y >= 0) // draw from selectionStartPosition.y to direction.y
+    if (direction.y >= 0) // draw from multiSelectionStartPosition.y to direction.y
     {
-        selectionRectangle.y = selectionStartPosition.y;
-        selectionRectangle.height = direction.y;
+        multiSelectionRectangle.y = multiSelectionStartPosition.y;
+        multiSelectionRectangle.height = direction.y;
     }
     else // draw from mousePos.y to -direction.y instead, raylib doesn't like negative sizes
     {
-        selectionRectangle.y = mousePos.y;
-        selectionRectangle.height = -direction.y;
+        multiSelectionRectangle.y = mousePos.y;
+        multiSelectionRectangle.height = -direction.y;
     }
 
-    if (direction.x >= 0) // draw from selectionStartPosition.x to direction.x
+    if (direction.x >= 0) // draw from multiSelectionStartPosition.x to direction.x
     {
-        selectionRectangle.x = selectionStartPosition.x;
-        selectionRectangle.width = direction.x;
+        multiSelectionRectangle.x = multiSelectionStartPosition.x;
+        multiSelectionRectangle.width = direction.x;
     }
     else // draw from mousePos.x to -direction.x instead, raylib doesn't like negative sizes
     {
-        selectionRectangle.x = mousePos.x;
-        selectionRectangle.width = -direction.x;
+        multiSelectionRectangle.x = mousePos.x;
+        multiSelectionRectangle.width = -direction.x;
     }
+}
+
+RaycastHitType GameScreen::checkRaycastHitType()
+{
+    if (ImGui::GetIO().WantCaptureMouse)
+        return RAYCAST_HIT_TYPE_UI;
+
+    if (raycastToPlayer())
+        return RAYCAST_HIT_TYPE_PLAYER;
+
+    if (buildingManager->raycastToBuilding())
+        return RAYCAST_HIT_TYPE_BUILDING;
+
+    RayCollision ground = raycastToGround();
+    if (ground.hit && layer->worldPositionWithinBounds(ground.point))
+        return RAYCAST_HIT_TYPE_GROUND;
+
+    return RAYCAST_HIT_TYPE_OUT_OF_BOUNDS;
+
 }
 
 void GameScreen::handleLeftMouseButton()
 {
-    if (hoveringUI) return;
+    RaycastHitType type = checkRaycastHitType();
 
-    if (!buildingManager->ghostBuildingExists())
+    if (type != RAYCAST_HIT_TYPE_BUILDING && selectedBuilding) // always deselect if not clicking a building
     {
-        updateSelectedBuilding();
-        return;
+        selectedBuilding->deselect();
+        selectedBuilding = nullptr;
     }
 
-    RayCollision collision = raycastToGround();
-    if (!collision.hit)
+    switch (type)
     {
-        buildingManager->clearGhostBuilding();
-        return;
+        case RAYCAST_HIT_TYPE_UI:
+            break;
+
+        case RAYCAST_HIT_TYPE_OUT_OF_BOUNDS:
+            isMultiSelecting = true;
+            break;
+
+        case RAYCAST_HIT_TYPE_PLAYER:
+            player->select();
+            break;
+
+        case RAYCAST_HIT_TYPE_BUILDING:
+        {
+            player->deselect();
+
+            Building* building = buildingManager->raycastToBuilding();
+            if (!selectedBuilding) // new select
+            {
+                selectedBuilding = building;
+                selectedBuilding->select();
+                break;
+            }
+
+            if (building != selectedBuilding) // switch select
+            {
+                selectedBuilding->deselect();
+                selectedBuilding = building;
+                selectedBuilding->select();
+            }
+            break;
+        }
+
+        case RAYCAST_HIT_TYPE_GROUND:
+        {
+            if (player->isSelected() && buildingManager->ghostBuildingExists())
+            {
+                if (!buildingManager->canScheduleGhostBuilding()) // can't schedule ghostbuilding
+                    break;
+
+                if (player->getState() == RUNNING_TO_BUILD) // already building, just schedule and leave player unchanged
+                {
+                    buildingManager->scheduleGhostBuilding();
+                    break;
+                }
+
+                // run to new target and schedule building
+                Vector3 targetPosition = calculateTargetPositionToBuildingFromPlayer(buildingManager->getGhostBuilding());
+                std::vector<Vector3> positions = pathfindPositions(player->getPosition(), targetPosition);
+                player->setPositions(positions, RUNNING_TO_BUILD);
+                buildingManager->scheduleGhostBuilding();
+                break;
+            }
+
+            // player is not trying to place a ghostbuilding
+            if (player->isSelected())
+                player->deselect();
+
+            isMultiSelecting = true; // start multi selection
+            break;
+        }
     }
-
-    if (!buildingManager->canScheduleGhostBuilding()) // can't schedule, do nothing
-        return;
-
-    if (player->getState() == RUNNING_TO_BUILD) // already building, just schedule and leave player unchanged
-    {
-        buildingManager->scheduleGhostBuilding();
-        return;
-    }
-
-    Vector3 targetPosition = calculateTargetPositionToBuildingFromPlayer(buildingManager->getGhostBuilding());
-    std::vector<Vector3> positions = pathfindPositions(player->getPosition(), targetPosition);
-    player->setPositions(positions, RUNNING_TO_BUILD);
-    buildingManager->scheduleGhostBuilding();
 }
 
 void GameScreen::handleRightMouseButton()
 {
-    if (!player->isSelected())
-        return;
+    RaycastHitType type = checkRaycastHitType();
 
-    RayCollision collision = raycastToGround();
-    if (!collision.hit)
-        return;
-
-    if (buildingManager->ghostBuildingExists()) // remove building and just walk the player to the location instead
+    switch (type)
     {
-        buildingManager->clearGhostBuilding();
-        return;
+        case RAYCAST_HIT_TYPE_GROUND:
+        {
+            if (!player->isSelected())  // do nothing
+                break;
+
+            if (buildingManager->ghostBuildingExists()) // remove building and just run the player to the location instead
+            {
+                buildingManager->clearGhostBuilding();
+                break;
+            }
+
+            if (player->getState() == RUNNING_TO_BUILD) // was running to build something, clear queue
+                buildingManager->clearBuildQueue();
+
+            // set new positions player should run to
+            std::vector<Vector3> positions = pathfindPositions(player->getPosition(), raycastToGround().point);
+            player->setPositions(positions, RUNNING);
+
+            break;
+        }
+
+        case RAYCAST_HIT_TYPE_UI:               // do nothing
+        case RAYCAST_HIT_TYPE_PLAYER:           // do nothing
+        case RAYCAST_HIT_TYPE_BUILDING:         // do nothing
+        case RAYCAST_HIT_TYPE_OUT_OF_BOUNDS:    // do nothing
+            break;
     }
 
-    if (player->getState() == RUNNING_TO_BUILD) // player was currently running to build something, clear queue
-        buildingManager->clearBuildQueue();
+}
 
-    std::vector<Vector3> positions = pathfindPositions(player->getPosition(), collision.point);
-    player->setPositions(positions, RUNNING);
+bool GameScreen::raycastToPlayer()
+{
+    Ray ray = CameraManager::get().getMouseRay();
+    Vector2 rayPosition = CameraManager::get().getWorldToScreen(ray.position);
+
+    return checkCollisionCapsulePoint(player->getCapsule(), GetMousePosition());
 }
 
 RayCollision GameScreen::raycastToGround()
 {
     float ground = layer->getHeight();
     const float max = 10000.f;
-    // Check mouse collision against a plane spanning from -max to max, with y the same as the ground cubes
-    // halfCubeSize is used here since the middle of the ground cube is at y=0
+    // Check mouse collision against a plane spanning from -max to max, with y the same as the ground level
     return GetRayCollisionQuad(
-        CameraManager::get().getMouseRay(), // TODO: maybe move these collisions to CameraManager?
+        CameraManager::get().getMouseRay(),
         { -max, ground, -max },
         { -max, ground,  max },
         {  max, ground,  max },

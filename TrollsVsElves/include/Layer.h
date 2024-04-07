@@ -34,6 +34,7 @@ public:
 
     Vector2i worldPositionToIndex(Vector3 position);
     Vector3 indexToWorldPosition(Vector2i index);
+    bool worldPositionWithinBounds(Vector3 position);
     std::vector<Vector2i> getCubeIndices(Cube cube);
     std::vector<Vector2i> getNeighboringIndices(Cube cube);
 

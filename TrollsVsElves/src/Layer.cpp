@@ -136,6 +136,12 @@ Vector3 Layer::indexToWorldPosition(Vector2i index)
     };
 }
 
+bool Layer::worldPositionWithinBounds(Vector3 position)
+{
+    Vector2i index = worldPositionToIndex(position);
+    return index.x >= 0 && index.x < gridSize.x && index.y >= 0 && index.y < gridSize.y;
+}
+
 std::vector<Vector2i> Layer::getCubeIndices(Cube cube)
 {
     // this should not be simplified to halfX = maxX / 2 since (3 / 2 = 1) and (3 - (3/2) = 2)
