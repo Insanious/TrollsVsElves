@@ -36,6 +36,7 @@ public:
     Vector3 indexToWorldPosition(Vector2i index);
     bool worldPositionWithinBounds(Vector3 position);
     std::vector<Vector2i> getCubeIndices(Cube cube);
+    std::vector<Vector2i> getNeighboringIndices(std::vector<Vector2i> indices);
     std::vector<Vector2i> getNeighboringIndices(Cube cube);
 
     void colorTiles(std::list<Vector2i> indices);

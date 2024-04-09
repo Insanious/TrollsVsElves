@@ -28,6 +28,7 @@ struct UIMapping
 enum RaycastHitType {
     RAYCAST_HIT_TYPE_UI = 0,
     RAYCAST_HIT_TYPE_PLAYER,
+    RAYCAST_HIT_TYPE_ENTITY,
     RAYCAST_HIT_TYPE_BUILDING,
     RAYCAST_HIT_TYPE_GROUND,
     RAYCAST_HIT_TYPE_OUT_OF_BOUNDS
@@ -42,6 +43,7 @@ class GameScreen: public BaseScreen
 
         BuildingManager* buildingManager;
         Building* selectedBuilding;
+        std::vector<Entity*> selectedEntities;
 
         std::map<BuildingType, UIMapping> buildingTypeMappings;
 
@@ -71,7 +73,10 @@ class GameScreen: public BaseScreen
         void handleLeftMouseButton();
         void handleRightMouseButton();
         bool raycastToPlayer();
+        Entity* raycastToEntity();
         RayCollision raycastToGround();
+
+        void clearAndDeselectAllSelectedEntities();
 
         Vector3 calculateTargetPositionToBuildingFromPlayer(Building* building);
 

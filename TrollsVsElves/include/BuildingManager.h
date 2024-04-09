@@ -7,6 +7,7 @@
 #include "utils.h"
 #include "Layer.h"
 #include "Building.h"
+#include "Entity.h"
 #include "CameraManager.h"
 
 class BuildingManager
@@ -20,6 +21,8 @@ private:
     std::deque<Building*> buildQueue;
     Building* ghostBuilding;
     bool ghostBuildingIsColliding;
+
+    std::vector<Entity*> entities;
 
     void updateGhostBuilding();
 
@@ -48,6 +51,8 @@ public:
     bool canScheduleGhostBuilding();
     Building* getGhostBuilding();
     bool ghostBuildingExists();
+
+    std::vector<Entity*> getEntities();
 };
 
 #endif

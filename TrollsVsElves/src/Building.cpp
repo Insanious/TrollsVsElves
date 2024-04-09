@@ -10,6 +10,8 @@ Building::Building(Cube cube, BuildingType buildingType)
     selected = false;
     sold = false;
     level = 1;
+    canRecruit = true;
+    recruiting = false;
 
     buildTime = 0.1f;
     // buildTime = 2.f;
@@ -40,6 +42,11 @@ void Building::drawUIButtons(ImVec2 windowPadding, ImVec2 buttonSize)
     ImGui::SameLine();
     if (ImGui::Button("Sell", buttonSize))
         sell();
+    if (canRecruit)
+    {
+        if (ImGui::Button("Recruit", buttonSize))
+            recruiting = true;
+    }
 }
 
 void Building::update()
@@ -121,6 +128,16 @@ bool Building::isSold()
 void Building::upgrade()
 {
     level += 1;
+}
+
+bool Building::isRecruiting()
+{
+    return recruiting;
+}
+
+void Building::setRecruiting(bool value)
+{
+    recruiting = value;
 }
 
 int Building::getLevel()

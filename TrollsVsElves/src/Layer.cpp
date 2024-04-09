@@ -144,7 +144,7 @@ bool Layer::worldPositionWithinBounds(Vector3 position)
 
 std::vector<Vector2i> Layer::getCubeIndices(Cube cube)
 {
-    // this should not be simplified to halfX = maxX / 2 since (3 / 2 = 1) and (3 - (3/2) = 2)
+    // this should NOT be simplified to (halfX = maxX / 2) since (3 / 2 = 1) and (3 - (3/2) = 2)
     int maxX = cube.size.x / cubeSize.x;
     int halfX = maxX - maxX / 2;
     int maxY = cube.size.z / cubeSize.z;
@@ -166,18 +166,12 @@ std::vector<Vector2i> Layer::getCubeIndices(Cube cube)
     return indices;
 }
 
-std::vector<Vector2i> Layer::getNeighboringIndices(Cube cube)
+std::vector<Vector2i> Layer::getNeighboringIndices(std::vector<Vector2i> indices)
 {
-    Vector2i increment = {
-        int(cube.size.x / cubeSize.x),
-        int(cube.size.z / cubeSize.z)
-    };
-    std::vector<Vector2i> neighborPositions = { { 0 }, { 0 }, { 0 }, { 0 }, { 0 }, { 0 }, { 0 }, { 0 } };
     std::vector<Vector2i> directions = { { -1, 0}, { 1, 0}, { 0, -1}, { 0, 1}, { -1, -1}, { 1, 1}, { -1, 1}, { 1, -1} };
 
     Vector2i pos;
     std::vector<Vector2i> neighboringIndices;
-    std::vector<Vector2i> indices = getCubeIndices(cube);
     for (Vector2i index: indices)
     {
         for (Vector2i direction: directions)
@@ -185,7 +179,7 @@ std::vector<Vector2i> Layer::getNeighboringIndices(Cube cube)
             pos = { index.x + direction.x, index.y + direction.y };
 
             if (pos.x < 0 || pos.x >= gridSize.x || pos.y < 0 || pos.y >= gridSize.y    // out of bounds
-            || (std::find(indices.begin(), indices.end(), pos) != indices.end())        // in cube
+            || (std::find(indices.begin(), indices.end(), pos) != indices.end())        // in indices
             || obstacles[pos.y][pos.x])                                                 // is not traversable
                 continue;
 
@@ -194,6 +188,12 @@ std::vector<Vector2i> Layer::getNeighboringIndices(Cube cube)
     }
 
     return neighboringIndices;
+}
+
+std::vector<Vector2i> Layer::getNeighboringIndices(Cube cube)
+{
+    std::vector<Vector2i> indices = getCubeIndices(cube);
+    return getNeighboringIndices(indices);
 }
 
 void Layer::colorTiles(std::list<Vector2i> indices)

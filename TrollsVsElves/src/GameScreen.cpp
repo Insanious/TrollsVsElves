@@ -24,7 +24,7 @@ GameScreen::GameScreen(Vector2i screenSize)
     startPos.z = endPos.z = gridSize.y/2 * cubeSize.z - cubeSize.z;
     float radius = 2.f;
     int slices = 16;
-    int rings = 16;
+    int rings = 4;
     Color playerColor = BLUE;
     Vector3 playerSpeed = Vector3Scale(Vector3One(), 40);
     printVector3("playerSpeed", playerSpeed);
@@ -71,21 +71,27 @@ void GameScreen::draw()
             DrawRectangleRec(multiSelectionRectangle, { 0, 255, 0, 25 });
             DrawRectangleLinesEx(multiSelectionRectangle, 1.f, { 0, 255, 0, 50 });
 
-            if (true) // set to true to draw player capsule collision circles
+            std::vector<Entity*> entities = buildingManager->getEntities();
+            entities.push_back(player);
+
+            if (true) // set to true to draw all entities' capsule collision circles
             {
-                Capsule cap = player->getCapsule();
+                for (Entity* entity: entities)
+                {
+                    Capsule cap = entity->getCapsule();
 
-                Vector2 bottomCirclePosScreen = GetWorldToScreen(cap.startPos, camera3D);
-                Vector2 topCirclePosScreen = GetWorldToScreen(cap.endPos, camera3D);
+                    Vector2 bottomCirclePosScreen = GetWorldToScreen(cap.startPos, camera3D);
+                    Vector2 topCirclePosScreen = GetWorldToScreen(cap.endPos, camera3D);
 
-                float newBottomRadius = calculateCircleRadius2D(cap.startPos, cap.radius);
-                float newTopRadius = calculateCircleRadius2D(cap.endPos, cap.radius);
+                    float newBottomRadius = calculateCircleRadius2D(cap.startPos, cap.radius);
+                    float newTopRadius = calculateCircleRadius2D(cap.endPos, cap.radius);
 
-                DrawCircleV(bottomCirclePosScreen, newBottomRadius, YELLOW);
-                DrawCircleLinesV(bottomCirclePosScreen, newBottomRadius, GRAY);
+                    DrawCircleV(bottomCirclePosScreen, newBottomRadius, YELLOW);
+                    DrawCircleLinesV(bottomCirclePosScreen, newBottomRadius, GRAY);
 
-                DrawCircleV(topCirclePosScreen, newTopRadius, YELLOW);
-                DrawCircleLinesV(topCirclePosScreen, newTopRadius, GRAY);
+                    DrawCircleV(topCirclePosScreen, newTopRadius, YELLOW);
+                    DrawCircleLinesV(topCirclePosScreen, newTopRadius, GRAY);
+                }
             }
         }
 
@@ -94,7 +100,8 @@ void GameScreen::draw()
 
 void GameScreen::drawUI()
 {
-    bool drawWindow = !selectedBuilding != !player->isSelected(); // xor
+    bool playerSelectedAndNoOther = (selectedEntities.size() == 1 && player->isSelected());
+    bool drawWindow = (!selectedBuilding != !playerSelectedAndNoOther); // xor
     if (drawWindow)
     {
         bool bottomRightWindow = true;
@@ -200,11 +207,22 @@ void GameScreen::update()
     if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && isMultiSelecting) // stop multi selection
     {
         isMultiSelecting = false;
-        if (checkCollisionCapsuleRectangle(player->getCapsule(), multiSelectionRectangle)) // player is inside multiSelectionRectangle
-            player->select();
+
+        clearAndDeselectAllSelectedEntities();
+        std::vector<Entity*> entities = buildingManager->getEntities();
+        entities.push_back(player); // add player to skip extra code to deal with him
+
+        for (Entity* entity: entities)
+        {
+            if (checkCollisionCapsuleRectangle(entity->getCapsule(), multiSelectionRectangle)) // entity is inside multiSelectionRectangle
+            {
+                entity->select();
+                selectedEntities.push_back(entity);
+            }
+        }
     }
 
-    if (player->isSelected()) // Check additional mapping keys
+    if (selectedEntities.size() == 1 && player->isSelected()) // Check additional mapping keys
     {
         for (int i = 1; i < BuildingType::COUNT; i += 1) // start at 1 since 0 = NONE
         {
@@ -305,6 +323,9 @@ RaycastHitType GameScreen::checkRaycastHitType()
     if (raycastToPlayer())
         return RAYCAST_HIT_TYPE_PLAYER;
 
+    if (raycastToEntity())
+        return RAYCAST_HIT_TYPE_ENTITY;
+
     if (buildingManager->raycastToBuilding())
         return RAYCAST_HIT_TYPE_BUILDING;
 
@@ -326,6 +347,10 @@ void GameScreen::handleLeftMouseButton()
         selectedBuilding = nullptr;
     }
 
+    // always clear selectetedEntities if clicked player/entity/building
+    if (type == RAYCAST_HIT_TYPE_PLAYER || type == RAYCAST_HIT_TYPE_ENTITY || type == RAYCAST_HIT_TYPE_BUILDING)
+        clearAndDeselectAllSelectedEntities();
+
     switch (type)
     {
         case RAYCAST_HIT_TYPE_UI:
@@ -336,13 +361,20 @@ void GameScreen::handleLeftMouseButton()
             break;
 
         case RAYCAST_HIT_TYPE_PLAYER:
+            selectedEntities.push_back(player);
             player->select();
             break;
 
+        case RAYCAST_HIT_TYPE_ENTITY:
+        {
+            Entity* entity = raycastToEntity();
+            selectedEntities.push_back(entity);
+            entity->select();
+            break;
+        }
+
         case RAYCAST_HIT_TYPE_BUILDING:
         {
-            player->deselect();
-
             Building* building = buildingManager->raycastToBuilding();
             if (!selectedBuilding) // new select
             {
@@ -399,27 +431,50 @@ void GameScreen::handleRightMouseButton()
     {
         case RAYCAST_HIT_TYPE_GROUND:
         {
-            if (!player->isSelected())  // do nothing
-                break;
-
-            if (buildingManager->ghostBuildingExists()) // remove building and just run the player to the location instead
+            if (player->isSelected())
             {
-                buildingManager->clearGhostBuilding();
-                break;
+                if (buildingManager->ghostBuildingExists()) // remove building and just run the player to the location instead
+                    buildingManager->clearGhostBuilding();
+
+                if (player->getState() == RUNNING_TO_BUILD) // was running to build something, clear queue
+                    buildingManager->clearBuildQueue();
             }
 
-            if (player->getState() == RUNNING_TO_BUILD) // was running to build something, clear queue
-                buildingManager->clearBuildQueue();
+            // run all selected entities to where mouse was clicked
+            Vector3 goal = raycastToGround().point;
+            Vector2i goalIndex = layer->worldPositionToIndex(goal);
+            std::vector<Vector2i> neighboringIndices = layer->getNeighboringIndices({ goalIndex });
 
-            // set new positions player should run to
-            std::vector<Vector3> positions = pathfindPositions(player->getPosition(), raycastToGround().point);
-            player->setPositions(positions, RUNNING);
+            neighboringIndices.insert(neighboringIndices.begin(), goalIndex); // insert at front so its guaranteed to be picked
+
+            std::vector<Vector3> neighboringPositions;
+            for (Vector2i index: neighboringIndices)
+                neighboringPositions.push_back(layer->indexToWorldPosition(index));
+
+            if (selectedEntities.size() > neighboringIndices.size())
+                printf("entities > indices, should probably do something about this later\n"); // TODO: later
+
+            Entity* entity = nullptr;
+            for (int i = 0; i < selectedEntities.size(); i++)
+            {
+                Vector3 pos = layer->indexToWorldPosition(neighboringIndices[i]);
+                entity = selectedEntities[i];
+                entity->setPositions(pathfindPositions(entity->getPosition(), pos), RUNNING);
+            }
+
+            if (false) // set to true to see color neighboring tiles
+            {
+                std::list<Vector2i> listIndices;
+                listIndices.insert(listIndices.begin(), neighboringIndices.begin(), neighboringIndices.end());
+                layer->colorTiles(listIndices);
+            }
 
             break;
         }
 
         case RAYCAST_HIT_TYPE_UI:               // do nothing
         case RAYCAST_HIT_TYPE_PLAYER:           // do nothing
+        case RAYCAST_HIT_TYPE_ENTITY:           // do nothing
         case RAYCAST_HIT_TYPE_BUILDING:         // do nothing
         case RAYCAST_HIT_TYPE_OUT_OF_BOUNDS:    // do nothing
             break;
@@ -429,10 +484,17 @@ void GameScreen::handleRightMouseButton()
 
 bool GameScreen::raycastToPlayer()
 {
-    Ray ray = CameraManager::get().getMouseRay();
-    Vector2 rayPosition = CameraManager::get().getWorldToScreen(ray.position);
-
     return checkCollisionCapsulePoint(player->getCapsule(), GetMousePosition());
+}
+
+Entity* GameScreen::raycastToEntity()
+{
+    std::vector<Entity*> entities = buildingManager->getEntities();
+    for (Entity* entity: entities)
+        if (checkCollisionCapsulePoint(entity->getCapsule(), GetMousePosition()))
+            return entity;
+
+    return nullptr;
 }
 
 RayCollision GameScreen::raycastToGround()
@@ -447,6 +509,14 @@ RayCollision GameScreen::raycastToGround()
         {  max, ground,  max },
         {  max, ground, -max }
     );
+}
+
+void GameScreen::clearAndDeselectAllSelectedEntities()
+{
+    for (Entity* entity: selectedEntities)
+        entity->deselect();
+
+    selectedEntities.clear();
 }
 
 Vector3 GameScreen::calculateTargetPositionToBuildingFromPlayer(Building* building)
@@ -466,7 +536,7 @@ Vector3 GameScreen::calculateTargetPositionToBuildingFromPlayer(Building* buildi
 
     if (positions.empty())
     {
-        printf("Found no valid positions, should probably do something about this later, but not now\n");
+        printf("Found no valid positions, should probably do something about this later\n"); // TODO: later
         return Vector3Zero();
     }
 

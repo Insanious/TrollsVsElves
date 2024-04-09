@@ -19,6 +19,9 @@ BuildingManager::~BuildingManager()
 
     if (ghostBuilding)
         delete ghostBuilding;
+
+    for (int i = 0; i < entities.size(); i++)
+        delete entities[i];
 }
 
 void BuildingManager::draw()
@@ -36,6 +39,9 @@ void BuildingManager::draw()
         ghostBuilding->draw();
         cube.position = Vector3SubtractValue(cube.position, 0.1f); // revert change
     }
+
+    for (Entity* entity: entities)
+        entity->draw();
 }
 
 Building* BuildingManager::raycastToBuilding()
@@ -73,12 +79,39 @@ void BuildingManager::removeBuilding(Building* building)
 void BuildingManager::update()
 {
     for (Building* building: buildings)
+    {
         building->update();
+
+        if (building->isRecruiting())
+        {
+            building->setRecruiting(false);
+
+            std::vector<Vector2i> neighboringIndices = layer->getNeighboringIndices(building->getCube());
+            if (!neighboringIndices.size()) // no valid neighboring tiles
+            {
+                printf("Found no neighboring tiles, should probably do something about this later\n"); // TODO: later
+                continue;
+            }
+
+            Vector3 neighborPosition = layer->indexToWorldPosition(neighboringIndices[0]);
+            float height = 3.f;
+            float ground = layer->getCubeSize().y;
+            Vector3 startPos = { neighborPosition.x, ground, neighborPosition.z };
+            Vector3 endPos = { neighborPosition.x, ground + height, neighborPosition.z };
+            float radius = 2.f;
+            Vector3 speed = Vector3Scale(Vector3One(), 30);
+
+            entities.push_back(new Entity(Capsule(startPos, endPos, radius, 16, 4, BLACK), speed));
+        }
+    }
     for (Building* building: buildQueue)
         building->update();
 
     if (ghostBuilding)
         updateGhostBuilding();
+
+    for (Entity* entity: entities)
+        entity->update();
 }
 
 Building* BuildingManager::yieldBuildQueue()
@@ -199,4 +232,9 @@ bool BuildingManager::ghostBuildingExists()
 bool BuildingManager::canScheduleGhostBuilding()
 {
     return !ghostBuildingIsColliding;
+}
+
+std::vector<Entity*> BuildingManager::getEntities()
+{
+    return entities;
 }

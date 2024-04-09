@@ -26,6 +26,8 @@ private:
     bool selected;
     bool sold;
     int level;
+    bool canRecruit;
+    bool recruiting;
 
 public:
     Building() = delete;
@@ -50,6 +52,8 @@ public:
     void sell();
     bool isSold();
     void upgrade();
+    bool isRecruiting();
+    void setRecruiting(bool value);
 
     int getLevel();
     BuildStage getBuildStage();
