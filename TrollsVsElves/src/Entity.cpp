@@ -1,10 +1,11 @@
 #include "Entity.h"
 
-Entity::Entity(Capsule capsule, Vector3 speed)
+Entity::Entity(Capsule capsule, Vector3 speed, EntityType type)
 {
     state = IDLE;
     previousState = IDLE;
     selected = false;
+    attachedBuilding = nullptr;
 
     defaultColor = capsule.color;
     Vector3 defaultColorHSL = ColorToHSV(defaultColor);
@@ -14,6 +15,7 @@ Entity::Entity(Capsule capsule, Vector3 speed)
 
     this->capsule = capsule;
     this->speed = speed;
+    this->type = type;
 }
 
 Entity::~Entity() {}
@@ -28,8 +30,21 @@ void Entity::draw()
 
 void Entity::update()
 {
-    if (state != IDLE)
-        updateMovement();
+    switch (state)
+    {
+        case IDLE:
+            if (attachedBuilding)
+                setState(WORKING);
+            break;
+
+        case RUNNING:
+        case RUNNING_TO_BUILD:
+            updateMovement();
+            break;
+
+        case WORKING:
+            break;
+    }
 }
 
 void Entity::updateMovement()
@@ -58,7 +73,7 @@ void Entity::updateMovement()
         capsule.startPos = { target.x, capsule.startPos.y, target.z };
         capsule.endPos = { target.x, capsule.endPos.y, target.z };
 
-        paths.pop_front();// reached the end of this path
+        paths.pop_front(); // reached the end of this path
         if (paths.empty())
             setState(IDLE);
     }
@@ -89,6 +104,27 @@ void Entity::setState(MovementState newState)
 {
     previousState = state;
     state = newState;
+
+    if (false) // set to true to enable state change logging
+    {
+        std::string stateString;
+        std::string previousStateString;
+        switch (state)
+        {
+            case IDLE:              stateString = "IDLE";               break;
+            case RUNNING:           stateString = "RUNNING";            break;
+            case RUNNING_TO_BUILD:  stateString = "RUNNING_TO_BUILD";   break;
+            case WORKING:           stateString = "WORKING";            break;
+        }
+        switch (previousState)
+        {
+            case IDLE:              previousStateString = "IDLE";               break;
+            case RUNNING:           previousStateString = "RUNNING";            break;
+            case RUNNING_TO_BUILD:  previousStateString = "RUNNING_TO_BUILD";   break;
+            case WORKING:           previousStateString = "WORKING";            break;
+        }
+        printf("newState, previousState: %s, %s\n", stateString.c_str(), previousStateString.c_str());
+    }
 }
 
 MovementState Entity::getState()
@@ -116,4 +152,14 @@ void Entity::deselect()
 bool Entity::isSelected()
 {
     return selected;
+}
+
+void Entity::attach(Building* building)
+{
+    attachedBuilding = building;
+}
+
+void Entity::detach()
+{
+    attachedBuilding = nullptr;
 }

@@ -5,12 +5,23 @@
 
 #include "utils.h"
 #include "structs.h"
+#include "Building.h"
 
-enum MovementState { IDLE, RUNNING, RUNNING_TO_BUILD };
+enum MovementState {
+    IDLE,
+    RUNNING,
+    RUNNING_TO_BUILD,
+    WORKING
+};
+enum EntityType {
+    PLAYER,
+    WORKER
+};
 
 class Entity
 {
 private:
+    EntityType type;
     Capsule capsule;
     Color defaultColor;
     Color selectedColor;
@@ -27,9 +38,11 @@ private:
     Cylinder targetMarker;
     std::deque<Vector3> paths;
 
+    Building* attachedBuilding;
+
 public:
     Entity() = delete;
-    Entity(Capsule capsule, Vector3 speed);
+    Entity(Capsule capsule, Vector3 speed, EntityType type);
     ~Entity();
 
     void draw();
@@ -47,6 +60,9 @@ public:
     void select();
     void deselect();
     bool isSelected();
+
+    void attach(Building* building);
+    void detach();
 };
 
 #endif

@@ -100,7 +100,7 @@ void BuildingManager::update()
             Vector3 endPos = { neighborPosition.x, ground + height, neighborPosition.z };
             float radius = 2.f;
             Vector3 speed = Vector3Scale(Vector3One(), 30);
-            Entity* entity = new Entity(Capsule(startPos, endPos, radius, 16, 4, BLACK), speed);
+            Entity* entity = new Entity(Capsule(startPos, endPos, radius, 16, 4, BLACK), speed, WORKER);
 
             if (building->isSelected())
             {

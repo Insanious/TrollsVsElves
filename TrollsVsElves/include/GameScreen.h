@@ -79,7 +79,7 @@ class GameScreen: public BaseScreen
 
         void clearAndDeselectAllSelectedEntities();
 
-        Vector3 calculateTargetPositionToBuildingFromPlayer(Building* building);
+        Vector3 calculateTargetPositionToBuildingFromEntity(Entity* entity, Building* building);
 };
 
 #endif

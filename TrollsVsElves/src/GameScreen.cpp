@@ -177,7 +177,7 @@ void GameScreen::update()
             building = buildingManager->buildQueueFront();
             if (building) // if more in queue, walk to the next target
             {
-                Vector3 targetPosition = calculateTargetPositionToBuildingFromPlayer(building);
+                Vector3 targetPosition = calculateTargetPositionToBuildingFromEntity(player, building);
                 std::vector<Vector3> positions = layer->pathfindPositions(player->getPosition(), targetPosition);
                 player->setPositions(positions, RUNNING_TO_BUILD);
             }
@@ -406,7 +406,7 @@ void GameScreen::handleLeftMouseButton()
                 }
 
                 // run to new target and schedule building
-                Vector3 targetPosition = calculateTargetPositionToBuildingFromPlayer(buildingManager->getGhostBuilding());
+                Vector3 targetPosition = calculateTargetPositionToBuildingFromEntity(player, buildingManager->getGhostBuilding());
                 std::vector<Vector3> positions = layer->pathfindPositions(player->getPosition(), targetPosition);
                 player->setPositions(positions, RUNNING_TO_BUILD);
                 buildingManager->scheduleGhostBuilding();
@@ -432,9 +432,80 @@ void GameScreen::handleRightMouseButton()
         case RAYCAST_HIT_TYPE_GROUND:
         {
             if (selectedEntities.size())
-                handleRightMouseButtonWithEntity();
-            else if (selectedBuilding)
-                handleRightMouseButtonWithBuilding();
+            {
+                if (player->isSelected())
+                {
+                    if (buildingManager->ghostBuildingExists()) // remove building and just run the player to the location instead
+                        buildingManager->clearGhostBuilding();
+
+                    if (player->getState() == RUNNING_TO_BUILD) // was running to build something, clear queue
+                        buildingManager->clearBuildQueue();
+                }
+
+                // run all selected entities to where mouse was clicked
+                Vector3 goal = raycastToGround().point;
+                Vector2i goalIndex = layer->worldPositionToIndex(goal);
+                std::vector<Vector2i> neighboringIndices = layer->getNeighboringIndices({ goalIndex });
+
+                neighboringIndices.insert(neighboringIndices.begin(), goalIndex); // insert at front so its guaranteed to be picked
+
+                std::vector<Vector3> neighboringPositions;
+                for (Vector2i index: neighboringIndices)
+                    neighboringPositions.push_back(layer->indexToWorldPosition(index));
+
+                if (selectedEntities.size() > neighboringIndices.size())
+                    printf("entities > indices, should probably do something about this later\n"); // TODO: later
+
+                Entity* entity = nullptr;
+                for (int i = 0; i < selectedEntities.size(); i++)
+                {
+                    Vector3 pos = layer->indexToWorldPosition(neighboringIndices[i]);
+                    entity = selectedEntities[i];
+
+                    entity->setPositions(layer->pathfindPositions(entity->getPosition(), pos), RUNNING);
+                    entity->detach();
+                }
+
+                if (false) // set to true to color neighboring tiles
+                {
+                    std::list<Vector2i> listIndices;
+                    listIndices.insert(listIndices.begin(), neighboringIndices.begin(), neighboringIndices.end());
+                    layer->colorTiles(listIndices);
+                }
+
+                break;
+            }
+
+            if (selectedBuilding)
+            {
+                Vector3 point = raycastToGround().point;
+                Vector2i index = layer->worldPositionToIndex(point);
+                Vector3 adjusted = layer->indexToWorldPosition(index);
+                selectedBuilding->setRallyPoint(adjusted);
+
+                break;
+            }
+
+            break;
+        }
+
+        case RAYCAST_HIT_TYPE_BUILDING:
+        {
+            if (!player->isSelected() && selectedEntities.size())
+            {
+                Building* building = buildingManager->raycastToBuilding();
+
+                Vector3 targetPosition;
+                std::vector<Vector3> positions;
+                for (Entity* entity: selectedEntities)
+                {
+                    targetPosition = calculateTargetPositionToBuildingFromEntity(entity, building);
+                    positions = layer->pathfindPositions(entity->getPosition(), targetPosition);
+                    entity->setPositions(positions, RUNNING);
+
+                    entity->attach(building);
+                }
+            }
 
             break;
         }
@@ -442,7 +513,6 @@ void GameScreen::handleRightMouseButton()
         case RAYCAST_HIT_TYPE_UI:               // do nothing
         case RAYCAST_HIT_TYPE_PLAYER:           // do nothing
         case RAYCAST_HIT_TYPE_ENTITY:           // do nothing
-        case RAYCAST_HIT_TYPE_BUILDING:         // do nothing
         case RAYCAST_HIT_TYPE_OUT_OF_BOUNDS:    // do nothing
             break;
     }
@@ -534,16 +604,17 @@ void GameScreen::clearAndDeselectAllSelectedEntities()
     selectedEntities.clear();
 }
 
-Vector3 GameScreen::calculateTargetPositionToBuildingFromPlayer(Building* building)
+Vector3 GameScreen::calculateTargetPositionToBuildingFromEntity(Entity* entity, Building* building)
 {
     std::vector<Vector2i> indices = layer->getNeighboringIndices(building->getCube());
+    Vector3 entityPosition = entity->getPosition();
+
     std::vector<Vector3> positions;
-    Vector3 playerPosition = player->getPosition();
     Vector3 position;
     for (Vector2i index: indices)
     {
         position = layer->indexToWorldPosition(index);
-        if (position.x == playerPosition.x && position.z == playerPosition.z)
+        if (position.x == entityPosition.x && position.z == entityPosition.z)
             return position;
 
         positions.push_back(position);
