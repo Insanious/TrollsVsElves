@@ -6,7 +6,7 @@
 #include "rlImGui.h"
 
 enum BuildStage { GHOST = 0, SCHEDULED, IN_PROGRESS, FINISHED };
-enum BuildingType { NONE = 0, CASTLE, ROCK, COUNT };
+enum BuildingType { CASTLE, ROCK, COUNT };
 
 class Building
 {

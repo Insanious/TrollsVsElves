@@ -137,7 +137,7 @@ void GameScreen::drawUI()
         else if (player->isSelected())
         {
             int buttonsPerLine = 2;
-            for (int i = 1; i < BuildingType::COUNT; i += buttonsPerLine) // start at 1 since 0 = NONE
+            for (int i = 0; i < BuildingType::COUNT; i += buttonsPerLine)
             {
                 for (int j = 0; j < buttonsPerLine; j++)
                 {
@@ -224,7 +224,7 @@ void GameScreen::update()
 
     if (selectedEntities.size() == 1 && player->isSelected()) // Check additional mapping keys
     {
-        for (int i = 1; i < BuildingType::COUNT; i += 1) // start at 1 since 0 = NONE
+        for (int i = 0; i < BuildingType::COUNT; i += 1)
         {
             BuildingType buildingType = (BuildingType)i;
             UIMapping mapping = buildingTypeMappings[buildingType];
