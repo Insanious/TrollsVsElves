@@ -518,55 +518,6 @@ void GameScreen::handleRightMouseButton()
     }
 }
 
-void GameScreen::handleRightMouseButtonWithEntity()
-{
-    if (player->isSelected())
-    {
-        if (buildingManager->ghostBuildingExists()) // remove building and just run the player to the location instead
-            buildingManager->clearGhostBuilding();
-
-        if (player->getState() == RUNNING_TO_BUILD) // was running to build something, clear queue
-            buildingManager->clearBuildQueue();
-    }
-
-    // run all selected entities to where mouse was clicked
-    Vector3 goal = raycastToGround().point;
-    Vector2i goalIndex = layer->worldPositionToIndex(goal);
-    std::vector<Vector2i> neighboringIndices = layer->getNeighboringIndices({ goalIndex });
-
-    neighboringIndices.insert(neighboringIndices.begin(), goalIndex); // insert at front so its guaranteed to be picked
-
-    std::vector<Vector3> neighboringPositions;
-    for (Vector2i index: neighboringIndices)
-        neighboringPositions.push_back(layer->indexToWorldPosition(index));
-
-    if (selectedEntities.size() > neighboringIndices.size())
-        printf("entities > indices, should probably do something about this later\n"); // TODO: later
-
-    Entity* entity = nullptr;
-    for (int i = 0; i < selectedEntities.size(); i++)
-    {
-        Vector3 pos = layer->indexToWorldPosition(neighboringIndices[i]);
-        entity = selectedEntities[i];
-        entity->setPositions(layer->pathfindPositions(entity->getPosition(), pos), RUNNING);
-    }
-
-    if (false) // set to true to color neighboring tiles
-    {
-        std::list<Vector2i> listIndices;
-        listIndices.insert(listIndices.begin(), neighboringIndices.begin(), neighboringIndices.end());
-        layer->colorTiles(listIndices);
-    }
-}
-
-void GameScreen::handleRightMouseButtonWithBuilding()
-{
-    Vector3 point = raycastToGround().point;
-    Vector2i index = layer->worldPositionToIndex(point);
-    Vector3 adjusted = layer->indexToWorldPosition(index);
-    selectedBuilding->setRallyPoint(adjusted);
-}
-
 bool GameScreen::raycastToPlayer()
 {
     return checkCollisionCapsulePoint(player->getCapsule(), GetMousePosition());

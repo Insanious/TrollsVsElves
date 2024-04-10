@@ -71,8 +71,6 @@ class GameScreen: public BaseScreen
         RaycastHitType checkRaycastHitType();
         void handleLeftMouseButton();
         void handleRightMouseButton();
-        void handleRightMouseButtonWithEntity();
-        void handleRightMouseButtonWithBuilding();
         bool raycastToPlayer();
         Entity* raycastToEntity();
         RayCollision raycastToGround();
