@@ -8,7 +8,6 @@
 #include "Building.h"
 #include "BuildingManager.h"
 #include "Player.h"
-#include "PathFinding.h"
 #include "CameraManager.h"
 #include <vector>
 #include <deque>
@@ -72,6 +71,8 @@ class GameScreen: public BaseScreen
         RaycastHitType checkRaycastHitType();
         void handleLeftMouseButton();
         void handleRightMouseButton();
+        void handleRightMouseButtonWithEntity();
+        void handleRightMouseButtonWithBuilding();
         bool raycastToPlayer();
         Entity* raycastToEntity();
         RayCollision raycastToGround();
@@ -79,8 +80,6 @@ class GameScreen: public BaseScreen
         void clearAndDeselectAllSelectedEntities();
 
         Vector3 calculateTargetPositionToBuildingFromPlayer(Building* building);
-
-        std::vector<Vector3> pathfindPositions(Vector3 start, Vector3 goal);
 };
 
 #endif

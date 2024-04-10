@@ -100,8 +100,15 @@ void BuildingManager::update()
             Vector3 endPos = { neighborPosition.x, ground + height, neighborPosition.z };
             float radius = 2.f;
             Vector3 speed = Vector3Scale(Vector3One(), 30);
+            Entity* entity = new Entity(Capsule(startPos, endPos, radius, 16, 4, BLACK), speed);
 
-            entities.push_back(new Entity(Capsule(startPos, endPos, radius, 16, 4, BLACK), speed));
+            if (building->isSelected())
+            {
+                std::vector<Vector3> positions = layer->pathfindPositions(endPos, building->getRallyPoint().position);
+                entity->setPositions(positions, RUNNING);
+            }
+
+            entities.push_back(entity);
         }
     }
     for (Building* building: buildQueue)

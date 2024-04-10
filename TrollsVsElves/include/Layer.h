@@ -3,7 +3,9 @@
 
 #include <vector>
 #include <list>
+
 #include "structs.h"
+#include "PathFinding.h"
 
 class Layer
 {
@@ -40,6 +42,7 @@ public:
     std::vector<Vector2i> getNeighboringIndices(Cube cube);
 
     void colorTiles(std::list<Vector2i> indices);
+    std::vector<Vector3> pathfindPositions(Vector3 start, Vector3 goal);
 };
 
 #endif

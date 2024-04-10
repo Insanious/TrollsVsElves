@@ -29,6 +29,8 @@ private:
     bool canRecruit;
     bool recruiting;
 
+    Cylinder rallyPoint;
+
 public:
     Building() = delete;
     Building(Cube cube, BuildingType buildingType);
@@ -48,6 +50,7 @@ public:
 
     void select();
     void deselect();
+    bool isSelected();
 
     void sell();
     bool isSold();
@@ -56,8 +59,9 @@ public:
     void setRecruiting(bool value);
 
     int getLevel();
-    BuildStage getBuildStage();
 
+    Cylinder getRallyPoint();
+    void setRallyPoint(Vector3 point);
 };
 
 #endif

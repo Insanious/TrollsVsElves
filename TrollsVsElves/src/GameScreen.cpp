@@ -178,7 +178,7 @@ void GameScreen::update()
             if (building) // if more in queue, walk to the next target
             {
                 Vector3 targetPosition = calculateTargetPositionToBuildingFromPlayer(building);
-                std::vector<Vector3> positions = pathfindPositions(player->getPosition(), targetPosition);
+                std::vector<Vector3> positions = layer->pathfindPositions(player->getPosition(), targetPosition);
                 player->setPositions(positions, RUNNING_TO_BUILD);
             }
         }
@@ -407,7 +407,7 @@ void GameScreen::handleLeftMouseButton()
 
                 // run to new target and schedule building
                 Vector3 targetPosition = calculateTargetPositionToBuildingFromPlayer(buildingManager->getGhostBuilding());
-                std::vector<Vector3> positions = pathfindPositions(player->getPosition(), targetPosition);
+                std::vector<Vector3> positions = layer->pathfindPositions(player->getPosition(), targetPosition);
                 player->setPositions(positions, RUNNING_TO_BUILD);
                 buildingManager->scheduleGhostBuilding();
                 break;
@@ -431,43 +431,10 @@ void GameScreen::handleRightMouseButton()
     {
         case RAYCAST_HIT_TYPE_GROUND:
         {
-            if (player->isSelected())
-            {
-                if (buildingManager->ghostBuildingExists()) // remove building and just run the player to the location instead
-                    buildingManager->clearGhostBuilding();
-
-                if (player->getState() == RUNNING_TO_BUILD) // was running to build something, clear queue
-                    buildingManager->clearBuildQueue();
-            }
-
-            // run all selected entities to where mouse was clicked
-            Vector3 goal = raycastToGround().point;
-            Vector2i goalIndex = layer->worldPositionToIndex(goal);
-            std::vector<Vector2i> neighboringIndices = layer->getNeighboringIndices({ goalIndex });
-
-            neighboringIndices.insert(neighboringIndices.begin(), goalIndex); // insert at front so its guaranteed to be picked
-
-            std::vector<Vector3> neighboringPositions;
-            for (Vector2i index: neighboringIndices)
-                neighboringPositions.push_back(layer->indexToWorldPosition(index));
-
-            if (selectedEntities.size() > neighboringIndices.size())
-                printf("entities > indices, should probably do something about this later\n"); // TODO: later
-
-            Entity* entity = nullptr;
-            for (int i = 0; i < selectedEntities.size(); i++)
-            {
-                Vector3 pos = layer->indexToWorldPosition(neighboringIndices[i]);
-                entity = selectedEntities[i];
-                entity->setPositions(pathfindPositions(entity->getPosition(), pos), RUNNING);
-            }
-
-            if (false) // set to true to see color neighboring tiles
-            {
-                std::list<Vector2i> listIndices;
-                listIndices.insert(listIndices.begin(), neighboringIndices.begin(), neighboringIndices.end());
-                layer->colorTiles(listIndices);
-            }
+            if (selectedEntities.size())
+                handleRightMouseButtonWithEntity();
+            else if (selectedBuilding)
+                handleRightMouseButtonWithBuilding();
 
             break;
         }
@@ -479,7 +446,55 @@ void GameScreen::handleRightMouseButton()
         case RAYCAST_HIT_TYPE_OUT_OF_BOUNDS:    // do nothing
             break;
     }
+}
 
+void GameScreen::handleRightMouseButtonWithEntity()
+{
+    if (player->isSelected())
+    {
+        if (buildingManager->ghostBuildingExists()) // remove building and just run the player to the location instead
+            buildingManager->clearGhostBuilding();
+
+        if (player->getState() == RUNNING_TO_BUILD) // was running to build something, clear queue
+            buildingManager->clearBuildQueue();
+    }
+
+    // run all selected entities to where mouse was clicked
+    Vector3 goal = raycastToGround().point;
+    Vector2i goalIndex = layer->worldPositionToIndex(goal);
+    std::vector<Vector2i> neighboringIndices = layer->getNeighboringIndices({ goalIndex });
+
+    neighboringIndices.insert(neighboringIndices.begin(), goalIndex); // insert at front so its guaranteed to be picked
+
+    std::vector<Vector3> neighboringPositions;
+    for (Vector2i index: neighboringIndices)
+        neighboringPositions.push_back(layer->indexToWorldPosition(index));
+
+    if (selectedEntities.size() > neighboringIndices.size())
+        printf("entities > indices, should probably do something about this later\n"); // TODO: later
+
+    Entity* entity = nullptr;
+    for (int i = 0; i < selectedEntities.size(); i++)
+    {
+        Vector3 pos = layer->indexToWorldPosition(neighboringIndices[i]);
+        entity = selectedEntities[i];
+        entity->setPositions(layer->pathfindPositions(entity->getPosition(), pos), RUNNING);
+    }
+
+    if (false) // set to true to color neighboring tiles
+    {
+        std::list<Vector2i> listIndices;
+        listIndices.insert(listIndices.begin(), neighboringIndices.begin(), neighboringIndices.end());
+        layer->colorTiles(listIndices);
+    }
+}
+
+void GameScreen::handleRightMouseButtonWithBuilding()
+{
+    Vector3 point = raycastToGround().point;
+    Vector2i index = layer->worldPositionToIndex(point);
+    Vector3 adjusted = layer->indexToWorldPosition(index);
+    selectedBuilding->setRallyPoint(adjusted);
 }
 
 bool GameScreen::raycastToPlayer()
@@ -541,20 +556,4 @@ Vector3 GameScreen::calculateTargetPositionToBuildingFromPlayer(Building* buildi
     }
 
     return positions[0]; // just grab the first one, don't care which one right now
-}
-
-std::vector<Vector3> GameScreen::pathfindPositions(Vector3 start, Vector3 goal)
-{
-    Vector2i startIndex = layer->worldPositionToIndex(start);
-    Vector2i goalIndex = layer->worldPositionToIndex(goal);
-
-    std::list<Vector2i> paths = PathFinding::get().findPath(startIndex, goalIndex, layer->getActualObstacles());
-    std::vector<Vector3> positions;
-
-    layer->colorTiles(paths);
-
-    for (Vector2i index: paths)
-        positions.push_back(layer->indexToWorldPosition(index));
-
-    return positions;
 }

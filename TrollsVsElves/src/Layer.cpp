@@ -203,3 +203,19 @@ void Layer::colorTiles(std::list<Vector2i> indices)
     for (Vector2i index: indices)
         grid[index.y * gridSize.x + index.x]->color = RED;
 }
+
+std::vector<Vector3> Layer::pathfindPositions(Vector3 start, Vector3 goal)
+{
+    Vector2i startIndex = worldPositionToIndex(start);
+    Vector2i goalIndex = worldPositionToIndex(goal);
+
+    std::list<Vector2i> paths = PathFinding::get().findPath(startIndex, goalIndex, getActualObstacles());
+    std::vector<Vector3> positions;
+
+    colorTiles(paths);
+
+    for (Vector2i index: paths)
+        positions.push_back(indexToWorldPosition(index));
+
+    return positions;
+}

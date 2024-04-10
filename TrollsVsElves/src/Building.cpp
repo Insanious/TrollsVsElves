@@ -24,6 +24,8 @@ Building::Building(Cube cube, BuildingType buildingType)
     targetColor = buildingType == ROCK ? Color{ 60, 60, 60, 255 } : BEIGE;
     Vector3 targetColorHSL = ColorToHSV(targetColor);
     selectedColor = ColorFromHSV(targetColorHSL.x, targetColorHSL.y, targetColorHSL.z - 0.2f);
+
+    rallyPoint = Cylinder(Vector3Zero(), 0.8f, 20.f, 8, { 255, 255, 255, 128 });
 }
 
 Building::~Building()
@@ -33,6 +35,9 @@ Building::~Building()
 void Building::draw()
 {
     drawCube(cube);
+
+    if (selected && !Vector3Equals(rallyPoint.position, cube.position)) // This might be a temporary solution TODO: later
+        drawCylinder(rallyPoint);
 }
 
 void Building::drawUIButtons(ImVec2 windowPadding, ImVec2 buttonSize)
@@ -72,6 +77,7 @@ void Building::scheduleBuild()
 
     buildStage = SCHEDULED;
     cube.color = inProgressColor;
+    rallyPoint.position = { cube.position.x, cube.position.y, cube.position.z };
 }
 
 void Building::build()
@@ -115,6 +121,11 @@ void Building::deselect()
         cube.color = targetColor;
 }
 
+bool Building::isSelected()
+{
+    return selected;
+}
+
 void Building::sell()
 {
     sold = true;
@@ -145,8 +156,12 @@ int Building::getLevel()
     return level;
 }
 
-BuildStage Building::getBuildStage()
+Cylinder Building::getRallyPoint()
 {
-    return buildStage;
+    return rallyPoint;
 }
 
+void Building::setRallyPoint(Vector3 point)
+{
+    rallyPoint.position = point;
+}
