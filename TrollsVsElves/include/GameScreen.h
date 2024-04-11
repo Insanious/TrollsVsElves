@@ -9,6 +9,8 @@
 #include "BuildingManager.h"
 #include "Player.h"
 #include "CameraManager.h"
+
+#include <chrono>
 #include <vector>
 #include <deque>
 #include <map>
@@ -53,6 +55,8 @@ class GameScreen: public BaseScreen
         bool isMultiSelecting;
         Vector2 multiSelectionStartPosition;
         Rectangle multiSelectionRectangle;
+
+        std::chrono::steady_clock::time_point lastLeftMouseButtonClick;
 
         bool checkCollisionCapsuleRectangle(Capsule capsule, Rectangle rectangle);
         bool checkCollisionCapsulePoint(Capsule capsule, Vector2 point);

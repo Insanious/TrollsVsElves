@@ -163,3 +163,8 @@ void Entity::detach()
 {
     attachedBuilding = nullptr;
 }
+
+EntityType Entity::getType()
+{
+    return type;
+}

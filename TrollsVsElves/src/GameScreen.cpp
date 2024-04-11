@@ -31,6 +31,8 @@ GameScreen::GameScreen(Vector2i screenSize)
     player = new Player(Capsule(startPos, endPos, radius, slices, rings, playerColor), playerSpeed);
 
     isMultiSelecting = false;
+
+    lastLeftMouseButtonClick = std::chrono::steady_clock::now();
 }
 
 GameScreen::~GameScreen()
@@ -338,6 +340,11 @@ RaycastHitType GameScreen::checkRaycastHitType()
 
 void GameScreen::handleLeftMouseButton()
 {
+    auto now = std::chrono::steady_clock::now();
+    std::chrono::duration<float> elapsedTime = now - lastLeftMouseButtonClick;
+    bool doubleclicked = elapsedTime.count() < 0.2f;
+    lastLeftMouseButtonClick = now;
+
     RaycastHitType type = checkRaycastHitType();
 
     // deselect selectedBuilding if not clicking a building or UI
@@ -347,7 +354,7 @@ void GameScreen::handleLeftMouseButton()
         selectedBuilding = nullptr;
     }
 
-    // always clear selectetedEntities if clicked player/entity/building
+    // always clear selectedEntities if clicked player/entity/building
     if (type == RAYCAST_HIT_TYPE_PLAYER || type == RAYCAST_HIT_TYPE_ENTITY || type == RAYCAST_HIT_TYPE_BUILDING)
         clearAndDeselectAllSelectedEntities();
 
@@ -367,9 +374,26 @@ void GameScreen::handleLeftMouseButton()
 
         case RAYCAST_HIT_TYPE_ENTITY:
         {
-            Entity* entity = raycastToEntity();
-            selectedEntities.push_back(entity);
-            entity->select();
+            Entity* clickedEntity = raycastToEntity();
+            if (doubleclicked) // select all of the same type
+            {
+                std::vector<Entity*> entities = buildingManager->getEntities();
+                EntityType clickedEntityType = clickedEntity->getType();
+                for (Entity* entity: entities)
+                {
+                    if (entity->getType() == clickedEntityType)
+                    {
+                        selectedEntities.push_back(entity);
+                        entity->select();
+                    }
+                }
+            }
+            else
+            {
+                selectedEntities.push_back(clickedEntity);
+                clickedEntity->select();
+            }
+
             break;
         }
 

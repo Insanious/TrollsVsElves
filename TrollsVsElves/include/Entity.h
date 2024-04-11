@@ -63,6 +63,8 @@ public:
 
     void attach(Building* building);
     void detach();
+
+    EntityType getType();
 };
 
 #endif
