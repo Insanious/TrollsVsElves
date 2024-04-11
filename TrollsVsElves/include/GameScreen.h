@@ -9,6 +9,7 @@
 #include "BuildingManager.h"
 #include "Player.h"
 #include "CameraManager.h"
+#include "Resource.h"
 
 #include <chrono>
 #include <vector>
@@ -46,6 +47,8 @@ class GameScreen: public BaseScreen
         Building* selectedBuilding;
         std::vector<Entity*> selectedEntities;
 
+        std::vector<Resource*> resources;
+
         std::map<BuildingType, UIMapping> buildingTypeMappings;
 
         Player* player;
@@ -82,6 +85,8 @@ class GameScreen: public BaseScreen
         void clearAndDeselectAllSelectedEntities();
 
         Vector3 calculateTargetPositionToBuildingFromEntity(Entity* entity, Building* building);
+
+        void addResource(Vector3 position);
 };
 
 #endif

@@ -18,8 +18,8 @@ GameScreen::GameScreen(Vector2i screenSize)
         { ROCK, { KEY_TWO, "Rock" } },
     };
 
-    Vector3 startPos = { 0.f, cubeSize.y, 0.f };
-    Vector3 endPos = { 0.f, cubeSize.y + 8.f, 0.f };
+    Vector3 startPos = { 0.f, cubeSize.y/2, 0.f };
+    Vector3 endPos = { 0.f, cubeSize.y/2 + 8.f, 0.f };
     startPos.x = endPos.x = gridSize.x/2 * cubeSize.x - cubeSize.x;
     startPos.z = endPos.z = gridSize.y/2 * cubeSize.z - cubeSize.z;
     float radius = 2.f;
@@ -33,6 +33,13 @@ GameScreen::GameScreen(Vector2i screenSize)
     isMultiSelecting = false;
 
     lastLeftMouseButtonClick = std::chrono::steady_clock::now();
+
+    Vector2 halfGridSize = { gridSize.x/2 * cubeSize.x, gridSize.y/2 * cubeSize.y };
+    for (int z = gridSize.y/8; z < gridSize.y - gridSize.y/8; z++)
+    {
+        Vector3 pos = { -halfGridSize.x, 0.f, cubeSize.z * z - halfGridSize.y, };
+        addResource(pos);
+    }
 }
 
 GameScreen::~GameScreen()
@@ -55,6 +62,9 @@ void GameScreen::draw()
     BeginMode3D(camera3D);
 
         layer->draw();
+
+        for (Resource* resource: resources)
+            resource->draw();
 
         if (buildingManager)
             buildingManager->draw();
@@ -602,4 +612,15 @@ Vector3 GameScreen::calculateTargetPositionToBuildingFromEntity(Entity* entity, 
     }
 
     return positions[0]; // just grab the first one, don't care which one right now
+}
+
+void GameScreen::addResource(Vector3 position)
+{
+    Vector3 size = { 2.f, 20.f, 2.f };
+    Vector3 adjustedPosition = { position.x, position.y + size.y/2, position.z };
+
+    Cube cube = { adjustedPosition, size, WHITE };
+    Resource* resource = new Resource(cube);
+    layer->addObstacle(cube);
+    resources.push_back(resource);
 }

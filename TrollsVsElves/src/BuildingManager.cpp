@@ -95,7 +95,7 @@ void BuildingManager::update()
 
             Vector3 neighborPosition = layer->indexToWorldPosition(neighboringIndices[0]);
             float height = 3.f;
-            float ground = layer->getCubeSize().y;
+            float ground = layer->getCubeSize().y / 2;
             Vector3 startPos = { neighborPosition.x, ground, neighborPosition.z };
             Vector3 endPos = { neighborPosition.x, ground + height, neighborPosition.z };
             float radius = 2.f;
