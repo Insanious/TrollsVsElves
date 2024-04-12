@@ -32,6 +32,7 @@ enum RaycastHitType {
     RAYCAST_HIT_TYPE_PLAYER,
     RAYCAST_HIT_TYPE_ENTITY,
     RAYCAST_HIT_TYPE_BUILDING,
+    RAYCAST_HIT_TYPE_RESOURCE,
     RAYCAST_HIT_TYPE_GROUND,
     RAYCAST_HIT_TYPE_OUT_OF_BOUNDS
 };
@@ -80,11 +81,12 @@ class GameScreen: public BaseScreen
         void handleRightMouseButton();
         bool raycastToPlayer();
         Entity* raycastToEntity();
+        Resource* raycastToResource();
         RayCollision raycastToGround();
 
         void clearAndDeselectAllSelectedEntities();
 
-        Vector3 calculateTargetPositionToBuildingFromEntity(Entity* entity, Building* building);
+        Vector3 calculateTargetPositionToCubeFromEntity(Entity* entity, Cube cube);
 
         void addResource(Vector3 position);
 };

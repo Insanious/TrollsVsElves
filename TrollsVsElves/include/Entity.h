@@ -6,6 +6,7 @@
 #include "utils.h"
 #include "structs.h"
 #include "Building.h"
+#include "Resource.h"
 
 enum MovementState {
     IDLE,
@@ -39,6 +40,7 @@ private:
     std::deque<Vector3> paths;
 
     Building* attachedBuilding;
+    Resource* attachedResource;
 
 public:
     Entity() = delete;
@@ -62,6 +64,7 @@ public:
     bool isSelected();
 
     void attach(Building* building);
+    void attach(Resource* resource);
     void detach();
 
     EntityType getType();

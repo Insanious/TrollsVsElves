@@ -159,9 +159,15 @@ void Entity::attach(Building* building)
     attachedBuilding = building;
 }
 
+void Entity::attach(Resource* resource)
+{
+    attachedResource = resource;
+}
+
 void Entity::detach()
 {
     attachedBuilding = nullptr;
+    attachedResource = nullptr;
 }
 
 EntityType Entity::getType()

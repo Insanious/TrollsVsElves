@@ -21,3 +21,8 @@ void Resource::draw()
 {
     drawCube(cube);
 }
+
+Cube& Resource::getCube()
+{
+    return cube;
+}

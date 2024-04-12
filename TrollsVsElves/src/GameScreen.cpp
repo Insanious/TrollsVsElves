@@ -27,7 +27,6 @@ GameScreen::GameScreen(Vector2i screenSize)
     int rings = 4;
     Color playerColor = BLUE;
     Vector3 playerSpeed = Vector3Scale(Vector3One(), 40);
-    printVector3("playerSpeed", playerSpeed);
     player = new Player(Capsule(startPos, endPos, radius, slices, rings, playerColor), playerSpeed);
 
     isMultiSelecting = false;
@@ -189,7 +188,7 @@ void GameScreen::update()
             building = buildingManager->buildQueueFront();
             if (building) // if more in queue, walk to the next target
             {
-                Vector3 targetPosition = calculateTargetPositionToBuildingFromEntity(player, building);
+                Vector3 targetPosition = calculateTargetPositionToCubeFromEntity(player, building->getCube());
                 std::vector<Vector3> positions = layer->pathfindPositions(player->getPosition(), targetPosition);
                 player->setPositions(positions, RUNNING_TO_BUILD);
             }
@@ -338,6 +337,9 @@ RaycastHitType GameScreen::checkRaycastHitType()
     if (raycastToEntity())
         return RAYCAST_HIT_TYPE_ENTITY;
 
+    if (raycastToResource())
+        return RAYCAST_HIT_TYPE_RESOURCE;
+
     if (buildingManager->raycastToBuilding())
         return RAYCAST_HIT_TYPE_BUILDING;
 
@@ -440,7 +442,7 @@ void GameScreen::handleLeftMouseButton()
                 }
 
                 // run to new target and schedule building
-                Vector3 targetPosition = calculateTargetPositionToBuildingFromEntity(player, buildingManager->getGhostBuilding());
+                Vector3 targetPosition = calculateTargetPositionToCubeFromEntity(player, buildingManager->getGhostBuilding()->getCube());
                 std::vector<Vector3> positions = layer->pathfindPositions(player->getPosition(), targetPosition);
                 player->setPositions(positions, RUNNING_TO_BUILD);
                 buildingManager->scheduleGhostBuilding();
@@ -533,7 +535,7 @@ void GameScreen::handleRightMouseButton()
                 std::vector<Vector3> positions;
                 for (Entity* entity: selectedEntities)
                 {
-                    targetPosition = calculateTargetPositionToBuildingFromEntity(entity, building);
+                    targetPosition = calculateTargetPositionToCubeFromEntity(entity, building->getCube());
                     positions = layer->pathfindPositions(entity->getPosition(), targetPosition);
                     entity->setPositions(positions, RUNNING);
 
@@ -541,6 +543,26 @@ void GameScreen::handleRightMouseButton()
                 }
             }
 
+            break;
+        }
+
+        case RAYCAST_HIT_TYPE_RESOURCE:
+        {
+            if (!player->isSelected() && selectedEntities.size())
+            {
+                Resource* resource = raycastToResource();
+
+                Vector3 targetPosition;
+                std::vector<Vector3> positions;
+                for (Entity* entity: selectedEntities)
+                {
+                    targetPosition = calculateTargetPositionToCubeFromEntity(entity, resource->getCube());
+                    positions = layer->pathfindPositions(entity->getPosition(), targetPosition);
+                    entity->setPositions(positions, RUNNING);
+
+                    entity->attach(resource);
+                }
+            }
             break;
         }
 
@@ -567,6 +589,27 @@ Entity* GameScreen::raycastToEntity()
     return nullptr;
 }
 
+Resource* GameScreen::raycastToResource()
+{
+    Ray ray = CameraManager::get().getMouseRay();
+    float closestCollisionDistance = std::numeric_limits<float>::infinity();
+    Resource* nearestResource = nullptr;
+
+    for (Resource* resource: resources)
+    {
+        Cube cube = resource->getCube();
+        RayCollision collision = GetRayCollisionBox(ray, getCubeBoundingBox(cube));
+
+        if (collision.hit && collision.distance < closestCollisionDistance)
+        {
+            closestCollisionDistance = collision.distance;
+            nearestResource = resource;
+        }
+    }
+
+    return nearestResource;
+}
+
 RayCollision GameScreen::raycastToGround()
 {
     float ground = layer->getHeight();
@@ -589,9 +632,9 @@ void GameScreen::clearAndDeselectAllSelectedEntities()
     selectedEntities.clear();
 }
 
-Vector3 GameScreen::calculateTargetPositionToBuildingFromEntity(Entity* entity, Building* building)
+Vector3 GameScreen::calculateTargetPositionToCubeFromEntity(Entity* entity, Cube cube)
 {
-    std::vector<Vector2i> indices = layer->getNeighboringIndices(building->getCube());
+    std::vector<Vector2i> indices = layer->getNeighboringIndices(cube);
     Vector3 entityPosition = entity->getPosition();
 
     std::vector<Vector3> positions;

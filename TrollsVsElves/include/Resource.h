@@ -19,6 +19,8 @@ public:
     ~Resource();
 
     void draw();
+
+    Cube& getCube();
 };
 
 #endif
