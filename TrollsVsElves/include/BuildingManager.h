@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <deque>
+#include <unordered_set>
 
 #include "utils.h"
 #include "Layer.h"
@@ -24,6 +25,12 @@ private:
 
     std::vector<Entity*> entities;
 
+    std::map<BuildingType, AdvancementTree*> advancementTrees;
+    std::unordered_set<std::string> unlockedAdvancements;
+
+    simpleSignal::Signal<void(std::string)> promotionSignal;
+    void onPromotion(std::string promotion);
+
     void updateGhostBuilding();
 
     template<typename Container>
@@ -37,7 +44,6 @@ public:
     void draw();
     void update();
 
-    std::vector<Building*> getBuildings(); // TODO: prob remove this
     Building* raycastToBuilding();
     void removeBuilding(Building* building);
 
@@ -53,6 +59,8 @@ public:
     bool ghostBuildingExists();
 
     std::vector<Entity*> getEntities();
+
+    void updateLockedPromotions();
 };
 
 #endif

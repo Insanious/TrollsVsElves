@@ -151,7 +151,7 @@ std::vector<Vector2i> Layer::getCubeIndices(Cube cube)
     int halfY = maxY - maxY / 2;
 
     std::vector<Vector2i> indices;
-    if (!maxX && !halfX && !maxY && !halfY) // all 0
+    if (!maxX && !halfX && !maxY && !halfY)
         return std::vector<Vector2i>(1, worldPositionToIndex({ cube.position.x, 0.f, cube.position.z }));
 
     for (int y = -halfY; y < halfY; y++)

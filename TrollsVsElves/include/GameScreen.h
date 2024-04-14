@@ -16,17 +16,6 @@
 #include <deque>
 #include <map>
 
-struct UIMapping
-{
-    KeyboardKey key = KEY_NULL;
-    std::string buttonText = "";
-
-    UIMapping(): key(), buttonText() {};
-
-    UIMapping(KeyboardKey _key, std::string _buttonText)
-        : key(_key), buttonText(_buttonText) {};
-};
-
 enum RaycastHitType {
     RAYCAST_HIT_TYPE_UI = 0,
     RAYCAST_HIT_TYPE_PLAYER,
@@ -49,8 +38,6 @@ class GameScreen: public BaseScreen
         std::vector<Entity*> selectedEntities;
 
         std::vector<Resource*> resources;
-
-        std::map<BuildingType, UIMapping> buildingTypeMappings;
 
         Player* player;
 

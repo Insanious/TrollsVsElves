@@ -8,6 +8,13 @@ BuildingManager::BuildingManager(Vector3 defaultBuildingSize, Color defaultBuild
 
     ghostBuilding = nullptr;
     ghostBuildingIsColliding = false;
+
+    advancementTrees = {
+        { CASTLE, new AdvancementTree("castle-dependencies.json") },
+        { ROCK, new AdvancementTree("rock-dependencies.json") },
+    };
+
+    promotionSignal.connect(this, &BuildingManager::onPromotion);
 }
 
 BuildingManager::~BuildingManager()
@@ -63,11 +70,6 @@ Building* BuildingManager::raycastToBuilding()
     }
 
     return nearestBuilding;
-}
-
-std::vector<Building*> BuildingManager::getBuildings()
-{
-    return buildings;
 }
 
 void BuildingManager::removeBuilding(Building* building)
@@ -203,7 +205,9 @@ void BuildingManager::createNewGhostBuilding(BuildingType buildingType)
     if (ghostBuilding)
         delete ghostBuilding;
 
-    ghostBuilding = new Building(Cube(defaultBuildingSize), buildingType);
+    // advancement of new building starts from the root
+    AdvancementNode* advancement = advancementTrees[buildingType]->getRoot();
+    ghostBuilding = new Building(Cube(defaultBuildingSize), buildingType, advancement, &promotionSignal);
 
     updateGhostBuilding(); // sets position correctly
 }
@@ -244,4 +248,31 @@ bool BuildingManager::canScheduleGhostBuilding()
 std::vector<Entity*> BuildingManager::getEntities()
 {
     return entities;
+}
+
+void BuildingManager::updateLockedPromotions()
+{
+    auto isLocked = [this](std::string dependency) { return unlockedAdvancements.find(dependency) == unlockedAdvancements.end(); };
+
+    std::vector<std::string> locked;
+    for (Building* building: buildings)
+    {
+        locked.clear();
+        for (AdvancementNode* promotion: building->getPossiblePromotions())
+        {
+            // check if any dependency is locked
+            bool hasLockedDependency = std::any_of(promotion->dependencies.begin(), promotion->dependencies.end(), isLocked);
+
+            if (hasLockedDependency) // add promotion to locked vector if atleast one of the dependencies are locked
+                locked.push_back(promotion->id);
+        }
+
+        building->updateLockedPromotions(locked);
+    }
+}
+
+void BuildingManager::onPromotion(std::string promotion)
+{
+    unlockedAdvancements.insert(promotion);
+    updateLockedPromotions();
 }

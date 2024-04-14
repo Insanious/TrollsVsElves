@@ -1,0 +1,34 @@
+{
+    "id": "rock",
+    "name": "Rock",
+    "dependencies": [],
+    "children": [
+        {
+            "id": "rock-1",
+            "name": "Rock 1",
+            "dependencies": ["rock"],
+            "children": [
+                {
+                    "id": "rock-2",
+                    "name": "Rock 2",
+                    "dependencies": ["rock-1", "castle"],
+                    "children": [
+                        {
+                            "id": "rock-3",
+                            "name": "Rock 3",
+                            "dependencies": ["rock-2", "castle-1"],
+                            "children": [
+                                {
+                                    "id": "rock-4",
+                                    "name": "Rock 4",
+                                    "dependencies": ["rock-3", "castle-2"],
+                                    "children": []
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
