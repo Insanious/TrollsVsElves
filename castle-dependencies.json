@@ -1,0 +1,27 @@
+{
+    "id": "castle",
+    "name": "Castle",
+    "dependencies": [],
+    "children": [
+        {
+            "id": "castle-1",
+            "name": "Castle 1",
+            "dependencies": ["castle"],
+            "children": [
+                {
+                    "id": "castle-2",
+                    "name": "Castle 2",
+                    "dependencies": ["castle-1"],
+                    "children": [
+                        {
+                            "id": "castle-3",
+                            "name": "Castle 3",
+                            "dependencies": ["castle-2", "rock-1"],
+                            "children": []
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

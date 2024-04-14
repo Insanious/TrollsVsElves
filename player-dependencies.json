@@ -1,0 +1,39 @@
+{
+    "id": "player",
+    "name": "Player",
+    "dependencies": [],
+    "children": [
+        {
+            "id": "build",
+            "name": "Build",
+            "dependencies": [],
+            "children": [
+                {
+                    "id": "castle",
+                    "name": "Castle",
+                    "dependencies": [],
+                    "children": []
+                },
+                {
+                    "id": "rock",
+                    "name": "Rock",
+                    "dependencies": [],
+                    "children": []
+                }
+            ]
+        },
+        {
+            "id": "spells",
+            "name": "Spells",
+            "dependencies": [],
+            "children": [
+                {
+                    "id": "blink",
+                    "name": "Blink",
+                    "dependencies": [],
+                    "children": []
+                }
+            ]
+        }
+    ]
+}

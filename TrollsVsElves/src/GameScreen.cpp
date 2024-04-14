@@ -13,11 +13,6 @@ GameScreen::GameScreen(Vector2i screenSize)
     selectedBuilding = nullptr;
     buildingManager = new BuildingManager({ cubeSize.x * 2, cubeSize.y, cubeSize.z * 2 }, WHITE, layer);
 
-    buildingTypeMappings = {
-        { CASTLE, { KEY_ONE, "Castle" } },
-        { ROCK, { KEY_TWO, "Rock" } },
-    };
-
     Vector3 startPos = { 0.f, cubeSize.y/2, 0.f };
     Vector3 endPos = { 0.f, cubeSize.y/2 + 8.f, 0.f };
     startPos.x = endPos.x = gridSize.x/2 * cubeSize.x - cubeSize.x;
@@ -27,7 +22,7 @@ GameScreen::GameScreen(Vector2i screenSize)
     int rings = 4;
     Color playerColor = BLUE;
     Vector3 playerSpeed = Vector3Scale(Vector3One(), 40);
-    player = new Player(Capsule(startPos, endPos, radius, slices, rings, playerColor), playerSpeed);
+    player = new Player(Capsule(startPos, endPos, radius, slices, rings, playerColor), playerSpeed, buildingManager);
 
     isMultiSelecting = false;
 
@@ -143,28 +138,12 @@ void GameScreen::drawUI()
 
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, buttonPadding);
 
+        int buttonsPerLine = 2;
+        int nrOfButtons = 4;
         if (selectedBuilding)
-            selectedBuilding->drawUIButtons(windowPadding, buttonSize);
+            selectedBuilding->drawUIButtons(buttonSize, nrOfButtons, buttonsPerLine);
         else if (player->isSelected())
-        {
-            int buttonsPerLine = 2;
-            for (int i = 0; i < BuildingType::COUNT; i += buttonsPerLine)
-            {
-                for (int j = 0; j < buttonsPerLine; j++)
-                {
-                    if ((BuildingType)(i+j) == BuildingType::COUNT) // safeguard if not a multiple of buttonsPerLine
-                        break;
-
-                    BuildingType buildingType = (BuildingType)(i+j);
-                    UIMapping mapping = buildingTypeMappings[buildingType];
-
-                    if (ImGui::Button(mapping.buttonText.c_str(), buttonSize))
-                        buildingManager->createNewGhostBuilding(buildingType);
-
-                    if (j != buttonsPerLine - 1) ImGui::SameLine(); // apply on all except the last
-                }
-            }
-        }
+            player->drawUIButtons(buttonSize, nrOfButtons, buttonsPerLine);
 
         ImGui::PopStyleVar();
         ImGui::End();
@@ -229,21 +208,6 @@ void GameScreen::update()
             {
                 entity->select();
                 selectedEntities.push_back(entity);
-            }
-        }
-    }
-
-    if (selectedEntities.size() == 1 && player->isSelected()) // Check additional mapping keys
-    {
-        for (int i = 0; i < BuildingType::COUNT; i += 1)
-        {
-            BuildingType buildingType = (BuildingType)i;
-            UIMapping mapping = buildingTypeMappings[buildingType];
-
-            if (IsKeyPressed(mapping.key))
-            {
-                buildingManager->createNewGhostBuilding(buildingType);
-                break;
             }
         }
     }

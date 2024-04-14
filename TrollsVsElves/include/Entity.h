@@ -60,7 +60,7 @@ public:
     MovementState getPreviousState();
 
     void select();
-    void deselect();
+    virtual void deselect();
     bool isSelected();
 
     void attach(Building* building);
