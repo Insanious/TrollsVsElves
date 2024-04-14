@@ -11,7 +11,8 @@ BuildingManager::BuildingManager(Vector3 defaultBuildingSize, Color defaultBuild
 
     advancementTrees = {
         { CASTLE, new AdvancementTree("castle-dependencies.json") },
-        { ROCK, new AdvancementTree("rock-dependencies.json") },
+        { ROCK,   new AdvancementTree("rock-dependencies.json") },
+        { HALL,   new AdvancementTree("hall-dependencies.json") },
     };
 
     promotionSignal.connect(this, &BuildingManager::onPromotion);

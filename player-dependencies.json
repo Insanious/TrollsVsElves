@@ -19,6 +19,12 @@
                     "name": "Rock",
                     "dependencies": [],
                     "children": []
+                },
+                {
+                    "id": "hall",
+                    "name": "Hall",
+                    "dependencies": [],
+                    "children": []
                 }
             ]
         },

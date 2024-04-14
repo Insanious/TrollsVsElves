@@ -116,7 +116,7 @@ void GameScreen::drawUI()
         bottomRightWindowFlags |= ImGuiWindowFlags_NoResize;
         bottomRightWindowFlags |= ImGuiWindowFlags_NoMove;
 
-        ImVec2 windowSize(200, 200);
+        ImVec2 windowSize(300, 200);
         ImVec2 windowPos(
             screenSize.x - windowSize.x,
             screenSize.y - windowSize.y
@@ -124,9 +124,11 @@ void GameScreen::drawUI()
 
         ImVec2 windowPadding(8, 8);
         ImVec2 buttonPadding(8, 8);
+        Vector2i buttonLayout = { 2, 2 }; // 2 columns, 2 rows
+        int nrOfButtons = buttonLayout.x * buttonLayout.y;
         ImVec2 buttonSize(
-            windowSize.x / 2 - windowPadding.x - buttonPadding.x / 2,
-            windowSize.y / 2 - windowPadding.y - buttonPadding.x / 2
+            (windowSize.x / float(buttonLayout.x)) - windowPadding.x - (buttonPadding.x / float(buttonLayout.x)),
+            (windowSize.y / float(buttonLayout.y)) - windowPadding.y - (buttonPadding.y / float(buttonLayout.y))
         );
 
         // Draw bottom right window
@@ -138,12 +140,10 @@ void GameScreen::drawUI()
 
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, buttonPadding);
 
-        int buttonsPerLine = 2;
-        int nrOfButtons = 4;
         if (selectedBuilding)
-            selectedBuilding->drawUIButtons(buttonSize, nrOfButtons, buttonsPerLine);
+            selectedBuilding->drawUIButtons(buttonSize, nrOfButtons, buttonLayout.x);
         else if (player->isSelected())
-            player->drawUIButtons(buttonSize, nrOfButtons, buttonsPerLine);
+            player->drawUIButtons(buttonSize, nrOfButtons, buttonLayout.x);
 
         ImGui::PopStyleVar();
         ImGui::End();

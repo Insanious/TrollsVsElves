@@ -8,7 +8,7 @@
 #include "Signal.h"
 
 enum BuildStage { GHOST = 0, SCHEDULED, IN_PROGRESS, FINISHED };
-enum BuildingType { CASTLE, ROCK, COUNT };
+enum BuildingType { CASTLE = 0, ROCK, HALL };
 
 class Building
 {

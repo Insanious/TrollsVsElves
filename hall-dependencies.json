@@ -1,0 +1,38 @@
+{
+    "id": "hall",
+    "name": "Hall",
+    "dependencies": [],
+    "children": [
+        {
+            "id": "hall-1",
+            "name": "Hall 1",
+            "dependencies": ["hall"],
+            "children": [
+                {
+                    "id": "hall-2",
+                    "name": "Hall 2",
+                    "dependencies": ["hall-1"],
+                    "children": []
+                },
+                {
+                    "id": "recruit",
+                    "name": "Recruit a kid",
+                    "dependencies": ["hall-1"],
+                    "children": []
+                },
+                {
+                    "id": "recruit",
+                    "name": "Recruit a teenager",
+                    "dependencies": ["hall-1"],
+                    "children": []
+                }
+            ]
+        },
+        {
+            "id": "recruit",
+            "name": "Recruit a kid",
+            "dependencies": ["hall"],
+            "children": []
+        }
+    ]
+}

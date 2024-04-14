@@ -36,6 +36,10 @@ Building::Building(
             break;
         case CASTLE:
             targetColor = BEIGE;
+            canRecruit = false;
+            break;
+        case HALL:
+            targetColor = BLUE;
             canRecruit = true;
             break;
     }
@@ -63,8 +67,9 @@ void Building::drawUIButtons(ImVec2 buttonSize, int nrOfButtons, int buttonsPerL
 
     int nrOfFillerButtons = nrOfButtons - children.size();
     for (int i = 0; i < nrOfFillerButtons - 1; i++)
-        children.push_back(&fillerButton);  // add filler buttons between actual buttons and sell button
-    children.push_back(&sellButton);        // add sellButton last so its the last button
+        children.push_back(&fillerButton);      // add filler buttons between actual buttons and sell button
+    if (nrOfFillerButtons)
+        children.push_back(&sellButton);        // add sellButton last so its the last button
 
     AdvancementNode* child = nullptr;
     bool buttonWasPressed = false;
@@ -96,6 +101,8 @@ void Building::drawUIButtons(ImVec2 buttonSize, int nrOfButtons, int buttonsPerL
                     buttonWasPressed = true;
                     if (child->id == "sell")
                         sell();
+                    else if (child->id == "recruit")
+                        recruiting = true;
                     else if (canBePromotedTo(child))
                         promote(child);
                 }
@@ -126,6 +133,8 @@ void Building::checkKeyboardPresses(std::vector<AdvancementNode*> children)
                 return;
             else if (child->id == "sell")
                 sell();
+            else if (child->id == "recruit")
+                recruiting = true;
             else if (canBePromotedTo(child))
                 promote(child);
             break;

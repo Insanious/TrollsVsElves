@@ -25,12 +25,16 @@ void Player::drawUIButtons(ImVec2 buttonSize, int nrOfButtons, int buttonsPerLin
 
     int nrOfFillerButtons = nrOfButtons - children.size();
     for (int i = 0; i < nrOfFillerButtons - 1; i++)
-        children.push_back(&fillerButton);      // add filler buttons between actual buttons and back button
+        children.push_back(&fillerButton);          // add filler buttons between actual buttons and back button
 
-    if (currentAdvancements->parent)            // can go back from here
-        children.push_back(&backButton);        // add backButton last so its the last button
-    else
-        children.push_back(&fillerButton);      // can't go back from here so add another fillerButton
+    if (nrOfFillerButtons)
+    {
+        if (currentAdvancements->parent)            // can go back from here
+            children.push_back(&backButton);        // add backButton last so its the last button
+        else
+            children.push_back(&fillerButton);      // can't go back from here so add another fillerButton
+    }
+
 
     bool buttonWasPressed = false;
     AdvancementNode* child = nullptr;
@@ -94,6 +98,8 @@ void Player::handleButtonPressLogic(AdvancementNode* node)
         buildingManager->createNewGhostBuilding(CASTLE);
     else if (node->id == "rock")
         buildingManager->createNewGhostBuilding(ROCK);
+    else if (node->id == "hall")
+        buildingManager->createNewGhostBuilding(HALL);
     else if (node->id == "blink")
         printf("Blink is not implemented\n"); // TODO: later
     else
