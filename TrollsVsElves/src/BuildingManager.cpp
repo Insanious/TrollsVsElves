@@ -152,36 +152,42 @@ void BuildingManager::clearBuildQueue()
 
 void BuildingManager::updateGhostBuilding()
 {
-    float ground = layer->getHeight();
-    const float max = 10000.f;
-    // Check mouse collision against a plane spanning from -max to max, with y the same as the ground level
-    RayCollision collision = GetRayCollisionQuad(
-        CameraManager::get().getMouseRay(),
-        { -max, ground, -max },
-        { -max, ground,  max },
-        {  max, ground,  max },
-        {  max, ground, -max }
-    );
-    if (!collision.hit)
+
+    Cube* cubeHit = layer->raycastToGround();
+    if (!cubeHit)
         return;
 
     Vector3 cubeSize = layer->getCubeSize();
+    float ground = layer->getHeight();
+    const float max = 10000.f;
+    // Check mouse collision against a plane spanning from -max to max, with y the same as the cubeHit y-level
+    RayCollision collision = GetRayCollisionQuad(
+        CameraManager::get().getMouseRay(),
+        { -max, ground + (cubeHit->position.y + cubeSize.y/2), -max },
+        { -max, ground + (cubeHit->position.y + cubeSize.y/2),  max },
+        {  max, ground + (cubeHit->position.y + cubeSize.y/2),  max },
+        {  max, ground + (cubeHit->position.y + cubeSize.y/2), -max }
+    );
+
+    assert(collision.hit == true); // sanity check
 
     // should be edge of cube or middle of cube depending on building size multiple of a cube
     float cubeOffset = (int(defaultBuildingSize.x / cubeSize.x)) % 2 == 0
         ? cubeSize.y / 2
         : cubeSize.y;
 
-    Vector2 snapped = {
+    Vector3 snapped = {
         nearestIncrement(collision.point.x + cubeOffset, cubeSize.x),
+        cubeHit->position.y + cubeSize.y / 2 + defaultBuildingSize.y / 2, // don't need nearest here, just calculate
         nearestIncrement(collision.point.z + cubeOffset, cubeSize.z)
     };
-    Vector2 offset = {
+
+    Vector3 offset = {
         (cubeSize.x - defaultBuildingSize.x) / 2.0f,
+        0.f,
         (cubeSize.z - defaultBuildingSize.z) / 2.0f,
     };
-    Vector2 adjusted = Vector2Add(snapped, offset);
-    Vector3 final = { adjusted.x, defaultBuildingSize.y / 2, adjusted.y };
+    Vector3 final = Vector3Add(snapped, offset);
 
     ghostBuilding->setPosition(final);
 

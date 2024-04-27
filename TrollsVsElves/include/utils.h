@@ -3,9 +3,12 @@
 #include "raylib.h"
 #include "structs.h"
 #include <cstdio>
+#include <cassert>
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <json/json.h>
+#include <fstream>
 
 inline void printVector2(std::string prefix, Vector2 vec)
 {
@@ -42,6 +45,19 @@ inline void printColor(std::string prefix, Color color)
     printf("%s: %u, %u, %u, %u\n", prefix.c_str(), color.r, color.g, color.b, color.a);
 }
 
+inline void print2DBoolVector(std::vector<std::vector<bool>> vec)
+{
+    std::string str = "";
+    for (int y = 0; y < vec.size(); y++)
+    {
+        for (int x = 0; x < vec[y].size(); x++)
+            str += vec[y][x] == false ? '0' : '1';
+
+        str += '\n';
+    }
+    printf("\n%s\n", str.c_str());
+}
+
 inline float nearestIncrementOld(float value, float increment)
 {
     return float(int(value) / int(increment)) * increment;
@@ -72,4 +88,27 @@ inline Color lerpColor(Color c1, Color c2, float amount)
         static_cast<unsigned char>(c1.b + amount * (c2.b - c1.b)),
         static_cast<unsigned char>(c1.a + amount * (c2.a - c1.a)),
     };
+}
+
+inline Json::Value parseJsonFile(std::string filename)
+{
+    std::ifstream file(filename);
+    if (!file.is_open())
+    {
+        printf("couldn't open file %s\n", filename.c_str());
+        assert(file.is_open());
+    }
+
+    Json::Value json;
+    Json::Reader reader;
+    bool parsingSuccessful = reader.parse(file, json);
+    file.close();
+
+    if (!parsingSuccessful)
+    {
+        printf("couldn't parse json file %s\n", filename.c_str());
+        assert(parsingSuccessful);
+    }
+
+    return json;
 }

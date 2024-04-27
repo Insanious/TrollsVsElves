@@ -35,11 +35,16 @@ void Entity::update()
         case IDLE:
             if (attachedBuilding)
                 setState(WORKING);
+
             break;
 
         case RUNNING:
         case RUNNING_TO_BUILD:
-            updateMovement();
+            if (paths.empty())
+                setState(IDLE);
+            else
+                updateMovement();
+
             break;
 
         case WORKING:
@@ -49,33 +54,22 @@ void Entity::update()
 
 void Entity::updateMovement()
 {
-    if (paths.empty()) // was already standing in the correct location
-    {
-        setState(IDLE);
-        return;
-    }
-
-    Vector3 pos = paths.front();
-    Vector3 target = { pos.x, 0.f, pos.z };                         // ignore y for now
-    Vector3 current = { capsule.endPos.x, 0.f, capsule.endPos.z };  // ignore y for now
-    Vector3 direction = Vector3Subtract(target, current);
-
+    Vector3 target = paths.front();
+    Vector3 direction = Vector3Subtract(target, capsule.startPos);
     Vector3 directionNormalized = Vector3Normalize(direction);
-    directionNormalized.y = 0.f;                                    // ignore y for now
+
     Vector3 velocity = Vector3Scale(Vector3Multiply(directionNormalized, speed), GetFrameTime());
 
-    capsule.startPos = Vector3Add(capsule.startPos, velocity);      // walk to target
-    capsule.endPos = Vector3Add(capsule.endPos, velocity);          // walk to target
+    capsule.startPos = Vector3Add(capsule.startPos, velocity);
+    capsule.endPos = Vector3Add(capsule.endPos, velocity);
 
-    float nextDistance = Vector3Distance(target, { capsule.endPos.x, 0.f, capsule.endPos.z });
-    if (nextDistance <= defaultTargetMargin)        // will go past target next frame, so just tp to it
+    float nextDistance = Vector3Distance(target, capsule.startPos);
+    if (nextDistance <= defaultTargetMargin) // check if it will go within the target margin
     {
-        capsule.startPos = { target.x, capsule.startPos.y, target.z };
-        capsule.endPos = { target.x, capsule.endPos.y, target.z };
+        capsule.startPos = { target.x, capsule.startPos.y, target.z };  // just tp to it
+        capsule.endPos = { target.x, capsule.endPos.y, target.z };      // just tp to it
 
         paths.pop_front(); // reached the end of this path
-        if (paths.empty())
-            setState(IDLE);
     }
 }
 

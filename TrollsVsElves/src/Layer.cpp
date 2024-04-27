@@ -2,6 +2,9 @@
 
 Layer::Layer()
 {
+    this->defaultCubeColor = DARKGRAY;
+    this->cubeSize = Vector3Scale(Vector3One(), 4.f);
+    this->height = 0.f;
 }
 
 Layer::~Layer()
@@ -16,24 +19,52 @@ void Layer::draw()
         drawCube(*cube);
 }
 
-void Layer::createGrid(Vector2i gridSize, Vector3 cubeSize, Color defaultCubeColor, float height)
+void Layer::createFromFile(std::string filename)
 {
-    this->gridSize = gridSize;
-    this->cubeSize = cubeSize;
-    this->defaultCubeColor = defaultCubeColor;
-    this->height = height;
+    Json::Value json = parseJsonFile(filename);
 
-    obstacles = std::vector<std::vector<bool>>(gridSize.x, std::vector<bool>(gridSize.y, false));
-    actualObstacles = std::vector<std::vector<bool>>(gridSize.x, std::vector<bool>(gridSize.y, false));
+    this->gridSize = {
+        json["width"].asInt(),
+        json["height"].asInt()
+    };
 
-    Vector2 halfGridSize = { gridSize.x/2 * cubeSize.x, gridSize.y/2 * cubeSize.y };
-    for (int z = 0; z < gridSize.y; z++)
+    this->grid = std::vector<Cube*>(gridSize.y * gridSize.x, nullptr);
+    obstacles = std::vector<std::vector<bool>>(gridSize.y, std::vector<bool>(gridSize.x, false));
+    actualObstacles = std::vector<std::vector<bool>>(gridSize.y, std::vector<bool>(gridSize.x, false));
+
+    Vector2 halfGridSize = { gridSize.x / 2 * cubeSize.x, gridSize.y / 2 * cubeSize.z };
+    float groundHeight = height - cubeSize.y/2;
+    float layerHeight = groundHeight;
+    Vector3 position;
+    int index, tile;
+    for (Json::Value& layer: json["layers"])
     {
-        for (int x = 0; x < gridSize.x; x++)
+        for (int y = 0; y < gridSize.y; y++)
         {
-            Vector3 position = { cubeSize.x * x - halfGridSize.x, height - cubeSize.y/2, cubeSize.z * z - halfGridSize.y, };
-            grid.push_back(new Cube(position, cubeSize, defaultCubeColor));
+            for (int x = 0; x < gridSize.x; x++)
+            {
+                int index = y * gridSize.x + x;
+                int tile = layer["data"][index].asInt();
+                if (tile == 0) // empty tile
+                    continue;
+
+                position = {
+                    cubeSize.x * x - halfGridSize.x,
+                    layerHeight,
+                    cubeSize.z * y - halfGridSize.y
+                };
+
+                grid[index] = new Cube(position, cubeSize, defaultCubeColor);
+
+                if (tile == 34) // obstruction tile
+                {
+                    grid[index]->position.y = groundHeight; // put it on the ground so it looks "normal"
+                    addObstacle(*grid[index]);
+                }
+            }
         }
+
+        layerHeight += cubeSize.y; // increment height with one cubeSize.y per layer
     }
 }
 
@@ -45,6 +76,11 @@ void Layer::addCube(Vector3 position, Vector3 size, Color color)
 Vector3 Layer::getCubeSize()
 {
     return cubeSize;
+}
+
+Vector2i Layer::getGridSize()
+{
+    return gridSize;
 }
 
 float Layer::getHeight()
@@ -66,10 +102,10 @@ void Layer::recalculateObstacles(std::vector<Vector2i> indices)
     {
         for (int x = 0; x < gridSize.x - 1; ++x)
         {
-            Vector2i topLeft        = { x,      y };                // index (0, 0)
-            Vector2i topRight       = { x + 1,  y };                // index (0, 1)
-            Vector2i bottomLeft     = { x,      y + 1 };            // index (1, 0)
-            Vector2i bottomRight    = { x + 1,  y + 1 };            // index (1, 1)
+            Vector2i topLeft        = { x + 0, y + 0 };
+            Vector2i topRight       = { x + 1, y + 0 };
+            Vector2i bottomLeft     = { x + 0, y + 1 };
+            Vector2i bottomRight    = { x + 1, y + 1 };
 
             if (actualObstacles[topLeft.y][topLeft.x]               // (0, 0 == true)
                 && !actualObstacles[topRight.y][topRight.x]         // (0, 1 == false)
@@ -97,6 +133,7 @@ void Layer::addObstacle(Cube cube)
     std::vector<Vector2i> indices = getCubeIndices(cube);
     for (Vector2i index: indices)
         obstacles[index.y][index.x] = true;
+
     recalculateObstacles(indices);
 }
 
@@ -105,6 +142,7 @@ void Layer::removeObstacle(Cube cube)
     std::vector<Vector2i> indices = getCubeIndices(cube);
     for (Vector2i index: indices)
         obstacles[index.y][index.x] = false;
+
     recalculateObstacles(indices);
 }
 
@@ -125,21 +163,18 @@ Vector2i Layer::worldPositionToIndex(Vector3 position)
 
 Vector3 Layer::indexToWorldPosition(Vector2i index)
 {
+    Cube* cube = grid[index.y * gridSize.x + index.x];
+
     Vector2i adjusted = {
         index.x - (gridSize.x/2),
         index.y - (gridSize.y/2),
     };
+
     return {
         adjusted.x * cubeSize.x,
-        height,
+        cube->position.y + cubeSize.y,
         adjusted.y * cubeSize.z,
     };
-}
-
-bool Layer::worldPositionWithinBounds(Vector3 position)
-{
-    Vector2i index = worldPositionToIndex(position);
-    return index.x >= 0 && index.x < gridSize.x && index.y >= 0 && index.y < gridSize.y;
 }
 
 std::vector<Vector2i> Layer::getCubeIndices(Cube cube)
@@ -151,18 +186,17 @@ std::vector<Vector2i> Layer::getCubeIndices(Cube cube)
     int halfY = maxY - maxY / 2;
 
     std::vector<Vector2i> indices;
-    if (!maxX && !halfX && !maxY && !halfY)
-        return std::vector<Vector2i>(1, worldPositionToIndex({ cube.position.x, 0.f, cube.position.z }));
+    if (maxX <= 1 && halfX <= 1 && maxY <= 1 && halfY <= 1)
+        return std::vector<Vector2i>(1, worldPositionToIndex(cube.position));
 
+    float posX, posZ;
     for (int y = -halfY; y < halfY; y++)
     {
         for (int x = -halfX; x < halfX; x++)
         {
-            indices.push_back(worldPositionToIndex({
-                (cube.position.x) + (cubeSize.x * x),
-                0.f,
-                (cube.position.z) + (cubeSize.z * y)
-            }));
+            posX = cube.position.x + (cubeSize.x * x);
+            posZ = cube.position.z + (cubeSize.z * y);
+            indices.push_back(worldPositionToIndex({ posX, 0.f, posZ }));
         }
     }
 
@@ -221,4 +255,24 @@ std::vector<Vector3> Layer::pathfindPositions(Vector3 start, Vector3 goal)
         positions.push_back(indexToWorldPosition(index));
 
     return positions;
+}
+
+Cube* Layer::raycastToGround()
+{
+    Ray ray = CameraManager::get().getMouseRay();
+    float closestCollisionDistance = std::numeric_limits<float>::infinity();
+    Cube* nearestCube = nullptr;
+
+    for (Cube* cube: grid)
+    {
+        RayCollision collision = GetRayCollisionBox(ray, getCubeBoundingBox(*cube));
+
+        if (collision.hit && collision.distance < closestCollisionDistance)
+        {
+            closestCollisionDistance = collision.distance;
+            nearestCube = cube;
+        }
+    }
+
+    return nearestCube;
 }
