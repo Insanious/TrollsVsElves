@@ -4,11 +4,11 @@ GameScreen::GameScreen(Vector2i screenSize)
 {
     this->screenSize = screenSize;
 
-    Vector3 cubeSize = { 4.f, 4.f, 4.f };
-    Vector2i gridSize = { 32, 32 };
 
     layer = new Layer();
-    layer->createGrid(gridSize, cubeSize, DARKGRAY, 0.f);
+    layer->createFromFile("map/map.json");
+    Vector2i gridSize = layer->getGridSize();
+    Vector3 cubeSize = layer->getCubeSize();
 
     selectedBuilding = nullptr;
     buildingManager = new BuildingManager({ cubeSize.x * 2, cubeSize.y, cubeSize.z * 2 }, WHITE, layer);
@@ -28,8 +28,9 @@ GameScreen::GameScreen(Vector2i screenSize)
 
     lastLeftMouseButtonClick = std::chrono::steady_clock::now();
 
+    // add some "trees"
     Vector2 halfGridSize = { gridSize.x/2 * cubeSize.x, gridSize.y/2 * cubeSize.y };
-    for (int z = gridSize.y/8; z < gridSize.y - gridSize.y/8; z++)
+    for (int z = gridSize.y/2; z < gridSize.y - gridSize.y/8; z++)
     {
         Vector3 pos = { -halfGridSize.x, 0.f, cubeSize.z * z - halfGridSize.y, };
         addResource(pos);
@@ -307,8 +308,7 @@ RaycastHitType GameScreen::checkRaycastHitType()
     if (buildingManager->raycastToBuilding())
         return RAYCAST_HIT_TYPE_BUILDING;
 
-    RayCollision ground = raycastToGround();
-    if (ground.hit && layer->worldPositionWithinBounds(ground.point))
+    if (layer->raycastToGround())
         return RAYCAST_HIT_TYPE_GROUND;
 
     return RAYCAST_HIT_TYPE_OUT_OF_BOUNDS;
@@ -443,15 +443,11 @@ void GameScreen::handleRightMouseButton()
                 }
 
                 // run all selected entities to where mouse was clicked
-                Vector3 goal = raycastToGround().point;
+                Vector3 goal = layer->raycastToGround()->position;
                 Vector2i goalIndex = layer->worldPositionToIndex(goal);
                 std::vector<Vector2i> neighboringIndices = layer->getNeighboringIndices({ goalIndex });
 
                 neighboringIndices.insert(neighboringIndices.begin(), goalIndex); // insert at front so its guaranteed to be picked
-
-                std::vector<Vector3> neighboringPositions;
-                for (Vector2i index: neighboringIndices)
-                    neighboringPositions.push_back(layer->indexToWorldPosition(index));
 
                 if (selectedEntities.size() > neighboringIndices.size())
                     printf("entities > indices, should probably do something about this later\n"); // TODO: later

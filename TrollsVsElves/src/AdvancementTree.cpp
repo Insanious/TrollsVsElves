@@ -3,23 +3,7 @@
 
 AdvancementTree::AdvancementTree(std::string filename)
 {
-    std::ifstream file(filename);
-    if (!file.is_open())
-    {
-        printf("couldn't open file %s\n", filename.c_str());
-        assert(file.is_open());
-    }
-
-    Json::Value json;
-    Json::Reader reader;
-    bool parsingSuccessful = reader.parse(file, json);
-    file.close();
-
-    if (!parsingSuccessful)
-    {
-        printf("couldn't parse json file %s\n", filename.c_str());
-        assert(parsingSuccessful);
-    }
+    Json::Value json = parseJsonFile(filename);
 
     root = new AdvancementNode(nullptr, json["id"].asString(), json["name"].asString(), {});
     for (const auto& child : json["children"])

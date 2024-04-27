@@ -6,6 +6,7 @@
 
 #include "structs.h"
 #include "PathFinding.h"
+#include "CameraManager.h"
 
 class Layer
 {
@@ -24,10 +25,13 @@ public:
 
     void draw();
 
-    void createGrid(Vector2i gridSize, Vector3 cubeSize, Color defaultCubeColor, float height);
+    void createFromFile(std::string filename);
     void addCube(Vector3 position, Vector3 size, Color color);
     Vector3 getCubeSize();
+    Vector2i getGridSize();
     float getHeight();
+
+    Cube* raycastToGround();
 
     std::vector<std::vector<bool>> getActualObstacles();
     void recalculateObstacles(std::vector<Vector2i> indices);
@@ -36,7 +40,6 @@ public:
 
     Vector2i worldPositionToIndex(Vector3 position);
     Vector3 indexToWorldPosition(Vector2i index);
-    bool worldPositionWithinBounds(Vector3 position);
     std::vector<Vector2i> getCubeIndices(Cube cube);
     std::vector<Vector2i> getNeighboringIndices(std::vector<Vector2i> indices);
     std::vector<Vector2i> getNeighboringIndices(Cube cube);
