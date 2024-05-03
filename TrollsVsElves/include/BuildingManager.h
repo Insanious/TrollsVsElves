@@ -6,7 +6,7 @@
 #include <unordered_set>
 
 #include "utils.h"
-#include "Layer.h"
+#include "MapGenerator.h"
 #include "Building.h"
 #include "Entity.h"
 #include "CameraManager.h"
@@ -16,7 +16,6 @@ class BuildingManager
 private:
     Vector3 defaultBuildingSize;
     Color defaultBuildingColor;
-    Layer* layer;
 
     std::vector<Building*> buildings;
     std::deque<Building*> buildQueue;
@@ -38,7 +37,7 @@ private:
 
 public:
     BuildingManager() = delete;
-    BuildingManager(Vector3 defaultBuildingSize, Color defaultBuildingColor, Layer* layer);
+    BuildingManager(Vector3 defaultBuildingSize, Color defaultBuildingColor);
     ~BuildingManager();
 
     void draw();

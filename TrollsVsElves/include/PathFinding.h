@@ -2,7 +2,7 @@
 #define PATH_FINDING_H
 
 #include "structs.h"
-#include "Layer.h"
+#include "MapGenerator.h"
 #include "limits.h"
 #include <list>
 #include <unordered_map>
@@ -52,7 +52,7 @@ struct CompareNode
 class PathFinding
 {
 private:
-    PathFinding();
+    PathFinding()  {}
 
     void printNode(std::string prefix, Node node);
     // refer to https://www.movingai.com/SAS/SUB/ for these calculated values
@@ -60,6 +60,9 @@ private:
     double weightedConvexDownwardParabola(double g, double h);
 
 public:
+    PathFinding(PathFinding const&) = delete;
+    void operator=(PathFinding const&) = delete;
+    ~PathFinding() {}
     static PathFinding& get()
     {
         static PathFinding instance;

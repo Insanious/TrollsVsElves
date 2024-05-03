@@ -1,5 +1,5 @@
-#ifndef LAYER_H
-#define LAYER_H
+#ifndef MAP_GENERATOR_H
+#define MAP_GENERATOR_H
 
 #include <vector>
 #include <list>
@@ -8,9 +8,11 @@
 #include "PathFinding.h"
 #include "CameraManager.h"
 
-class Layer
+class MapGenerator
 {
 private:
+    MapGenerator();
+
     std::vector<Cube*> grid;
     std::vector<std::vector<bool>> obstacles;
     std::vector<std::vector<bool>> actualObstacles;
@@ -21,12 +23,19 @@ private:
     float height;
 
 public:
-    Layer();
-    ~Layer();
+    MapGenerator(MapGenerator const&) = delete;
+    void operator=(MapGenerator const&) = delete;
+    ~MapGenerator();
+
+    static MapGenerator& get()
+    {
+        static MapGenerator instance;
+        return instance;
+    }
 
     void draw();
 
-    void createFromFile(std::string filename);
+    void generateFromFile(std::string filename);
     void addCube(Vector3 position, Vector3 size, Color color);
     Vector3 getCubeSize();
     Vector2i getGridSize();

@@ -1,25 +1,25 @@
-#include "Layer.h"
+#include "MapGenerator.h"
 
-Layer::Layer()
+MapGenerator::MapGenerator()
 {
     this->defaultCubeColor = DARKGRAY;
     this->cubeSize = Vector3Scale(Vector3One(), 4.f);
     this->height = 0.f;
 }
 
-Layer::~Layer()
+MapGenerator::~MapGenerator()
 {
     for (int i = 0; i < grid.size(); i++)
         delete grid[i];
 }
 
-void Layer::draw()
+void MapGenerator::draw()
 {
     for (Cube* cube: grid)
         drawCube(*cube);
 }
 
-void Layer::createFromFile(std::string filename)
+void MapGenerator::generateFromFile(std::string filename)
 {
     Json::Value json = parseJsonFile(filename);
 
@@ -69,37 +69,37 @@ void Layer::createFromFile(std::string filename)
     }
 }
 
-void Layer::addCube(Vector3 position, Vector3 size, Color color)
+void MapGenerator::addCube(Vector3 position, Vector3 size, Color color)
 {
     grid.push_back(new Cube(position, size, color));
 }
 
-Vector3 Layer::getCubeSize()
+Vector3 MapGenerator::getCubeSize()
 {
     return cubeSize;
 }
 
-Vector2i Layer::getGridSize()
+Vector2i MapGenerator::getGridSize()
 {
     return gridSize;
 }
 
-float Layer::getHeight()
+float MapGenerator::getHeight()
 {
     return height;
 }
 
-std::vector<std::vector<bool>> Layer::getActualObstacles()
+std::vector<std::vector<bool>> MapGenerator::getActualObstacles()
 {
     return actualObstacles;
 }
 
-std::vector<std::vector<bool>> Layer::getTrollObstacles()
+std::vector<std::vector<bool>> MapGenerator::getTrollObstacles()
 {
     return trollObstacles;
 }
 
-void Layer::recalculateObstacles()
+void MapGenerator::recalculateObstacles()
 {
     // this is needed so the player doesn't walk between the edges of two buildings
     // check whether two edges are touching and if they are, fill in the gaps
@@ -138,7 +138,7 @@ void Layer::recalculateObstacles()
     }
 }
 
-void Layer::recalculateTrollObstacles()
+void MapGenerator::recalculateTrollObstacles()
 {
     // shrink original obstacles map by 2 so it can still be used with pathfinding for troll
     // needed to simulate that the troll is twice as big, and shouldn't be able to walk through 1x1 paths
@@ -147,7 +147,7 @@ void Layer::recalculateTrollObstacles()
             trollObstacles[y/2][x/2] = (obstacles[y][x] || obstacles[y+1][x] || obstacles[y][x+1] || obstacles[y+1][x+1]);
 }
 
-void Layer::addObstacle(Cube cube)
+void MapGenerator::addObstacle(Cube cube)
 {
     std::vector<Vector2i> indices = getCubeIndices(cube);
     for (Vector2i index: indices)
@@ -157,7 +157,7 @@ void Layer::addObstacle(Cube cube)
     recalculateTrollObstacles();
 }
 
-void Layer::removeObstacle(Cube cube)
+void MapGenerator::removeObstacle(Cube cube)
 {
     std::vector<Vector2i> indices = getCubeIndices(cube);
     for (Vector2i index: indices)
@@ -167,7 +167,7 @@ void Layer::removeObstacle(Cube cube)
     recalculateTrollObstacles();
 }
 
-Vector2i Layer::worldPositionToIndex(Vector3 position)
+Vector2i MapGenerator::worldPositionToIndex(Vector3 position)
 {
     // shift position by half grid size to get positive values only, and add half cube size to correct for cube origin
     Vector2 adjusted = {
@@ -182,7 +182,7 @@ Vector2i Layer::worldPositionToIndex(Vector3 position)
     return truncated;
 }
 
-Vector3 Layer::indexToWorldPosition(Vector2i index)
+Vector3 MapGenerator::indexToWorldPosition(Vector2i index)
 {
     Cube* cube = grid[index.y * gridSize.x + index.x];
 
@@ -198,7 +198,7 @@ Vector3 Layer::indexToWorldPosition(Vector2i index)
     };
 }
 
-std::vector<Vector2i> Layer::getCubeIndices(Cube cube)
+std::vector<Vector2i> MapGenerator::getCubeIndices(Cube cube)
 {
     // this should NOT be simplified to (halfX = maxX / 2) since (3 / 2 = 1) and (3 - (3/2) = 2)
     int maxX = cube.size.x / cubeSize.x;
@@ -224,7 +224,7 @@ std::vector<Vector2i> Layer::getCubeIndices(Cube cube)
     return indices;
 }
 
-std::vector<Vector2i> Layer::getNeighboringIndices(std::vector<Vector2i> indices)
+std::vector<Vector2i> MapGenerator::getNeighboringIndices(std::vector<Vector2i> indices)
 {
     std::vector<Vector2i> directions = { { -1, 0}, { 1, 0}, { 0, -1}, { 0, 1}, { -1, -1}, { 1, 1}, { -1, 1}, { 1, -1} };
 
@@ -248,13 +248,13 @@ std::vector<Vector2i> Layer::getNeighboringIndices(std::vector<Vector2i> indices
     return neighboringIndices;
 }
 
-std::vector<Vector2i> Layer::getNeighboringIndices(Cube cube)
+std::vector<Vector2i> MapGenerator::getNeighboringIndices(Cube cube)
 {
     std::vector<Vector2i> indices = getCubeIndices(cube);
     return getNeighboringIndices(indices);
 }
 
-void Layer::colorTiles(std::list<Vector2i> indices)
+void MapGenerator::colorTiles(std::list<Vector2i> indices)
 {
     for (Cube* cube: grid)
         cube->color = defaultCubeColor;
@@ -262,7 +262,7 @@ void Layer::colorTiles(std::list<Vector2i> indices)
         grid[index.y * gridSize.x + index.x]->color = RED;
 }
 
-std::vector<Vector3> Layer::pathfindPositions(Vector3 start, Vector3 goal)
+std::vector<Vector3> MapGenerator::pathfindPositions(Vector3 start, Vector3 goal)
 {
     Vector2i startIndex = worldPositionToIndex(start);
     Vector2i goalIndex = worldPositionToIndex(goal);
@@ -278,7 +278,7 @@ std::vector<Vector3> Layer::pathfindPositions(Vector3 start, Vector3 goal)
     return positions;
 }
 
-std::vector<Vector3> Layer::pathfindPositionsForTroll(Vector3 start, Vector3 goal)
+std::vector<Vector3> MapGenerator::pathfindPositionsForTroll(Vector3 start, Vector3 goal)
 {
     Vector2i startIndex = worldPositionToIndex(start);
     Vector2i goalIndex = worldPositionToIndex(goal);
@@ -312,7 +312,7 @@ std::vector<Vector3> Layer::pathfindPositionsForTroll(Vector3 start, Vector3 goa
     return positions;
 }
 
-Cube* Layer::raycastToGround()
+Cube* MapGenerator::raycastToGround()
 {
     Ray ray = CameraManager::get().getMouseRay();
     float closestCollisionDistance = std::numeric_limits<float>::infinity();

@@ -4,7 +4,7 @@
 #include "structs.h"
 
 #include "BaseScreen.h"
-#include "Layer.h"
+#include "MapGenerator.h"
 #include "Building.h"
 #include "BuildingManager.h"
 #include "Player.h"
@@ -30,8 +30,6 @@ class GameScreen: public BaseScreen
 {
     private:
         Vector2i screenSize;
-
-        Layer* layer;
 
         BuildingManager* buildingManager;
         Building* selectedBuilding;

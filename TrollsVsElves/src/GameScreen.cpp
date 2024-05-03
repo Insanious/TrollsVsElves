@@ -4,14 +4,12 @@ GameScreen::GameScreen(Vector2i screenSize)
 {
     this->screenSize = screenSize;
 
-
-    layer = new Layer();
-    layer->createFromFile("map/map.json");
-    Vector2i gridSize = layer->getGridSize();
-    Vector3 cubeSize = layer->getCubeSize();
+    MapGenerator::get().generateFromFile("map/map.json");
+    Vector2i gridSize = MapGenerator::get().getGridSize();
+    Vector3 cubeSize = MapGenerator::get().getCubeSize();
 
     selectedBuilding = nullptr;
-    buildingManager = new BuildingManager({ cubeSize.x * 2, cubeSize.y, cubeSize.z * 2 }, BLANK, layer);
+    buildingManager = new BuildingManager({ cubeSize.x * 2, cubeSize.y, cubeSize.z * 2 }, BLANK);
 
     Vector3 startPos = { 0.f, cubeSize.y / 2, 0.f };
     startPos.x = gridSize.x / 2 * cubeSize.x - cubeSize.x; // spawn in corner
@@ -34,9 +32,6 @@ GameScreen::GameScreen(Vector2i screenSize)
 
 GameScreen::~GameScreen()
 {
-    if (layer)
-        delete layer;
-
     if (buildingManager)
         delete buildingManager;
 
@@ -51,7 +46,7 @@ void GameScreen::draw()
 
     BeginMode3D(camera3D);
 
-        layer->draw();
+        MapGenerator::get().draw();
 
         for (Resource* resource: resources)
             resource->draw();
@@ -158,13 +153,13 @@ void GameScreen::update()
         if (player->getState() == IDLE && player->getPreviousState() == RUNNING_TO_BUILD) // was running and reached target
         {
             Building* building = buildingManager->yieldBuildQueue();
-            layer->addObstacle(building->getCube());
+            MapGenerator::get().addObstacle(building->getCube());
 
             building = buildingManager->buildQueueFront();
             if (building) // if more in queue, walk to the next target
             {
                 Vector3 targetPosition = calculateTargetPositionToCubeFromEntity(player, building->getCube());
-                std::vector<Vector3> positions = layer->pathfindPositions(player->getPosition(), targetPosition);
+                std::vector<Vector3> positions = MapGenerator::get().pathfindPositions(player->getPosition(), targetPosition);
                 player->setPositions(positions, RUNNING_TO_BUILD);
             }
         }
@@ -172,7 +167,7 @@ void GameScreen::update()
 
     if (selectedBuilding && selectedBuilding->isSold()) // delete selectedBuilding and pop from buildings vector
     {
-        layer->removeObstacle(selectedBuilding->getCube());
+        MapGenerator::get().removeObstacle(selectedBuilding->getCube());
         buildingManager->removeBuilding(selectedBuilding);
         selectedBuilding = nullptr;
     }
@@ -303,7 +298,7 @@ RaycastHitType GameScreen::checkRaycastHitType()
     if (buildingManager->raycastToBuilding())
         return RAYCAST_HIT_TYPE_BUILDING;
 
-    if (layer->raycastToGround())
+    if (MapGenerator::get().raycastToGround())
         return RAYCAST_HIT_TYPE_GROUND;
 
     return RAYCAST_HIT_TYPE_OUT_OF_BOUNDS;
@@ -402,7 +397,7 @@ void GameScreen::handleLeftMouseButton()
 
                 // run to new target and schedule building
                 Vector3 targetPosition = calculateTargetPositionToCubeFromEntity(player, buildingManager->getGhostBuilding()->getCube());
-                std::vector<Vector3> positions = layer->pathfindPositions(player->getPosition(), targetPosition);
+                std::vector<Vector3> positions = MapGenerator::get().pathfindPositions(player->getPosition(), targetPosition);
                 player->setPositions(positions, RUNNING_TO_BUILD);
                 buildingManager->scheduleGhostBuilding();
                 break;
@@ -420,6 +415,7 @@ void GameScreen::handleLeftMouseButton()
 
 void GameScreen::handleRightMouseButton()
 {
+    MapGenerator& mapGenerator = MapGenerator::get();
     RaycastHitType type = checkRaycastHitType();
 
     switch (type)
@@ -438,9 +434,9 @@ void GameScreen::handleRightMouseButton()
                 }
 
                 // run all selected entities to where mouse was clicked
-                Vector3 goal = layer->raycastToGround()->position;
-                Vector2i goalIndex = layer->worldPositionToIndex(goal);
-                std::vector<Vector2i> neighboringIndices = layer->getNeighboringIndices({ goalIndex });
+                Vector3 goal = mapGenerator.raycastToGround()->position;
+                Vector2i goalIndex = mapGenerator.worldPositionToIndex(goal);
+                std::vector<Vector2i> neighboringIndices = mapGenerator.getNeighboringIndices({ goalIndex });
 
                 neighboringIndices.insert(neighboringIndices.begin(), goalIndex); // insert at front so its guaranteed to be picked
 
@@ -451,13 +447,13 @@ void GameScreen::handleRightMouseButton()
                 bool checkForTroll = player->isTroll() && player->isSelected();
                 for (int i = 0; i < selectedEntities.size(); i++)
                 {
-                    Vector3 pos = layer->indexToWorldPosition(neighboringIndices[i]);
+                    Vector3 pos = mapGenerator.indexToWorldPosition(neighboringIndices[i]);
                     entity = selectedEntities[i];
 
                     if (checkForTroll && entity == player) // TODO: later, this seems inefficient but good enough for now
-                        entity->setPositions(layer->pathfindPositionsForTroll(entity->getPosition(), pos), RUNNING);
+                        entity->setPositions(mapGenerator.pathfindPositionsForTroll(entity->getPosition(), pos), RUNNING);
                     else
-                        entity->setPositions(layer->pathfindPositions(entity->getPosition(), pos), RUNNING);
+                        entity->setPositions(mapGenerator.pathfindPositions(entity->getPosition(), pos), RUNNING);
                     entity->detach();
                 }
 
@@ -465,7 +461,7 @@ void GameScreen::handleRightMouseButton()
                 {
                     std::list<Vector2i> listIndices;
                     listIndices.insert(listIndices.begin(), neighboringIndices.begin(), neighboringIndices.end());
-                    layer->colorTiles(listIndices);
+                    mapGenerator.colorTiles(listIndices);
                 }
 
                 break;
@@ -474,8 +470,8 @@ void GameScreen::handleRightMouseButton()
             if (selectedBuilding)
             {
                 Vector3 point = raycastToGround().point;
-                Vector2i index = layer->worldPositionToIndex(point);
-                Vector3 adjusted = layer->indexToWorldPosition(index);
+                Vector2i index = mapGenerator.worldPositionToIndex(point);
+                Vector3 adjusted = mapGenerator.indexToWorldPosition(index);
                 selectedBuilding->setRallyPoint(adjusted);
 
                 break;
@@ -495,7 +491,7 @@ void GameScreen::handleRightMouseButton()
                 for (Entity* entity: selectedEntities)
                 {
                     targetPosition = calculateTargetPositionToCubeFromEntity(entity, building->getCube());
-                    positions = layer->pathfindPositions(entity->getPosition(), targetPosition);
+                    positions = mapGenerator.pathfindPositions(entity->getPosition(), targetPosition);
                     entity->setPositions(positions, RUNNING);
 
                     entity->attach(building);
@@ -516,7 +512,7 @@ void GameScreen::handleRightMouseButton()
                 for (Entity* entity: selectedEntities)
                 {
                     targetPosition = calculateTargetPositionToCubeFromEntity(entity, resource->getCube());
-                    positions = layer->pathfindPositions(entity->getPosition(), targetPosition);
+                    positions = mapGenerator.pathfindPositions(entity->getPosition(), targetPosition);
                     entity->setPositions(positions, RUNNING);
 
                     entity->attach(resource);
@@ -571,7 +567,7 @@ Resource* GameScreen::raycastToResource()
 
 RayCollision GameScreen::raycastToGround()
 {
-    float ground = layer->getHeight();
+    float ground = MapGenerator::get().getHeight();
     const float max = 10000.f;
     // Check mouse collision against a plane spanning from -max to max, with y the same as the ground level
     return GetRayCollisionQuad(
@@ -593,14 +589,15 @@ void GameScreen::clearAndDeselectAllSelectedEntities()
 
 Vector3 GameScreen::calculateTargetPositionToCubeFromEntity(Entity* entity, Cube cube)
 {
-    std::vector<Vector2i> indices = layer->getNeighboringIndices(cube);
+    MapGenerator& mapGenerator = MapGenerator::get();
+    std::vector<Vector2i> indices = mapGenerator.getNeighboringIndices(cube);
     Vector3 entityPosition = entity->getPosition();
 
     std::vector<Vector3> positions;
     Vector3 position;
     for (Vector2i index: indices)
     {
-        position = layer->indexToWorldPosition(index);
+        position = mapGenerator.indexToWorldPosition(index);
         if (position.x == entityPosition.x && position.z == entityPosition.z)
             return position;
 
@@ -623,6 +620,6 @@ void GameScreen::addResource(Vector3 position)
 
     Cube cube = { adjustedPosition, size, BLANK };
     Resource* resource = new Resource(cube);
-    layer->addObstacle(cube);
+    MapGenerator::get().addObstacle(cube);
     resources.push_back(resource);
 }

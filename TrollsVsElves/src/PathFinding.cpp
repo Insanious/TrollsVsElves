@@ -5,8 +5,6 @@
 #include <iostream>
 #include <limits>
 
-PathFinding::PathFinding() {}
-
 void PathFinding::printNode(std::string prefix, Node node)
 {
     printf("%s: x: %d, y: %d\tg: %f, h: %f, f: %f\n", prefix.c_str(), node.position.x, node.position.y, node.g, node.h, node.f);
