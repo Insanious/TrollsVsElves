@@ -45,7 +45,7 @@ inline void printColor(std::string prefix, Color color)
     printf("%s: %u, %u, %u, %u\n", prefix.c_str(), color.r, color.g, color.b, color.a);
 }
 
-inline void print2DBoolVector(std::vector<std::vector<bool>> vec)
+inline void print2DBoolVector(std::string prefix, std::vector<std::vector<bool>> vec)
 {
     std::string str = "";
     for (int y = 0; y < vec.size(); y++)
@@ -55,7 +55,7 @@ inline void print2DBoolVector(std::vector<std::vector<bool>> vec)
 
         str += '\n';
     }
-    printf("\n%s\n", str.c_str());
+    printf("%s\n%s\n", prefix.c_str(), str.c_str());
 }
 
 inline float nearestIncrementOld(float value, float increment)

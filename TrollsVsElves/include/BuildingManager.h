@@ -51,6 +51,7 @@ public:
     Building* buildQueueFront();
     void clearBuildQueue();
 
+    void createDebugBuilding(Vector2i index);
     void createNewGhostBuilding(BuildingType buildingType);
     void clearGhostBuilding();
     void scheduleGhostBuilding();

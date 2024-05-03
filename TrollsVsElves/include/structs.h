@@ -11,7 +11,7 @@ struct Cube
 {
     Vector3 position = Vector3Zero();
     Vector3 size = Vector3Zero();
-    Color color = WHITE;
+    Color color = BLANK;
 
     Cube(): position(), size(), color() {};
 
@@ -45,7 +45,7 @@ struct Cylinder
     float radiusBottom = 0;
     float height = 0;
     int slices = 0;
-    Color color = WHITE;
+    Color color = BLANK;
 
     Cylinder(): position(), radiusTop(), radiusBottom(), height(), slices(), color() {};
 
@@ -67,15 +67,16 @@ struct Capsule
 {
     Vector3 startPos = Vector3Zero();
     Vector3 endPos = Vector3Zero();
-    float radius = 0;
-    int slices = 0;
-    int rings = 0;
-    Color color = WHITE;
+    float radius = 2.f;
+    float height = 3.f;
+    int slices = 16;
+    int rings = 4;
+    Color color = BLANK;
 
-    Capsule(): startPos(), endPos(), radius(), slices(), rings(), color() {};
+    Capsule(): startPos(), endPos(), radius(), height(), color() {};
 
-    Capsule(Vector3 _startPos, Vector3 _endPos, float _radius, int _slices, int _rings, Color _color)
-        : startPos(_startPos), endPos(_endPos), radius(_radius), slices(_slices), rings(_rings), color(_color) {};
+    Capsule(float _radius, float _height)
+        : radius(_radius), height(_height) {};
 };
 
 inline void drawCapsule(Capsule capsule)

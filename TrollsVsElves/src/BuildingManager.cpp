@@ -103,7 +103,7 @@ void BuildingManager::update()
             Vector3 endPos = { neighborPosition.x, ground + height, neighborPosition.z };
             float radius = 2.f;
             Vector3 speed = Vector3Scale(Vector3One(), 30);
-            Entity* entity = new Entity(Capsule(startPos, endPos, radius, 16, 4, BLACK), speed, WORKER);
+            Entity* entity = new Entity(startPos, speed, BLACK, WORKER);
 
             if (building->isSelected())
             {
@@ -205,6 +205,32 @@ bool BuildingManager::isColliding(const Container& buildings, Building* targetBu
             return true;
 
     return false;
+}
+
+void BuildingManager::createDebugBuilding(Vector2i index)
+{
+    ghostBuilding = new Building(Cube(defaultBuildingSize), ROCK, nullptr, nullptr);
+
+    Vector3 pos = layer->indexToWorldPosition(index);
+    Vector3 cubeSize = layer->getCubeSize();
+    Vector3 snapped = {
+        nearestIncrement(pos.x, cubeSize.x),
+        pos.y, // don't need nearest here
+        nearestIncrement(pos.z, cubeSize.z)
+    };
+    Vector3 offset = {
+        (cubeSize.x - defaultBuildingSize.x) / 2.0f,
+        0.f,
+        (cubeSize.z - defaultBuildingSize.z) / 2.0f,
+    };
+
+    ghostBuilding->setPosition(Vector3Add(snapped, offset));
+    layer->addObstacle(ghostBuilding->getCube());
+
+    ghostBuilding->scheduleBuild();
+    buildQueue.push_back(ghostBuilding);
+    yieldBuildQueue();
+    ghostBuilding = nullptr;
 }
 
 void BuildingManager::createNewGhostBuilding(BuildingType buildingType)

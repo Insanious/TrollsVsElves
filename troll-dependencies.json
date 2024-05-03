@@ -1,0 +1,20 @@
+{
+    "id": "troll",
+    "name": "Troll",
+    "dependencies": [],
+    "children": [
+        {
+            "id": "spells",
+            "name": "Spells",
+            "dependencies": [],
+            "children": [
+                {
+                    "id": "blink",
+                    "name": "Blink",
+                    "dependencies": [],
+                    "children": []
+                }
+            ]
+        }
+    ]
+}

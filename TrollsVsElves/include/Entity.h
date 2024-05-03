@@ -14,10 +14,7 @@ enum MovementState {
     RUNNING_TO_BUILD,
     WORKING
 };
-enum EntityType {
-    PLAYER,
-    WORKER
-};
+enum EntityType { PLAYER, WORKER };
 
 class Entity
 {
@@ -44,7 +41,7 @@ private:
 
 public:
     Entity() = delete;
-    Entity(Capsule capsule, Vector3 speed, EntityType type);
+    Entity(Vector3 position, Vector3 speed, Color defaultColor, EntityType type);
     ~Entity();
 
     void draw();
@@ -54,6 +51,9 @@ public:
     Vector3 getPosition();
     Capsule getCapsule();
     void setPositions(std::vector<Vector3> positions, MovementState newState);
+    void setDefaultColor(Color color);
+    void setCapsule(Capsule capsule);
+    void setPosition(Vector3 position);
 
     void setState(MovementState newState);
     MovementState getState();

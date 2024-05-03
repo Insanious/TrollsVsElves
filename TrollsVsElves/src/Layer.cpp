@@ -31,6 +31,7 @@ void Layer::createFromFile(std::string filename)
     this->grid = std::vector<Cube*>(gridSize.y * gridSize.x, nullptr);
     obstacles = std::vector<std::vector<bool>>(gridSize.y, std::vector<bool>(gridSize.x, false));
     actualObstacles = std::vector<std::vector<bool>>(gridSize.y, std::vector<bool>(gridSize.x, false));
+    trollObstacles = std::vector<std::vector<bool>>(gridSize.y/2, std::vector<bool>(gridSize.x/2, false));
 
     Vector2 halfGridSize = { gridSize.x / 2 * cubeSize.x, gridSize.y / 2 * cubeSize.z };
     float groundHeight = height - cubeSize.y/2;
@@ -93,19 +94,28 @@ std::vector<std::vector<bool>> Layer::getActualObstacles()
     return actualObstacles;
 }
 
-void Layer::recalculateObstacles(std::vector<Vector2i> indices)
+std::vector<std::vector<bool>> Layer::getTrollObstacles()
+{
+    return trollObstacles;
+}
+
+void Layer::recalculateObstacles()
 {
     // this is needed so the player doesn't walk between the edges of two buildings
     // check whether two edges are touching and if they are, fill in the gaps
     std::copy(obstacles.begin(), obstacles.end(), actualObstacles.begin());
+    Vector2i topLeft;
+    Vector2i topRight;
+    Vector2i bottomLeft;
+    Vector2i bottomRight;
     for (int y = 0; y < gridSize.y - 1; ++y)
     {
         for (int x = 0; x < gridSize.x - 1; ++x)
         {
-            Vector2i topLeft        = { x + 0, y + 0 };
-            Vector2i topRight       = { x + 1, y + 0 };
-            Vector2i bottomLeft     = { x + 0, y + 1 };
-            Vector2i bottomRight    = { x + 1, y + 1 };
+            topLeft        = { x + 0, y + 0 };
+            topRight       = { x + 1, y + 0 };
+            bottomLeft     = { x + 0, y + 1 };
+            bottomRight    = { x + 1, y + 1 };
 
             if (actualObstacles[topLeft.y][topLeft.x]               // (0, 0 == true)
                 && !actualObstacles[topRight.y][topRight.x]         // (0, 1 == false)
@@ -128,13 +138,23 @@ void Layer::recalculateObstacles(std::vector<Vector2i> indices)
     }
 }
 
+void Layer::recalculateTrollObstacles()
+{
+    // shrink original obstacles map by 2 so it can still be used with pathfinding for troll
+    // needed to simulate that the troll is twice as big, and shouldn't be able to walk through 1x1 paths
+    for (int y = 0; y < gridSize.y - 1; y += 2)
+        for (int x = 0; x < gridSize.x - 1; x += 2)
+            trollObstacles[y/2][x/2] = (obstacles[y][x] || obstacles[y+1][x] || obstacles[y][x+1] || obstacles[y+1][x+1]);
+}
+
 void Layer::addObstacle(Cube cube)
 {
     std::vector<Vector2i> indices = getCubeIndices(cube);
     for (Vector2i index: indices)
         obstacles[index.y][index.x] = true;
 
-    recalculateObstacles(indices);
+    recalculateObstacles();
+    recalculateTrollObstacles();
 }
 
 void Layer::removeObstacle(Cube cube)
@@ -143,7 +163,8 @@ void Layer::removeObstacle(Cube cube)
     for (Vector2i index: indices)
         obstacles[index.y][index.x] = false;
 
-    recalculateObstacles(indices);
+    recalculateObstacles();
+    recalculateTrollObstacles();
 }
 
 Vector2i Layer::worldPositionToIndex(Vector3 position)
@@ -253,6 +274,40 @@ std::vector<Vector3> Layer::pathfindPositions(Vector3 start, Vector3 goal)
 
     for (Vector2i index: paths)
         positions.push_back(indexToWorldPosition(index));
+
+    return positions;
+}
+
+std::vector<Vector3> Layer::pathfindPositionsForTroll(Vector3 start, Vector3 goal)
+{
+    Vector2i startIndex = worldPositionToIndex(start);
+    Vector2i goalIndex = worldPositionToIndex(goal);
+
+    Vector2i startTrollIndex = { startIndex.x/2, startIndex.y/2 }; // half to account for troll obstacle map
+    Vector2i goalTrollIndex = { goalIndex.x/2, goalIndex.y/2 }; // half to account for troll obstacle map
+    std::list<Vector2i> paths = PathFinding::get().findPath(startTrollIndex, goalTrollIndex, getTrollObstacles());
+    std::vector<Vector3> positions;
+
+    Vector3 pos;
+    float halfCubeSize = cubeSize.x/2;
+    for (Vector2i index: paths)
+    {
+        pos = indexToWorldPosition({ index.x * 2, index.y * 2 }); // double index to get real index
+        positions.push_back({ pos.x + halfCubeSize, pos.y, pos.z + halfCubeSize }); // adjust to make pos middle of 2x2
+    }
+
+    std::list<Vector2i> updatedPaths;
+    Vector2i doubleIndex;
+    for (Vector2i index: paths)
+    {
+        doubleIndex = { index.x * 2, index.y * 2 }; // top left
+        updatedPaths.push_back(doubleIndex);
+        updatedPaths.push_back({ doubleIndex.x + 1, doubleIndex.y + 0 }); // top right
+        updatedPaths.push_back({ doubleIndex.x + 0, doubleIndex.y + 1 }); // bottom left
+        updatedPaths.push_back({ doubleIndex.x + 1, doubleIndex.y + 1 }); // bottom right
+    }
+
+    colorTiles(updatedPaths);
 
     return positions;
 }

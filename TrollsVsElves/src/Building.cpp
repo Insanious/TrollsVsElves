@@ -172,7 +172,9 @@ void Building::build()
 {
     assert(buildStage == SCHEDULED); // sanity check
 
-    promotionSignal->emit(advancement->id);
+    if (promotionSignal)
+        promotionSignal->emit(advancement->id);
+
     buildStage = IN_PROGRESS;
 }
 

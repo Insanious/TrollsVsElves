@@ -14,6 +14,7 @@ private:
     std::vector<Cube*> grid;
     std::vector<std::vector<bool>> obstacles;
     std::vector<std::vector<bool>> actualObstacles;
+    std::vector<std::vector<bool>> trollObstacles;
     Vector2i gridSize;
     Vector3 cubeSize;
     Color defaultCubeColor;
@@ -34,7 +35,9 @@ public:
     Cube* raycastToGround();
 
     std::vector<std::vector<bool>> getActualObstacles();
-    void recalculateObstacles(std::vector<Vector2i> indices);
+    std::vector<std::vector<bool>> getTrollObstacles();
+    void recalculateObstacles();
+    void recalculateTrollObstacles();
     void addObstacle(Cube cube);
     void removeObstacle(Cube cube);
 
@@ -46,6 +49,7 @@ public:
 
     void colorTiles(std::list<Vector2i> indices);
     std::vector<Vector3> pathfindPositions(Vector3 start, Vector3 goal);
+    std::vector<Vector3> pathfindPositionsForTroll(Vector3 start, Vector3 goal);
 };
 
 #endif

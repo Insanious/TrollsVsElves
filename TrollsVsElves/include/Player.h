@@ -8,10 +8,13 @@
 #include <map>
 #include <functional>
 
+enum PlayerType { PLAYER_ELF, PLAYER_TROLL };
+
 class Player : public Entity
 {
 private:
     BuildingManager* buildingManager;
+    PlayerType type;
 
     AdvancementTree* advancements;
     AdvancementNode* currentAdvancements;
@@ -21,8 +24,11 @@ private:
 
 public:
     Player() = delete;
-    Player(Capsule capsule, Vector3 speed, BuildingManager* buildingManager);
+    Player(Vector3 position, Vector3 speed, BuildingManager* buildingManager, PlayerType type);
     ~Player();
+
+    bool isElf();
+    bool isTroll();
 
     void draw();
     void drawUIButtons(ImVec2 buttonSize, int nrOfButtons, int buttonsPerLine);

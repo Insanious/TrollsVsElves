@@ -66,7 +66,6 @@ std::list<Vector2i> PathFinding::findPath(Vector2i start, Vector2i goal, const s
     std::priority_queue<Node, std::vector<Node>, CompareNode> notVisitedHeap;
     std::unordered_map<Vector2i, Node, HashVector2i> notVisitedMap;
     std::unordered_map<Vector2i, Node, HashVector2i> visited;
-    std::list<Vector2i> path;
 
     notVisitedHeap.push(startNode);
     while (!notVisitedHeap.empty())
@@ -90,7 +89,7 @@ std::list<Vector2i> PathFinding::findPath(Vector2i start, Vector2i goal, const s
             neighborPositions[i].y = current.position.y + directions[i][1];
         }
 
-        for (Vector2i pos : neighborPositions)
+        for (Vector2i pos: neighborPositions)
         {
             if (pos.x < 0 || pos.x >= maxX || pos.y < 0 || pos.y >= maxY    // out of bounds
                 || visited.find(pos) != visited.end()                       // already visited
@@ -116,6 +115,5 @@ std::list<Vector2i> PathFinding::findPath(Vector2i start, Vector2i goal, const s
     }
 
     printf("no path?\n");
-
-    return path;
+    return std::list<Vector2i>();
 }

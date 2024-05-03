@@ -11,18 +11,13 @@ GameScreen::GameScreen(Vector2i screenSize)
     Vector3 cubeSize = layer->getCubeSize();
 
     selectedBuilding = nullptr;
-    buildingManager = new BuildingManager({ cubeSize.x * 2, cubeSize.y, cubeSize.z * 2 }, WHITE, layer);
+    buildingManager = new BuildingManager({ cubeSize.x * 2, cubeSize.y, cubeSize.z * 2 }, BLANK, layer);
 
-    Vector3 startPos = { 0.f, cubeSize.y/2, 0.f };
-    Vector3 endPos = { 0.f, cubeSize.y/2 + 8.f, 0.f };
-    startPos.x = endPos.x = gridSize.x/2 * cubeSize.x - cubeSize.x;
-    startPos.z = endPos.z = gridSize.y/2 * cubeSize.z - cubeSize.z;
-    float radius = 2.f;
-    int slices = 16;
-    int rings = 4;
-    Color playerColor = BLUE;
+    Vector3 startPos = { 0.f, cubeSize.y / 2, 0.f };
+    startPos.x = gridSize.x / 2 * cubeSize.x - cubeSize.x; // spawn in corner
+    startPos.z = gridSize.y / 2 * cubeSize.z - cubeSize.z; // spawn in corner
     Vector3 playerSpeed = Vector3Scale(Vector3One(), 40);
-    player = new Player(Capsule(startPos, endPos, radius, slices, rings, playerColor), playerSpeed, buildingManager);
+    player = new Player(startPos, playerSpeed, buildingManager, PLAYER_ELF);
 
     isMultiSelecting = false;
 
@@ -453,12 +448,16 @@ void GameScreen::handleRightMouseButton()
                     printf("entities > indices, should probably do something about this later\n"); // TODO: later
 
                 Entity* entity = nullptr;
+                bool checkForTroll = player->isTroll() && player->isSelected();
                 for (int i = 0; i < selectedEntities.size(); i++)
                 {
                     Vector3 pos = layer->indexToWorldPosition(neighboringIndices[i]);
                     entity = selectedEntities[i];
 
-                    entity->setPositions(layer->pathfindPositions(entity->getPosition(), pos), RUNNING);
+                    if (checkForTroll && entity == player) // TODO: later, this seems inefficient but good enough for now
+                        entity->setPositions(layer->pathfindPositionsForTroll(entity->getPosition(), pos), RUNNING);
+                    else
+                        entity->setPositions(layer->pathfindPositions(entity->getPosition(), pos), RUNNING);
                     entity->detach();
                 }
 
@@ -622,7 +621,7 @@ void GameScreen::addResource(Vector3 position)
     Vector3 size = { 2.f, 20.f, 2.f };
     Vector3 adjustedPosition = { position.x, position.y + size.y/2, position.z };
 
-    Cube cube = { adjustedPosition, size, WHITE };
+    Cube cube = { adjustedPosition, size, BLANK };
     Resource* resource = new Resource(cube);
     layer->addObstacle(cube);
     resources.push_back(resource);

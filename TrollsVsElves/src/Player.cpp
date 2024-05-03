@@ -1,15 +1,41 @@
 #include "Player.h"
 
-Player::Player(Capsule capsule, Vector3 speed, BuildingManager* buildingManager)
-    : Entity(capsule, speed, PLAYER)
+Player::Player(Vector3 position, Vector3 speed, BuildingManager* buildingManager, PlayerType type)
+    : Entity(position, speed, BLANK, PLAYER)
 {
     this->buildingManager = buildingManager;
+    this->type = type;
+    switch (type)
+    {
+        case PLAYER_ELF:
+            this->setCapsule(Capsule(2.f, 8.f));
+            this->setDefaultColor(BLUE);
+            this->setPosition(position);
+            advancements = new AdvancementTree("player-dependencies.json");
+            break;
 
-    advancements = new AdvancementTree("player-dependencies.json");
+        case PLAYER_TROLL:
+            this->setCapsule(Capsule(3.f, 12.f));
+            this->setDefaultColor(RED);
+            this->setPosition(position);
+            advancements = new AdvancementTree("troll-dependencies.json"); // TODO: later, create a proper troll-dependencies file
+            break;
+    }
+
     currentAdvancements = advancements->getRoot();
 }
 
 Player::~Player() {}
+
+bool Player::isElf()
+{
+    return type == PLAYER_ELF;
+}
+
+bool Player::isTroll()
+{
+    return type == PLAYER_TROLL;
+}
 
 void Player::draw()
 {
@@ -27,13 +53,8 @@ void Player::drawUIButtons(ImVec2 buttonSize, int nrOfButtons, int buttonsPerLin
     for (int i = 0; i < nrOfFillerButtons - 1; i++)
         children.push_back(&fillerButton);          // add filler buttons between actual buttons and back button
 
-    if (nrOfFillerButtons)
-    {
-        if (currentAdvancements->parent)            // can go back from here
-            children.push_back(&backButton);        // add backButton last so its the last button
-        else
-            children.push_back(&fillerButton);      // can't go back from here so add another fillerButton
-    }
+    if (nrOfFillerButtons)                          // add back button if possible
+        children.push_back(currentAdvancements->parent ? &backButton : &fillerButton);
 
 
     bool buttonWasPressed = false;

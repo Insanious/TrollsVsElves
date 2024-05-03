@@ -1,21 +1,19 @@
 #include "Entity.h"
 
-Entity::Entity(Capsule capsule, Vector3 speed, EntityType type)
+Entity::Entity(Vector3 position, Vector3 speed, Color defaultColor, EntityType type)
 {
     state = IDLE;
     previousState = IDLE;
     selected = false;
     attachedBuilding = nullptr;
 
-    defaultColor = capsule.color;
-    Vector3 defaultColorHSL = ColorToHSV(defaultColor);
-    selectedColor = ColorFromHSV(defaultColorHSL.x, defaultColorHSL.y, defaultColorHSL.z - 0.2f);
-
     targetMarker = Cylinder(Vector3Zero(), 4.f, 0.1f, 8, { 255, 255, 255, 30 });
 
-    this->capsule = capsule;
     this->speed = speed;
     this->type = type;
+
+    setPosition(position);
+    setDefaultColor(defaultColor);
 }
 
 Entity::~Entity() {}
@@ -92,6 +90,26 @@ void Entity::setPositions(std::vector<Vector3> positions, MovementState newState
         targetMarker.position = { paths.back().x, 2.f, paths.back().z };
 
     setState(newState);
+}
+
+void Entity::setDefaultColor(Color color)
+{
+    defaultColor = color;
+    Vector3 defaultColorHSL = ColorToHSV(defaultColor);
+    selectedColor = ColorFromHSV(defaultColorHSL.x, defaultColorHSL.y, defaultColorHSL.z - 0.2f);
+
+    this->capsule.color = defaultColor;
+}
+
+void Entity::setCapsule(Capsule capsule)
+{
+    this->capsule = capsule;
+}
+
+void Entity::setPosition(Vector3 position)
+{
+    capsule.startPos = capsule.endPos = position;
+    capsule.endPos.y = capsule.startPos.y + capsule.height;
 }
 
 void Entity::setState(MovementState newState)
