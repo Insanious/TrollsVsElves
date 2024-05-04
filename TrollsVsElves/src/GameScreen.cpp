@@ -132,7 +132,7 @@ void GameScreen::drawUI()
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, buttonPadding);
 
         if (selectedBuilding)
-            selectedBuilding->drawUIButtons(buttonSize, nrOfButtons, buttonLayout.x);
+            buildingManager->drawBuildingUIButtons(selectedBuilding, buttonSize, nrOfButtons, buttonLayout.x);
         else if (player->isSelected())
             player->drawUIButtons(buttonSize, nrOfButtons, buttonLayout.x);
 
@@ -472,7 +472,7 @@ void GameScreen::handleRightMouseButton()
                 Vector3 point = raycastToGround().point;
                 Vector2i index = mapGenerator.worldPositionToIndex(point);
                 Vector3 adjusted = mapGenerator.indexToWorldPosition(index);
-                selectedBuilding->setRallyPoint(adjusted);
+                selectedBuilding->setRallyPoint(adjusted); // TODO: later, this doesn't work for y-elevated buildings
 
                 break;
             }

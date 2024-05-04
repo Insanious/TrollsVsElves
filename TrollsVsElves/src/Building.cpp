@@ -1,51 +1,32 @@
 #include "Building.h"
 
-Building::Building(
-    Cube cube,
-    BuildingType buildingType,
-    AdvancementNode* advancement,
-    simpleSignal::Signal<void(std::string)>* promotionSignal)
+Building::Building(Cube cube, BuildingType buildingType)
 {
-
     buildStage = GHOST;
 
     ghostColor = { 0, 121, 241, 100 };
     inProgressColor = { 255, 255, 255, 100 };
 
-    this->promotionSignal = promotionSignal;
     this->cube = cube;
     this->buildingType = buildingType;
     cube.color = ghostColor;
 
     selected = false;
     sold = false;
-    recruiting = false;
 
     buildTime = 0.2f;
     buildTimer = 0.f;
 
     rallyPoint = Cylinder(Vector3Zero(), 0.8f, 20.f, 8, { 255, 255, 255, 128 });
 
-    this->advancement = advancement;
+    this->advancement = nullptr;
 
     switch (buildingType)
     {
-        case ROCK:
-            targetColor = Color{ 60, 60, 60, 255 };
-            canRecruit = false;
-            break;
-        case CASTLE:
-            targetColor = BEIGE;
-            canRecruit = false;
-            break;
-        case HALL:
-            targetColor = BLUE;
-            canRecruit = true;
-            break;
-        case SHOP:
-            targetColor = SKYBLUE;
-            canRecruit = true;
-            break;
+        case ROCK:      targetColor = Color{ 60, 60, 60, 255 }; break;
+        case CASTLE:    targetColor = BEIGE;                    break;
+        case HALL:      targetColor = BLUE;                     break;
+        case SHOP:      targetColor = SKYBLUE;                  break;
     }
 
     Vector3 targetColorHSL = ColorToHSV(targetColor);
@@ -60,94 +41,6 @@ void Building::draw()
 
     if (selected && !Vector3Equals(rallyPoint.position, cube.position)) // This might be a temporary solution TODO: later
         drawCylinder(rallyPoint);
-}
-
-void Building::drawUIButtons(ImVec2 buttonSize, int nrOfButtons, int buttonsPerLine)
-{
-    std::vector<AdvancementNode*> children = advancement->children;
-
-    AdvancementNode fillerButton = AdvancementNode(nullptr, "filler", "filler", {});
-    AdvancementNode sellButton = AdvancementNode(nullptr, "sell", "Sell", {});
-
-    int nrOfFillerButtons = nrOfButtons - children.size();
-    for (int i = 0; i < nrOfFillerButtons - 1; i++)
-        children.push_back(&fillerButton);      // add filler buttons between actual buttons and sell button
-    if (nrOfFillerButtons)
-        children.push_back(&sellButton);        // add sellButton last so its the last button
-
-    AdvancementNode* child = nullptr;
-    bool buttonWasPressed = false;
-    for (int i = 0; i < children.size(); i += buttonsPerLine)
-    {
-        for (int j = 0; j < buttonsPerLine; j++)
-        {
-            child = children[i+j];
-
-            if (child->name == "filler")
-                ImGui::InvisibleButton(child->name.c_str(), buttonSize);
-            else
-            {
-                if (canBePromotedTo(child)) // push default colors
-                {
-                    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.26f, 0.59f, 0.98f, 0.40f});         // found in imgui_draw.cpp@201
-                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.26f, 0.59f, 0.98f, 1.00f});  // found in imgui_draw.cpp@202
-                    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.06f, 0.53f, 0.98f, 1.00f});   // found in imgui_draw.cpp@203
-                }
-                else // push disabled colors
-                {
-                    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.83f, 0.32f, 0.32f, 0.4f});
-                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.83f, 0.32f, 0.32f, 0.7f});
-                    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.83f, 0.32f, 0.32f, 1.00f});
-                }
-
-                if (ImGui::Button(child->name.c_str(), buttonSize))
-                {
-                    buttonWasPressed = true;
-                    if (child->id == "sell")
-                        sell();
-                    else if (child->id == "recruit")
-                        recruiting = true;
-                    else if (child->id == "buy")
-                        buy(child);
-                    else if (canBePromotedTo(child))
-                        promote(child);
-                }
-
-                ImGui::PopStyleColor(3); // remove pushed colors
-            }
-
-            if (j != buttonsPerLine - 1) // apply on all except the last
-                ImGui::SameLine();
-        }
-    }
-
-    if (!buttonWasPressed)
-        checkKeyboardPresses(children);
-}
-
-void Building::checkKeyboardPresses(std::vector<AdvancementNode*> children)
-{
-    // check if any key between KEY_ONE -> KEY_ONE + children.size() was pressed
-    AdvancementNode* child = nullptr;
-    for (int i = 0; i < children.size(); i++)
-    {
-        child = children[i];
-        int keyNr = int(KEY_ONE) + i;
-        if (IsKeyPressed((KeyboardKey)keyNr))
-        {
-            if (child->name == "filler")
-                return;
-            else if (child->id == "sell")
-                sell();
-            else if (child->id == "recruit")
-                recruiting = true;
-            else if (child->id == "buy")
-                buy(child);
-            else if (canBePromotedTo(child))
-                promote(child);
-            break;
-        }
-    }
 }
 
 void Building::update()
@@ -179,9 +72,6 @@ void Building::scheduleBuild()
 void Building::build()
 {
     assert(buildStage == SCHEDULED); // sanity check
-
-    if (promotionSignal)
-        promotionSignal->emit(advancement->id);
 
     buildStage = IN_PROGRESS;
 }
@@ -235,16 +125,6 @@ bool Building::isSold()
     return sold;
 }
 
-bool Building::isRecruiting()
-{
-    return recruiting;
-}
-
-void Building::setRecruiting(bool value)
-{
-    recruiting = value;
-}
-
 Cylinder Building::getRallyPoint()
 {
     return rallyPoint;
@@ -255,29 +135,15 @@ void Building::setRallyPoint(Vector3 point)
     rallyPoint.position = point;
 }
 
-std::vector<AdvancementNode*> Building::getPossiblePromotions()
+AdvancementNode* Building::getAdvancement()
 {
-    return advancement->children;
-}
-
-bool Building::canBePromotedTo(AdvancementNode* promotion)
-{
-    return std::find(lockedPromotions.begin(), lockedPromotions.end(), promotion->id) == lockedPromotions.end();
+    return advancement;
 }
 
 void Building::promote(AdvancementNode* promotion)
 {
-    printf("'%s' got promoted to '%s'\n", advancement->id.c_str(), promotion->id.c_str());
+    if (advancement)
+        printf("'%s' got promoted to '%s'\n", advancement->id.c_str(), promotion->id.c_str());
+
     advancement = promotion;
-    promotionSignal->emit(promotion->id);
-}
-
-void Building::buy(AdvancementNode* item)
-{
-    printf("buy not implemented yet\n"); // TODO: later
-}
-
-void Building::updateLockedPromotions(std::vector<std::string> lockedPromotions)
-{
-    this->lockedPromotions = lockedPromotions;
 }

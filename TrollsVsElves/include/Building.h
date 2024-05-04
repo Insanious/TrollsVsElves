@@ -5,7 +5,6 @@
 #include "imgui.h"
 #include "rlImGui.h"
 #include "AdvancementTree.h"
-#include "Signal.h"
 
 enum BuildStage { GHOST = 0, SCHEDULED, IN_PROGRESS, FINISHED };
 enum BuildingType { CASTLE = 0, ROCK, HALL, SHOP };
@@ -27,26 +26,17 @@ private:
 
     bool selected;
     bool sold;
-    bool canRecruit;
-    bool recruiting;
 
     Cylinder rallyPoint;
 
     AdvancementNode* advancement;
-    std::vector<std::string> lockedPromotions;
-
-    simpleSignal::Signal<void(std::string)>* promotionSignal;
-
-    void checkKeyboardPresses(std::vector<AdvancementNode*> children);
-    void handleButtonPressLogic(AdvancementNode* node);
 
 public:
     Building() = delete;
-    Building(Cube cube, BuildingType buildingType, AdvancementNode* options, simpleSignal::Signal<void(std::string)>* promotionSignal);
+    Building(Cube cube, BuildingType buildingType);
     ~Building();
 
     void draw();
-    void drawUIButtons(ImVec2 buttonSize, int nrOfButtons, int buttonsPerLine);
     void update();
 
     void scheduleBuild();
@@ -63,19 +53,12 @@ public:
 
     void sell();
     bool isSold();
-    bool isRecruiting();
-    void setRecruiting(bool value);
 
     Cylinder getRallyPoint();
     void setRallyPoint(Vector3 point);
 
-    std::vector<AdvancementNode*> getPossiblePromotions();
-    bool canBePromotedTo(AdvancementNode* promotion);
+    AdvancementNode* getAdvancement();
     void promote(AdvancementNode* promotion);
-
-    void buy(AdvancementNode* item);
-
-    void updateLockedPromotions(std::vector<std::string> lockedPromotions);
 };
 
 #endif

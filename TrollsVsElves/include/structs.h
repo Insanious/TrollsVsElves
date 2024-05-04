@@ -73,7 +73,7 @@ struct Capsule
     int rings = 4;
     Color color = BLANK;
 
-    Capsule(): startPos(), endPos(), radius(), height(), color() {};
+    Capsule() {};
 
     Capsule(float _radius, float _height)
         : radius(_radius), height(_height) {};

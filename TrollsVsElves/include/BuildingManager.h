@@ -27,9 +27,6 @@ private:
     std::map<BuildingType, AdvancementTree*> advancementTrees;
     std::unordered_set<std::string> unlockedAdvancements;
 
-    simpleSignal::Signal<void(std::string)> promotionSignal;
-    void onPromotion(std::string promotion);
-
     void updateGhostBuilding();
 
     template<typename Container>
@@ -41,6 +38,8 @@ public:
     ~BuildingManager();
 
     void draw();
+    void drawBuildingUIButtons(Building* building, ImVec2 buttonSize, int nrOfButtons, int buttonsPerLine);
+    void checkKeyboardPresses(Building* building, std::vector<AdvancementNode*> children);
     void update();
 
     Building* raycastToBuilding();
@@ -60,7 +59,9 @@ public:
 
     std::vector<Entity*> getEntities();
 
-    void updateLockedPromotions();
+    void recruit(Building* building);
+    bool canPromoteTo(AdvancementNode* promotion);
+    void promote(Building* building, AdvancementNode* promotion);
 };
 
 #endif
