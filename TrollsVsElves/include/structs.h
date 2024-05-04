@@ -100,3 +100,11 @@ inline void printVector2i(std::string prefix, Vector2i vec)
 {
     printf("%s: %d, %d\n", prefix.c_str(), vec.x, vec.y);
 }
+
+struct Item
+{
+    std::string name = "";
+
+    Item() {};
+    Item(std::string _name): name(_name) {};
+};

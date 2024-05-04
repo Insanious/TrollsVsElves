@@ -1,4 +1,5 @@
 #include "BuildingManager.h"
+#include "Player.h"
 
 BuildingManager::BuildingManager(Vector3 defaultBuildingSize, Color defaultBuildingColor)
 {
@@ -97,7 +98,7 @@ void BuildingManager::drawBuildingUIButtons(Building* building, ImVec2 buttonSiz
                     else if (child->id == "recruit")
                         recruit(building);
                     else if (child->id == "buy")
-                        continue; // TODO
+                        player->tryBuyItem(Item(child->name));
                     else if (canPromoteTo(child))
                         promote(building, child);
                 }
@@ -131,7 +132,7 @@ void BuildingManager::checkKeyboardPresses(Building* building, std::vector<Advan
             else if (child->id == "recruit")
                 recruit(building);
             else if (child->id == "buy")
-                continue; // TODO
+                player->tryBuyItem(Item(child->name));
             else if (canPromoteTo(child))
                 promote(building, child);
             break;
@@ -179,6 +180,11 @@ void BuildingManager::update()
 
     for (Entity* entity: entities)
         entity->update();
+}
+
+void BuildingManager::setPlayer(Player* player)
+{
+    this->player = player;
 }
 
 Building* BuildingManager::yieldBuildQueue()

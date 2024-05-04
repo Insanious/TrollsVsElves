@@ -29,7 +29,7 @@ private:
 
     Vector3 speed;
 
-    const float defaultTargetMargin = 0.5f;
+    float defaultTargetMargin;
 
     bool selected;
 
@@ -54,6 +54,8 @@ public:
     void setDefaultColor(Color color);
     void setCapsule(Capsule capsule);
     void setPosition(Vector3 position);
+    void setSpeed(Vector3 speed);
+    Vector3 getSpeed();
 
     void setState(MovementState newState);
     MovementState getState();

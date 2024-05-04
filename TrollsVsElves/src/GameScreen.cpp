@@ -15,7 +15,10 @@ GameScreen::GameScreen(Vector2i screenSize)
     startPos.x = gridSize.x / 2 * cubeSize.x - cubeSize.x; // spawn in corner
     startPos.z = gridSize.y / 2 * cubeSize.z - cubeSize.z; // spawn in corner
     Vector3 playerSpeed = Vector3Scale(Vector3One(), 40);
-    player = new Player(startPos, playerSpeed, buildingManager, PLAYER_ELF);
+    player = new Player(startPos, playerSpeed, PLAYER_ELF);
+
+    player->setBuildingManager(buildingManager);
+    buildingManager->setPlayer(player);
 
     isMultiSelecting = false;
 

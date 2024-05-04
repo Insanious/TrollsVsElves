@@ -12,6 +12,8 @@ Entity::Entity(Vector3 position, Vector3 speed, Color defaultColor, EntityType t
     this->speed = speed;
     this->type = type;
 
+    this->defaultTargetMargin = Vector3Length(Vector3Scale(speed, 1/60.f)); // speed divided FPS
+
     setPosition(position);
     setDefaultColor(defaultColor);
 }
@@ -110,6 +112,17 @@ void Entity::setPosition(Vector3 position)
 {
     capsule.startPos = capsule.endPos = position;
     capsule.endPos.y = capsule.startPos.y + capsule.height;
+}
+
+void Entity::setSpeed(Vector3 speed)
+{
+    this->speed = speed;
+    this->defaultTargetMargin = Vector3Length(Vector3Scale(speed, 1/60.f)); // speed divided FPS
+}
+
+Vector3 Entity::getSpeed()
+{
+    return speed;
 }
 
 void Entity::setState(MovementState newState)

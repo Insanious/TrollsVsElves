@@ -2,11 +2,12 @@
 #define PLAYER_H
 
 #include "Entity.h"
-#include "BuildingManager.h"
 #include "AdvancementTree.h"
 
 #include <map>
 #include <functional>
+
+class BuildingManager; // forward declaration to get around circular depenedency
 
 enum PlayerType { PLAYER_ELF, PLAYER_TROLL };
 
@@ -19,13 +20,18 @@ private:
     AdvancementTree* advancements;
     AdvancementNode* currentAdvancements;
 
+    std::vector<Item> items;
+
     void checkKeyboardPresses(std::vector<AdvancementNode*> children);
     void handleButtonPressLogic(AdvancementNode* node);
 
 public:
     Player() = delete;
-    Player(Vector3 position, Vector3 speed, BuildingManager* buildingManager, PlayerType type);
+    Player(Vector3 position, Vector3 speed, PlayerType type);
     ~Player();
+
+    void setBuildingManager(BuildingManager* buildingManager);
+    void tryBuyItem(Item item);
 
     bool isElf();
     bool isTroll();

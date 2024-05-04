@@ -1,9 +1,9 @@
 #include "Player.h"
+#include "BuildingManager.h"
 
-Player::Player(Vector3 position, Vector3 speed, BuildingManager* buildingManager, PlayerType type)
+Player::Player(Vector3 position, Vector3 speed, PlayerType type)
     : Entity(position, speed, BLANK, PLAYER)
 {
-    this->buildingManager = buildingManager;
     this->type = type;
     switch (type)
     {
@@ -26,6 +26,24 @@ Player::Player(Vector3 position, Vector3 speed, BuildingManager* buildingManager
 }
 
 Player::~Player() {}
+
+void Player::setBuildingManager(BuildingManager* buildingManager)
+{
+    this->buildingManager = buildingManager;
+}
+
+void Player::tryBuyItem(Item item)
+{
+    bool canBuyItem = this->isTroll();
+
+    printf("%s item called '%s'\n", canBuyItem ? "Purchased" : "Couldn't purchase", item.name.c_str());
+    if (!canBuyItem)
+        return;
+
+    items.push_back(item);
+    if (item.name == "Cocaine")
+        setSpeed(Vector3Add(getSpeed(), { 10.f, 10.f, 10.f }));
+}
 
 bool Player::isElf()
 {

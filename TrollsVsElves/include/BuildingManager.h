@@ -11,6 +11,8 @@
 #include "Entity.h"
 #include "CameraManager.h"
 
+class Player; // forward declaration to get around circular depenedency
+
 class BuildingManager
 {
 private:
@@ -27,6 +29,8 @@ private:
     std::map<BuildingType, AdvancementTree*> advancementTrees;
     std::unordered_set<std::string> unlockedAdvancements;
 
+    Player* player;
+
     void updateGhostBuilding();
 
     template<typename Container>
@@ -41,6 +45,8 @@ public:
     void drawBuildingUIButtons(Building* building, ImVec2 buttonSize, int nrOfButtons, int buttonsPerLine);
     void checkKeyboardPresses(Building* building, std::vector<AdvancementNode*> children);
     void update();
+
+    void setPlayer(Player* player);
 
     Building* raycastToBuilding();
     void removeBuilding(Building* building);
