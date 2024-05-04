@@ -1,0 +1,13 @@
+{
+    "id": "shop",
+    "name": "Shop",
+    "dependencies": [],
+    "children": [
+        {
+            "id": "buy",
+            "name": "Buy a life",
+            "dependencies": [],
+            "children": []
+        }
+    ]
+}

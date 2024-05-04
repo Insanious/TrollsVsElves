@@ -42,6 +42,10 @@ Building::Building(
             targetColor = BLUE;
             canRecruit = true;
             break;
+        case SHOP:
+            targetColor = SKYBLUE;
+            canRecruit = true;
+            break;
     }
 
     Vector3 targetColorHSL = ColorToHSV(targetColor);
@@ -103,6 +107,8 @@ void Building::drawUIButtons(ImVec2 buttonSize, int nrOfButtons, int buttonsPerL
                         sell();
                     else if (child->id == "recruit")
                         recruiting = true;
+                    else if (child->id == "buy")
+                        buy(child);
                     else if (canBePromotedTo(child))
                         promote(child);
                 }
@@ -135,6 +141,8 @@ void Building::checkKeyboardPresses(std::vector<AdvancementNode*> children)
                 sell();
             else if (child->id == "recruit")
                 recruiting = true;
+            else if (child->id == "buy")
+                buy(child);
             else if (canBePromotedTo(child))
                 promote(child);
             break;
@@ -262,6 +270,11 @@ void Building::promote(AdvancementNode* promotion)
     printf("'%s' got promoted to '%s'\n", advancement->id.c_str(), promotion->id.c_str());
     advancement = promotion;
     promotionSignal->emit(promotion->id);
+}
+
+void Building::buy(AdvancementNode* item)
+{
+    printf("buy not implemented yet\n"); // TODO: later
 }
 
 void Building::updateLockedPromotions(std::vector<std::string> lockedPromotions)

@@ -8,7 +8,7 @@
 #include "Signal.h"
 
 enum BuildStage { GHOST = 0, SCHEDULED, IN_PROGRESS, FINISHED };
-enum BuildingType { CASTLE = 0, ROCK, HALL };
+enum BuildingType { CASTLE = 0, ROCK, HALL, SHOP };
 
 class Building
 {
@@ -72,6 +72,8 @@ public:
     std::vector<AdvancementNode*> getPossiblePromotions();
     bool canBePromotedTo(AdvancementNode* promotion);
     void promote(AdvancementNode* promotion);
+
+    void buy(AdvancementNode* item);
 
     void updateLockedPromotions(std::vector<std::string> lockedPromotions);
 };

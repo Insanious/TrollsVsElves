@@ -12,6 +12,7 @@ BuildingManager::BuildingManager(Vector3 defaultBuildingSize, Color defaultBuild
         { CASTLE, new AdvancementTree("castle-dependencies.json") },
         { ROCK,   new AdvancementTree("rock-dependencies.json") },
         { HALL,   new AdvancementTree("hall-dependencies.json") },
+        { SHOP,   new AdvancementTree("shop-dependencies.json") }, // TODO: create file lul
     };
 
     promotionSignal.connect(this, &BuildingManager::onPromotion);
@@ -207,9 +208,11 @@ bool BuildingManager::isColliding(const Container& buildings, Building* targetBu
     return false;
 }
 
-void BuildingManager::createDebugBuilding(Vector2i index)
+void BuildingManager::createDebugBuilding(Vector2i index, BuildingType buildingType)
 {
-    ghostBuilding = new Building(Cube(defaultBuildingSize), ROCK, nullptr, nullptr);
+    AdvancementNode* advancement = advancementTrees[buildingType]->getRoot();
+    ghostBuilding = new Building(Cube(defaultBuildingSize), buildingType, advancement, &promotionSignal);
+
     MapGenerator& mapGenerator = MapGenerator::get();
     Vector3 pos = mapGenerator.indexToWorldPosition(index);
     Vector3 cubeSize = mapGenerator.getCubeSize();

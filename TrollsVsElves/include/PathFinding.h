@@ -52,7 +52,7 @@ struct CompareNode
 class PathFinding
 {
 private:
-    PathFinding()  {}
+    PathFinding() {}
 
     void printNode(std::string prefix, Node node);
     // refer to https://www.movingai.com/SAS/SUB/ for these calculated values
