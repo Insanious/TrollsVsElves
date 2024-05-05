@@ -1,11 +1,13 @@
 {
-    "id": "shop",
+    "base": "shop",
     "name": "Shop",
+    "stage": 0,
     "dependencies": [],
     "children": [
         {
-            "id": "buy",
+            "base": "buy",
             "name": "Cocaine",
+            "stage": 0,
             "dependencies": [],
             "children": []
         }

@@ -1,41 +1,48 @@
 {
-    "id": "player",
+    "base": "player",
     "name": "Player",
+    "stage": 0,
     "dependencies": [],
     "children": [
         {
-            "id": "build",
+            "base": "build",
             "name": "Build",
+            "stage": 0,
             "dependencies": [],
             "children": [
                 {
-                    "id": "castle",
+                    "base": "castle",
                     "name": "Castle",
+                    "stage": 0,
                     "dependencies": [],
                     "children": []
                 },
                 {
-                    "id": "rock",
+                    "base": "rock",
                     "name": "Rock",
+                    "stage": 0,
                     "dependencies": [],
                     "children": []
                 },
                 {
-                    "id": "hall",
+                    "base": "hall",
                     "name": "Hall",
+                    "stage": 0,
                     "dependencies": [],
                     "children": []
                 }
             ]
         },
         {
-            "id": "spells",
+            "base": "spells",
             "name": "Spells",
+            "stage": 0,
             "dependencies": [],
             "children": [
                 {
-                    "id": "blink",
+                    "base": "blink",
                     "name": "Blink",
+                    "stage": 0,
                     "dependencies": [],
                     "children": []
                 }

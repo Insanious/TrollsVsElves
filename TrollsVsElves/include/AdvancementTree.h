@@ -5,16 +5,25 @@
 #include <vector>
 #include "utils.h"
 
+struct IdNode
+{
+    std::string base;
+    int stage;
+
+    IdNode(std::string _base, int _stage): base(_base), stage(_stage) {};
+    IdNode(): base(), stage() {};
+};
+
 struct AdvancementNode
 {
-    std::string id;
+    IdNode id;
     std::string name;
     AdvancementNode* parent;
-    std::vector<std::string> dependencies;
+    std::vector<IdNode> dependencies;
     std::vector<AdvancementNode*> children;
 
-    AdvancementNode(AdvancementNode* _parent, std::string _id, std::string _name, std::vector<std::string> _dependencies):
-        parent(_parent), id(_id), name(_name), dependencies(_dependencies) {};
+    AdvancementNode(IdNode _id, std::string _name, AdvancementNode* _parent, std::vector<IdNode> _dependencies):
+        id(_id), name(_name), parent(_parent), dependencies(_dependencies) {};
 
     ~AdvancementNode()
     {
@@ -30,6 +39,7 @@ private:
 
     void parseNode(const Json::Value& json, AdvancementNode* parent);
     void printNode(AdvancementNode* parent, std::string prefix);
+    void printIdNode(IdNode id, std::string prefix);
 
 public:
     AdvancementTree() = delete;

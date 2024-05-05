@@ -56,8 +56,8 @@ void BuildingManager::drawBuildingUIButtons(Building* building, ImVec2 buttonSiz
     AdvancementNode* advancement = building->getAdvancement();
     std::vector<AdvancementNode*> children = advancement->children;
 
-    AdvancementNode fillerButton = AdvancementNode(nullptr, "filler", "filler", {});
-    AdvancementNode sellButton = AdvancementNode(nullptr, "sell", "Sell", {});
+    AdvancementNode fillerButton = AdvancementNode(IdNode("filler", 0), "filler", nullptr, {});
+    AdvancementNode sellButton = AdvancementNode(IdNode("sell", 0), "Sell", nullptr, {});
 
     int nrOfFillerButtons = nrOfButtons - children.size();
     for (int i = 0; i < nrOfFillerButtons - 1; i++)
@@ -93,11 +93,11 @@ void BuildingManager::drawBuildingUIButtons(Building* building, ImVec2 buttonSiz
                 if (ImGui::Button(child->name.c_str(), buttonSize))
                 {
                     buttonWasPressed = true;
-                    if (child->id == "sell")
+                    if (child->id.base == "sell")
                         building->sell();
-                    else if (child->id == "recruit")
+                    else if (child->id.base == "recruit")
                         recruit(building);
-                    else if (child->id == "buy")
+                    else if (child->id.base == "buy")
                         player->tryBuyItem(Item(child->name));
                     else if (canPromoteTo(child))
                         promote(building, child);
@@ -125,13 +125,13 @@ void BuildingManager::checkKeyboardPresses(Building* building, std::vector<Advan
         int keyNr = int(KEY_ONE) + i;
         if (IsKeyPressed((KeyboardKey)keyNr))
         {
-            if (child->name == "filler")
+            if (child->id.base == "filler")
                 return;
-            else if (child->id == "sell")
+            else if (child->id.base == "sell")
                 building->sell();
-            else if (child->id == "recruit")
+            else if (child->id.base == "recruit")
                 recruit(building);
-            else if (child->id == "buy")
+            else if (child->id.base == "buy")
                 player->tryBuyItem(Item(child->name));
             else if (canPromoteTo(child))
                 promote(building, child);
@@ -164,6 +164,8 @@ Building* BuildingManager::raycastToBuilding()
 void BuildingManager::removeBuilding(Building* building)
 {
     swapAndPop(buildings, building);
+    updateUnlockedAdvancementOfBase(building->getAdvancement()->id.base);
+
     delete building;
 }
 
@@ -372,7 +374,12 @@ void BuildingManager::recruit(Building* building)
 
 bool BuildingManager::canPromoteTo(AdvancementNode* promotion)
 {
-    auto isLocked = [this](std::string dependency) { return unlockedAdvancements.find(dependency) == unlockedAdvancements.end(); };
+    auto isLocked = [this](IdNode dependency)
+    {
+        std::string base = dependency.base;
+        int stage = dependency.stage;
+        return unlockedAdvancements.find(base) == unlockedAdvancements.end() || unlockedAdvancements.at(base) < stage;
+    };
 
     bool hasAnyLockedDependency = std::any_of(promotion->dependencies.begin(), promotion->dependencies.end(), isLocked);
     return !hasAnyLockedDependency;
@@ -380,6 +387,29 @@ bool BuildingManager::canPromoteTo(AdvancementNode* promotion)
 
 void BuildingManager::promote(Building* building, AdvancementNode* promotion)
 {
-    unlockedAdvancements.insert(promotion->id);
+    std::string base = promotion->id.base;
+    int stage = promotion->id.stage;
+    if (unlockedAdvancements.find(base) == unlockedAdvancements.end() || unlockedAdvancements.at(base) < stage)
+        unlockedAdvancements.insert_or_assign(base, stage);
+
     building->promote(promotion);
+}
+
+void BuildingManager::updateUnlockedAdvancementOfBase(std::string base)
+{
+    int currentStage = unlockedAdvancements.at(base);
+
+    int highestStage = -1;
+    IdNode idNode;
+    for (Building* other: buildings)
+    {
+        idNode = other->getAdvancement()->id;
+        if (idNode.base == base && (highestStage -1 || idNode.stage > highestStage))
+            highestStage = idNode.stage;
+    }
+
+    if (highestStage == -1)
+        unlockedAdvancements.erase(unlockedAdvancements.find(base));
+    else
+        unlockedAdvancements.insert_or_assign(base, highestStage);
 }

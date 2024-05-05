@@ -1,22 +1,29 @@
 {
-    "id": "castle",
+    "base": "castle",
     "name": "Castle",
+    "stage": 0,
     "dependencies": [],
     "children": [
         {
-            "id": "castle-1",
+            "base": "castle",
+            "stage": 1,
             "name": "Castle 1",
-            "dependencies": ["castle"],
+            "dependencies": [{ "base": "castle", "stage": 0 }],
             "children": [
                 {
-                    "id": "castle-2",
+                    "base": "castle",
+                    "stage": 2,
                     "name": "Castle 2",
-                    "dependencies": ["castle-1"],
+                    "dependencies": [{ "base": "castle", "stage": 1 }],
                     "children": [
                         {
-                            "id": "castle-3",
+                            "base": "castle",
+                            "stage": 3,
                             "name": "Castle 3",
-                            "dependencies": ["castle-2", "rock-1"],
+                            "dependencies": [
+                                { "base": "castle", "stage": 2 },
+                                { "base": "rock", "stage": 1 }
+                            ],
                             "children": []
                         }
                     ]

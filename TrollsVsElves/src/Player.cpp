@@ -64,8 +64,8 @@ void Player::drawUIButtons(ImVec2 buttonSize, int nrOfButtons, int buttonsPerLin
 {
     std::vector<AdvancementNode*> children = currentAdvancements->children;
 
-    AdvancementNode fillerButton = AdvancementNode(nullptr, "filler", "filler", {});
-    AdvancementNode backButton = AdvancementNode(nullptr, "back", "Back", {});
+    AdvancementNode fillerButton = AdvancementNode(IdNode("filler", 0), "filler", nullptr, {});
+    AdvancementNode backButton = AdvancementNode(IdNode("back", 0), "Back", nullptr, {});
 
     int nrOfFillerButtons = nrOfButtons - children.size();
     for (int i = 0; i < nrOfFillerButtons - 1; i++)
@@ -129,17 +129,17 @@ void Player::deselect()
 
 void Player::handleButtonPressLogic(AdvancementNode* node)
 {
-    if (node->id == "filler")
+    if (node->id.base == "filler")
         return;
-    else if (node->id == "back")
+    else if (node->id.base == "back")
         currentAdvancements = currentAdvancements->parent;
-    else if (node->id == "castle")
+    else if (node->id.base == "castle")
         buildingManager->createNewGhostBuilding(CASTLE);
-    else if (node->id == "rock")
+    else if (node->id.base == "rock")
         buildingManager->createNewGhostBuilding(ROCK);
-    else if (node->id == "hall")
+    else if (node->id.base == "hall")
         buildingManager->createNewGhostBuilding(HALL);
-    else if (node->id == "blink")
+    else if (node->id.base == "blink")
         printf("Blink is not implemented\n"); // TODO: later
     else
         currentAdvancements = node;

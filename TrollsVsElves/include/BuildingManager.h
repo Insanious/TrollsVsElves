@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <deque>
-#include <unordered_set>
+#include <unordered_map>
 
 #include "utils.h"
 #include "MapGenerator.h"
@@ -27,7 +27,7 @@ private:
     std::vector<Entity*> entities;
 
     std::map<BuildingType, AdvancementTree*> advancementTrees;
-    std::unordered_set<std::string> unlockedAdvancements;
+    std::unordered_map<std::string, int> unlockedAdvancements;
 
     Player* player;
 
@@ -68,6 +68,7 @@ public:
     void recruit(Building* building);
     bool canPromoteTo(AdvancementNode* promotion);
     void promote(Building* building, AdvancementNode* promotion);
+    void updateUnlockedAdvancementOfBase(std::string base);
 };
 
 #endif

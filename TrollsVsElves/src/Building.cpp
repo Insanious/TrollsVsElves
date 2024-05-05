@@ -23,14 +23,14 @@ Building::Building(Cube cube, BuildingType buildingType)
 
     switch (buildingType)
     {
-        case ROCK:      targetColor = Color{ 60, 60, 60, 255 }; break;
+        case ROCK:      targetColor = Color{ 100, 100, 100, 255 }; break;
         case CASTLE:    targetColor = BEIGE;                    break;
         case HALL:      targetColor = BLUE;                     break;
         case SHOP:      targetColor = SKYBLUE;                  break;
     }
 
     Vector3 targetColorHSL = ColorToHSV(targetColor);
-    selectedColor = ColorFromHSV(targetColorHSL.x, targetColorHSL.y, targetColorHSL.z - 0.2f);
+    selectedColor = ColorFromHSV(targetColorHSL.x, targetColorHSL.y, targetColorHSL.z * 0.8f);
 }
 
 Building::~Building() {}
@@ -142,8 +142,17 @@ AdvancementNode* Building::getAdvancement()
 
 void Building::promote(AdvancementNode* promotion)
 {
-    if (advancement)
-        printf("'%s' got promoted to '%s'\n", advancement->id.c_str(), promotion->id.c_str());
+    if (advancement) // on creation this will be nullptr
+    {
+        printf("'%s' got promoted to stage %d\n", advancement->id.base.c_str(), promotion->id.stage);
+
+        Vector3 targetColorHSV = ColorToHSV(targetColor);
+        Vector3 selectedColorHSV = ColorToHSV(selectedColor);
+        targetColor = ColorFromHSV(targetColorHSV.x, targetColorHSV.y, targetColorHSV.z * 0.8f);
+        selectedColor = ColorFromHSV(targetColorHSV.x, targetColorHSV.y, targetColorHSV.z * 0.8f * 0.8f);
+        cube.color = selected ? selectedColor : targetColor;
+    }
 
     advancement = promotion;
+
 }

@@ -1,16 +1,19 @@
 {
-    "id": "troll",
+    "base": "troll",
     "name": "Troll",
+    "stage": 0,
     "dependencies": [],
     "children": [
         {
-            "id": "spells",
+            "base": "spells",
             "name": "Spells",
+            "stage": 0,
             "dependencies": [],
             "children": [
                 {
-                    "id": "blink",
+                    "base": "blink",
                     "name": "Blink",
+                    "stage": 0,
                     "dependencies": [],
                     "children": []
                 }

@@ -5,7 +5,12 @@ AdvancementTree::AdvancementTree(std::string filename)
 {
     Json::Value json = parseJsonFile(filename);
 
-    root = new AdvancementNode(nullptr, json["id"].asString(), json["name"].asString(), {});
+    root = new AdvancementNode(
+        IdNode(json["base"].asString(), json["stage"].asInt()),
+        json["name"].asString(),
+        nullptr,
+        {}
+    );
     for (const auto& child : json["children"])
         parseNode(child, root);
 
@@ -20,14 +25,14 @@ AdvancementTree::~AdvancementTree()
 
 void AdvancementTree::parseNode(const Json::Value& json, AdvancementNode* parent)
 {
-    std::vector<std::string> dependencies;
-    for (const auto& dependency : json["dependencies"])
-        dependencies.push_back(dependency.asString());
+    std::vector<IdNode> dependencies;
+    for (const auto& dep : json["dependencies"])
+        dependencies.push_back(IdNode(dep["base"].asString(), dep["stage"].asInt()));
 
     AdvancementNode* node = new AdvancementNode(
-        parent,
-        json["id"].asString(),
+        IdNode(json["base"].asString(), json["stage"].asInt()),
         json["name"].asString(),
+        parent,
         dependencies
     );
     parent->children.push_back(node);
@@ -38,19 +43,24 @@ void AdvancementTree::parseNode(const Json::Value& json, AdvancementNode* parent
 
 void AdvancementTree::printNode(AdvancementNode* parent, std::string prefix)
 {
-    printf("%sId: %s\n", prefix.c_str(), parent->id.c_str());
-    printf("%sName: %s\n", prefix.c_str(), parent->name.c_str());
 
     if (parent->dependencies.size())
     {
         printf("%sDependencies:\n", prefix.c_str());
         for (auto dependency: parent->dependencies)
-            printf("%s%s\n", prefix.c_str(), dependency.c_str());
+            printIdNode(dependency, prefix + "   ");
     }
-
+    printIdNode(parent->id, prefix);
+    printf("%sName: %s\n", prefix.c_str(), parent->name.c_str());
 
     for (auto child: parent->children)
         printNode(child, prefix + " - ");
+}
+
+void AdvancementTree::printIdNode(IdNode id, std::string prefix)
+{
+    printf("%sBase: %s\n", prefix.c_str(), id.base.c_str());
+    printf("%sStage: %d\n", prefix.c_str(), id.stage);
 }
 
 AdvancementNode* AdvancementTree::getRoot()
