@@ -59,7 +59,10 @@ class GameScreen: public BaseScreen
         void draw();
         void drawUI();
         void update();
-        void updateMultiSelectionRectangle();
+
+        void startMultiSelection();
+        void stopMultiSelection();
+        void updateMultiSelection();
 
         RaycastHitType checkRaycastHitType();
         void handleLeftMouseButton();

@@ -31,6 +31,8 @@ GameScreen::GameScreen(Vector2i screenSize)
         Vector3 pos = { -halfGridSize.x, 0.f, cubeSize.z * z - halfGridSize.y, };
         addResource(pos);
     }
+
+    buildingManager->createDebugBuilding({ 15, 15 }, ROCK);
 }
 
 GameScreen::~GameScreen()
@@ -151,20 +153,17 @@ void GameScreen::update()
     buildingManager->update();
     player->update();
 
-    if (buildingManager->buildQueueFront()) // something is getting built
+    if (player->hasReachedDestination() && buildingManager->buildQueueFront()) // something is getting built
     {
-        if (player->getState() == IDLE && player->getPreviousState() == RUNNING_TO_BUILD) // was running and reached target
-        {
-            Building* building = buildingManager->yieldBuildQueue();
-            MapGenerator::get().addObstacle(building->getCube());
+        Building* building = buildingManager->yieldBuildQueue();
+        MapGenerator::get().addObstacle(building->getCube());
 
-            building = buildingManager->buildQueueFront();
-            if (building) // if more in queue, walk to the next target
-            {
-                Vector3 targetPosition = calculateTargetPositionToCubeFromEntity(player, building->getCube());
-                std::vector<Vector3> positions = MapGenerator::get().pathfindPositions(player->getPosition(), targetPosition);
-                player->setPositions(positions, RUNNING_TO_BUILD);
-            }
+        building = buildingManager->buildQueueFront();
+        if (building) // if more in queue, walk to the next target
+        {
+            Vector3 targetPosition = calculateTargetPositionToCubeFromEntity(player, building->getCube());
+            std::vector<Vector3> positions = MapGenerator::get().pathfindPositions(player->getPosition(), targetPosition);
+            player->setPositions(positions);
         }
     }
 
@@ -175,35 +174,17 @@ void GameScreen::update()
         selectedBuilding = nullptr;
     }
 
-    bool wasMultiSelecting = isMultiSelecting;
-
-    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))                        // LMB was clicked this frame
-        handleLeftMouseButton();                                        // this may update isMultiSelecting
-    else if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) && isMultiSelecting)  // keep updating rectangle
-        updateMultiSelectionRectangle();
-
-    if (!wasMultiSelecting && isMultiSelecting) // update only first time isMultiSelecting is set to true
+    if (!isMultiSelecting)
     {
-        multiSelectionStartPosition = GetMousePosition();
-        updateMultiSelectionRectangle();
+        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) // LMB was clicked this frame
+            handleLeftMouseButton();
     }
-
-    if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && isMultiSelecting) // stop multi selection
+    else
     {
-        isMultiSelecting = false;
-
-        clearAndDeselectAllSelectedEntities();
-        std::vector<Entity*> entities = buildingManager->getEntities();
-        entities.push_back(player); // add player to skip extra code to deal with him
-
-        for (Entity* entity: entities)
-        {
-            if (checkCollisionCapsuleRectangle(entity->getCapsule(), multiSelectionRectangle)) // entity is inside multiSelectionRectangle
-            {
-                entity->select();
-                selectedEntities.push_back(entity);
-            }
-        }
+        if (IsMouseButtonDown(MOUSE_BUTTON_LEFT))
+            updateMultiSelection();
+        else if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT))
+            stopMultiSelection();
     }
 
     if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
@@ -256,7 +237,32 @@ bool GameScreen::checkCollisionCapsulePoint(Capsule capsule, Vector2 point)
     return false;
 }
 
-void GameScreen::updateMultiSelectionRectangle()
+void GameScreen::startMultiSelection()
+{
+    isMultiSelecting = true;
+    multiSelectionStartPosition = GetMousePosition();
+    updateMultiSelection();
+}
+
+void GameScreen::stopMultiSelection()
+{
+    isMultiSelecting = false;
+
+    clearAndDeselectAllSelectedEntities();
+    std::vector<Entity*> entities = buildingManager->getEntities();
+    entities.push_back(player); // add player to skip extra code to deal with him
+
+    for (Entity* entity: entities)
+    {
+        if (checkCollisionCapsuleRectangle(entity->getCapsule(), multiSelectionRectangle)) // entity is inside multiSelectionRectangle
+        {
+            entity->select();
+            selectedEntities.push_back(entity);
+        }
+    }
+}
+
+void GameScreen::updateMultiSelection()
 {
     Vector2 mousePos = GetMousePosition();
     Vector2 direction = Vector2Subtract(mousePos, multiSelectionStartPosition);
@@ -317,7 +323,7 @@ void GameScreen::handleLeftMouseButton()
     RaycastHitType type = checkRaycastHitType();
 
     // deselect selectedBuilding if not clicking a building or UI
-    if (selectedBuilding && type != RAYCAST_HIT_TYPE_UI && type != RAYCAST_HIT_TYPE_BUILDING)
+    if (selectedBuilding && type != RAYCAST_HIT_TYPE_UI)
     {
         selectedBuilding->deselect();
         selectedBuilding = nullptr;
@@ -333,7 +339,7 @@ void GameScreen::handleLeftMouseButton()
             break;
 
         case RAYCAST_HIT_TYPE_OUT_OF_BOUNDS:
-            isMultiSelecting = true;
+            startMultiSelection();
             break;
 
         case RAYCAST_HIT_TYPE_PLAYER:
@@ -368,20 +374,8 @@ void GameScreen::handleLeftMouseButton()
 
         case RAYCAST_HIT_TYPE_BUILDING:
         {
-            Building* building = buildingManager->raycastToBuilding();
-            if (!selectedBuilding) // new select
-            {
-                selectedBuilding = building;
-                selectedBuilding->select();
-                break;
-            }
-
-            if (building != selectedBuilding) // switch select
-            {
-                selectedBuilding->deselect();
-                selectedBuilding = building;
-                selectedBuilding->select();
-            }
+            selectedBuilding = buildingManager->raycastToBuilding();
+            selectedBuilding->select();
             break;
         }
 
@@ -392,25 +386,25 @@ void GameScreen::handleLeftMouseButton()
                 if (!buildingManager->canScheduleGhostBuilding()) // can't schedule ghostbuilding
                     break;
 
-                if (player->getState() == RUNNING_TO_BUILD) // already building, just schedule and leave player unchanged
-                {
-                    buildingManager->scheduleGhostBuilding();
-                    break;
-                }
-
-                // run to new target and schedule building
-                Vector3 targetPosition = calculateTargetPositionToCubeFromEntity(player, buildingManager->getGhostBuilding()->getCube());
-                std::vector<Vector3> positions = MapGenerator::get().pathfindPositions(player->getPosition(), targetPosition);
-                player->setPositions(positions, RUNNING_TO_BUILD);
+                Building* ghost = buildingManager->getGhostBuilding();
+                bool buildingsInQueue = buildingManager->buildQueueFront() != nullptr;
                 buildingManager->scheduleGhostBuilding();
+                if (buildingsInQueue) // something is getting built, just schedule and leave player unchanged
+                    break;
+
+                // run to new target
+                Vector3 targetPosition = calculateTargetPositionToCubeFromEntity(player, ghost->getCube());
+                std::vector<Vector3> positions = MapGenerator::get().pathfindPositions(player->getPosition(), targetPosition);
+                player->setPositions(positions);
                 break;
             }
 
-            // player is not trying to place a ghostbuilding
-            if (player->isSelected())
+            if (player->isSelected()) // player is not trying to place a ghostbuilding
                 player->deselect();
 
-            isMultiSelecting = true; // start multi selection
+            if (!isMultiSelecting)
+                startMultiSelection();
+
             break;
         }
     }
@@ -429,11 +423,8 @@ void GameScreen::handleRightMouseButton()
             {
                 if (player->isSelected())
                 {
-                    if (buildingManager->ghostBuildingExists()) // remove building and just run the player to the location instead
-                        buildingManager->clearGhostBuilding();
-
-                    if (player->getState() == RUNNING_TO_BUILD) // was running to build something, clear queue
-                        buildingManager->clearBuildQueue();
+                    buildingManager->clearGhostBuilding();
+                    buildingManager->clearBuildQueue();
                 }
 
                 // run all selected entities to where mouse was clicked
@@ -454,9 +445,9 @@ void GameScreen::handleRightMouseButton()
                     entity = selectedEntities[i];
 
                     if (checkForTroll && entity == player) // TODO: later, this seems inefficient but good enough for now
-                        entity->setPositions(mapGenerator.pathfindPositionsForTroll(entity->getPosition(), pos), RUNNING);
+                        entity->setPositions(mapGenerator.pathfindPositionsForTroll(entity->getPosition(), pos));
                     else
-                        entity->setPositions(mapGenerator.pathfindPositions(entity->getPosition(), pos), RUNNING);
+                        entity->setPositions(mapGenerator.pathfindPositions(entity->getPosition(), pos));
                     entity->detach();
                 }
 
@@ -495,7 +486,7 @@ void GameScreen::handleRightMouseButton()
                 {
                     targetPosition = calculateTargetPositionToCubeFromEntity(entity, building->getCube());
                     positions = mapGenerator.pathfindPositions(entity->getPosition(), targetPosition);
-                    entity->setPositions(positions, RUNNING);
+                    entity->setPositions(positions);
 
                     entity->attach(building);
                 }
@@ -516,7 +507,7 @@ void GameScreen::handleRightMouseButton()
                 {
                     targetPosition = calculateTargetPositionToCubeFromEntity(entity, resource->getCube());
                     positions = mapGenerator.pathfindPositions(entity->getPosition(), targetPosition);
-                    entity->setPositions(positions, RUNNING);
+                    entity->setPositions(positions);
 
                     entity->attach(resource);
                 }

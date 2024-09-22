@@ -5,6 +5,7 @@ Entity::Entity(Vector3 position, Vector3 speed, Color defaultColor, EntityType e
     state = IDLE;
     previousState = IDLE;
     selected = false;
+    reachedDestination = false;
     attachedBuilding = nullptr;
     attachedResource = nullptr;
 
@@ -31,28 +32,8 @@ void Entity::draw()
 
 void Entity::update()
 {
-    switch (state)
-    {
-        case IDLE:
-            if (attachedBuilding)
-                setState(ATTACHED_TO_BUILDING);
-            else if (attachedResource)
-                setState(ATTACHED_TO_RESOURCE);
-
-            break;
-
-        case RUNNING:
-        case RUNNING_TO_BUILD:
-            if (paths.empty())
-                setState(IDLE);
-            else
-                updateMovement();
-
-            break;
-
-        case ATTACHED_TO_BUILDING: // TODO: implement attachment logic
-        case ATTACHED_TO_RESOURCE: // TODO: implement attachment logic
-            break;
+    if (state == RUNNING) {
+        updateMovement();
     }
 }
 
@@ -74,6 +55,11 @@ void Entity::updateMovement()
         capsule.endPos = { target.x, capsule.endPos.y, target.z };      // just tp to it
 
         paths.pop_front(); // reached the end of this path
+        if (paths.empty())
+        {
+            setState(IDLE);
+            reachedDestination = true;
+        }
     }
 }
 
@@ -87,7 +73,7 @@ Capsule Entity::getCapsule()
     return capsule;
 }
 
-void Entity::setPositions(std::vector<Vector3> positions, State newState)
+void Entity::setPositions(std::vector<Vector3> positions)
 {
     paths.clear();
     paths.insert(paths.end(), positions.begin(), positions.end());
@@ -95,7 +81,7 @@ void Entity::setPositions(std::vector<Vector3> positions, State newState)
     if (paths.size())
         targetMarker.position = { paths.back().x, 2.f, paths.back().z };
 
-    setState(newState);
+    setState(RUNNING);
 }
 
 void Entity::setDefaultColor(Color color)
@@ -124,9 +110,11 @@ void Entity::setSpeed(Vector3 speed)
     this->defaultTargetMargin = Vector3Length(Vector3Scale(speed, 1/60.f)); // speed divided FPS
 }
 
-Vector3 Entity::getSpeed()
+bool Entity::hasReachedDestination()
 {
-    return speed;
+    bool value = reachedDestination;
+    reachedDestination = false; // one-shot read true
+    return value;
 }
 
 void Entity::setState(State newState)
@@ -140,19 +128,15 @@ void Entity::setState(State newState)
         std::string previousStateString;
         switch (state)
         {
-            case IDLE:                  stateString = "IDLE";                   break;
-            case RUNNING:               stateString = "RUNNING";                break;
-            case RUNNING_TO_BUILD:      stateString = "RUNNING_TO_BUILD";       break;
-            case ATTACHED_TO_BUILDING:  stateString = "ATTACHED_TO_BUILDING";   break;
-            case ATTACHED_TO_RESOURCE:  stateString = "ATTACHED_TO_RESOURCE";   break;
+            case IDLE:      stateString = "IDLE";       break;
+            case RUNNING:   stateString = "RUNNING";    break;
+            case ATTACHED:  stateString = "ATTACHED";   break;
         }
         switch (previousState)
         {
-            case IDLE:                  previousStateString = "IDLE";                   break;
-            case RUNNING:               previousStateString = "RUNNING";                break;
-            case RUNNING_TO_BUILD:      previousStateString = "RUNNING_TO_BUILD";       break;
-            case ATTACHED_TO_BUILDING:  previousStateString = "ATTACHED_TO_BUILDING";   break;
-            case ATTACHED_TO_RESOURCE:  previousStateString = "ATTACHED_TO_RESOURCE";   break;
+            case IDLE:      previousStateString = "IDLE";       break;
+            case RUNNING:   previousStateString = "RUNNING";    break;
+            case ATTACHED:  previousStateString = "ATTACHED";   break;
         }
         printf("newState, previousState: %s, %s\n", stateString.c_str(), previousStateString.c_str());
     }
@@ -188,11 +172,13 @@ bool Entity::isSelected()
 void Entity::attach(Building* building)
 {
     attachedBuilding = building;
+    setState(ATTACHED);
 }
 
 void Entity::attach(Resource* resource)
 {
     attachedResource = resource;
+    setState(ATTACHED);
 }
 
 void Entity::detach()

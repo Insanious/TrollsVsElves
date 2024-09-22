@@ -367,7 +367,7 @@ void BuildingManager::recruit(Building* building)
     Entity* entity = new Entity(pos, speed, BLACK, WORKER);
 
     std::vector<Vector3> positions = mapGenerator.pathfindPositions(entity->getPosition(), building->getRallyPoint().position);
-    entity->setPositions(positions, RUNNING);
+    entity->setPositions(positions);
 
     entities.push_back(entity);
 }

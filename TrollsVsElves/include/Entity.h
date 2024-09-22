@@ -11,9 +11,7 @@
 enum State {
     IDLE,
     RUNNING,
-    RUNNING_TO_BUILD,
-    ATTACHED_TO_BUILDING,
-    ATTACHED_TO_RESOURCE
+    ATTACHED
 };
 enum EntityType { PLAYER, WORKER };
 
@@ -29,6 +27,7 @@ protected:
     State previousState;
 
     Vector3 speed;
+    bool reachedDestination;
 
     float defaultTargetMargin;
 
@@ -51,12 +50,12 @@ public:
 
     Vector3 getPosition();
     Capsule getCapsule();
-    void setPositions(std::vector<Vector3> positions, State newState);
+    void setPositions(std::vector<Vector3> positions);
     void setDefaultColor(Color color);
     void setCapsule(Capsule capsule);
     void setPosition(Vector3 position);
     void setSpeed(Vector3 speed);
-    Vector3 getSpeed();
+    bool hasReachedDestination();
 
     void setState(State newState);
     State getState();
