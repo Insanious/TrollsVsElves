@@ -347,10 +347,10 @@ void GameScreen::handleLeftMouseButton()
             if (doubleclicked) // select all of the same type
             {
                 std::vector<Entity*> entities = buildingManager->getEntities();
-                EntityType clickedEntityType = clickedEntity->getType();
+                EntityType clickedEntityType = clickedEntity->getEntityType();
                 for (Entity* entity: entities)
                 {
-                    if (entity->getType() == clickedEntityType)
+                    if (entity->getEntityType() == clickedEntityType)
                     {
                         selectedEntities.push_back(entity);
                         entity->select();

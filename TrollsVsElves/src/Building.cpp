@@ -23,10 +23,10 @@ Building::Building(Cube cube, BuildingType buildingType)
 
     switch (buildingType)
     {
-        case ROCK:      targetColor = Color{ 100, 100, 100, 255 }; break;
-        case CASTLE:    targetColor = BEIGE;                    break;
-        case HALL:      targetColor = BLUE;                     break;
-        case SHOP:      targetColor = SKYBLUE;                  break;
+        case ROCK:      targetColor = Color{ 100, 100, 100, 255 };  break;
+        case CASTLE:    targetColor = BEIGE;                        break;
+        case HALL:      targetColor = BLUE;                         break;
+        case SHOP:      targetColor = SKYBLUE;                      break;
     }
 
     Vector3 targetColorHSL = ColorToHSV(targetColor);

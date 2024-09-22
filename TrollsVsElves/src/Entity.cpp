@@ -1,16 +1,17 @@
 #include "Entity.h"
 
-Entity::Entity(Vector3 position, Vector3 speed, Color defaultColor, EntityType type)
+Entity::Entity(Vector3 position, Vector3 speed, Color defaultColor, EntityType entityType)
 {
     state = IDLE;
     previousState = IDLE;
     selected = false;
     attachedBuilding = nullptr;
+    attachedResource = nullptr;
 
     targetMarker = Cylinder(Vector3Zero(), 4.f, 0.1f, 8, { 255, 255, 255, 30 });
 
     this->speed = speed;
-    this->type = type;
+    this->entityType = entityType;
 
     this->defaultTargetMargin = Vector3Length(Vector3Scale(speed, 1/60.f)); // speed divided FPS
 
@@ -34,7 +35,9 @@ void Entity::update()
     {
         case IDLE:
             if (attachedBuilding)
-                setState(WORKING);
+                setState(ATTACHED_TO_BUILDING);
+            else if (attachedResource)
+                setState(ATTACHED_TO_RESOURCE);
 
             break;
 
@@ -47,7 +50,8 @@ void Entity::update()
 
             break;
 
-        case WORKING:
+        case ATTACHED_TO_BUILDING: // TODO: implement attachment logic
+        case ATTACHED_TO_RESOURCE: // TODO: implement attachment logic
             break;
     }
 }
@@ -83,7 +87,7 @@ Capsule Entity::getCapsule()
     return capsule;
 }
 
-void Entity::setPositions(std::vector<Vector3> positions, MovementState newState)
+void Entity::setPositions(std::vector<Vector3> positions, State newState)
 {
     paths.clear();
     paths.insert(paths.end(), positions.begin(), positions.end());
@@ -125,7 +129,7 @@ Vector3 Entity::getSpeed()
     return speed;
 }
 
-void Entity::setState(MovementState newState)
+void Entity::setState(State newState)
 {
     previousState = state;
     state = newState;
@@ -136,28 +140,30 @@ void Entity::setState(MovementState newState)
         std::string previousStateString;
         switch (state)
         {
-            case IDLE:              stateString = "IDLE";               break;
-            case RUNNING:           stateString = "RUNNING";            break;
-            case RUNNING_TO_BUILD:  stateString = "RUNNING_TO_BUILD";   break;
-            case WORKING:           stateString = "WORKING";            break;
+            case IDLE:                  stateString = "IDLE";                   break;
+            case RUNNING:               stateString = "RUNNING";                break;
+            case RUNNING_TO_BUILD:      stateString = "RUNNING_TO_BUILD";       break;
+            case ATTACHED_TO_BUILDING:  stateString = "ATTACHED_TO_BUILDING";   break;
+            case ATTACHED_TO_RESOURCE:  stateString = "ATTACHED_TO_RESOURCE";   break;
         }
         switch (previousState)
         {
-            case IDLE:              previousStateString = "IDLE";               break;
-            case RUNNING:           previousStateString = "RUNNING";            break;
-            case RUNNING_TO_BUILD:  previousStateString = "RUNNING_TO_BUILD";   break;
-            case WORKING:           previousStateString = "WORKING";            break;
+            case IDLE:                  previousStateString = "IDLE";                   break;
+            case RUNNING:               previousStateString = "RUNNING";                break;
+            case RUNNING_TO_BUILD:      previousStateString = "RUNNING_TO_BUILD";       break;
+            case ATTACHED_TO_BUILDING:  previousStateString = "ATTACHED_TO_BUILDING";   break;
+            case ATTACHED_TO_RESOURCE:  previousStateString = "ATTACHED_TO_RESOURCE";   break;
         }
         printf("newState, previousState: %s, %s\n", stateString.c_str(), previousStateString.c_str());
     }
 }
 
-MovementState Entity::getState()
+State Entity::getState()
 {
     return state;
 }
 
-MovementState Entity::getPreviousState()
+State Entity::getPreviousState()
 {
     return previousState;
 }
@@ -195,7 +201,7 @@ void Entity::detach()
     attachedResource = nullptr;
 }
 
-EntityType Entity::getType()
+EntityType Entity::getEntityType()
 {
-    return type;
+    return entityType;
 }

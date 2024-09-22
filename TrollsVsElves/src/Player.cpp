@@ -1,11 +1,12 @@
 #include "Player.h"
 #include "BuildingManager.h"
 
-Player::Player(Vector3 position, Vector3 speed, PlayerType type)
+Player::Player(Vector3 position, Vector3 speed, PlayerType playerType)
     : Entity(position, speed, BLANK, PLAYER)
 {
-    this->type = type;
-    switch (type)
+    this->playerType = playerType;
+
+    switch (playerType)
     {
         case PLAYER_ELF:
             this->setCapsule(Capsule(2.f, 8.f));
@@ -34,7 +35,7 @@ void Player::setBuildingManager(BuildingManager* buildingManager)
 
 void Player::tryBuyItem(Item item)
 {
-    bool canBuyItem = this->isTroll();
+    bool canBuyItem = isTroll();
 
     printf("%s item called '%s'\n", canBuyItem ? "Purchased" : "Couldn't purchase", item.name.c_str());
     if (!canBuyItem)
@@ -42,17 +43,17 @@ void Player::tryBuyItem(Item item)
 
     items.push_back(item);
     if (item.name == "Cocaine")
-        setSpeed(Vector3Add(getSpeed(), { 10.f, 10.f, 10.f }));
+        setSpeed(Vector3Add(speed, { 10.f, 10.f, 10.f }));
 }
 
 bool Player::isElf()
 {
-    return type == PLAYER_ELF;
+    return playerType == PLAYER_ELF;
 }
 
 bool Player::isTroll()
 {
-    return type == PLAYER_TROLL;
+    return playerType == PLAYER_TROLL;
 }
 
 void Player::draw()

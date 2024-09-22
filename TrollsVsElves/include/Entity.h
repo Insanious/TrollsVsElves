@@ -8,24 +8,25 @@
 #include "Building.h"
 #include "Resource.h"
 
-enum MovementState {
+enum State {
     IDLE,
     RUNNING,
     RUNNING_TO_BUILD,
-    WORKING
+    ATTACHED_TO_BUILDING,
+    ATTACHED_TO_RESOURCE
 };
 enum EntityType { PLAYER, WORKER };
 
 class Entity
 {
-private:
-    EntityType type;
+protected:
+    EntityType entityType;
     Capsule capsule;
     Color defaultColor;
     Color selectedColor;
 
-    MovementState state;
-    MovementState previousState;
+    State state;
+    State previousState;
 
     Vector3 speed;
 
@@ -41,7 +42,7 @@ private:
 
 public:
     Entity() = delete;
-    Entity(Vector3 position, Vector3 speed, Color defaultColor, EntityType type);
+    Entity(Vector3 position, Vector3 speed, Color defaultColor, EntityType entityType);
     ~Entity();
 
     void draw();
@@ -50,16 +51,16 @@ public:
 
     Vector3 getPosition();
     Capsule getCapsule();
-    void setPositions(std::vector<Vector3> positions, MovementState newState);
+    void setPositions(std::vector<Vector3> positions, State newState);
     void setDefaultColor(Color color);
     void setCapsule(Capsule capsule);
     void setPosition(Vector3 position);
     void setSpeed(Vector3 speed);
     Vector3 getSpeed();
 
-    void setState(MovementState newState);
-    MovementState getState();
-    MovementState getPreviousState();
+    void setState(State newState);
+    State getState();
+    State getPreviousState();
 
     void select();
     virtual void deselect();
@@ -69,7 +70,7 @@ public:
     void attach(Resource* resource);
     void detach();
 
-    EntityType getType();
+    EntityType getEntityType();
 };
 
 #endif

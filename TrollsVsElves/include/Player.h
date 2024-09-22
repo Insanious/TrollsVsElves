@@ -15,7 +15,7 @@ class Player : public Entity
 {
 private:
     BuildingManager* buildingManager;
-    PlayerType type;
+    PlayerType playerType;
 
     AdvancementTree* advancements;
     AdvancementNode* currentAdvancements;
@@ -27,7 +27,7 @@ private:
 
 public:
     Player() = delete;
-    Player(Vector3 position, Vector3 speed, PlayerType type);
+    Player(Vector3 position, Vector3 speed, PlayerType playerType);
     ~Player();
 
     void setBuildingManager(BuildingManager* buildingManager);
