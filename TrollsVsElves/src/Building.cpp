@@ -19,14 +19,19 @@ Building::Building(Cube cube, BuildingType buildingType)
 
     rallyPoint = Cylinder(Vector3Zero(), 0.8f, 20.f, 8, { 255, 255, 255, 128 });
 
-    this->advancement = nullptr;
-
     switch (buildingType)
     {
         case ROCK:      targetColor = Color{ 100, 100, 100, 255 };  break;
         case CASTLE:    targetColor = BEIGE;                        break;
         case HALL:      targetColor = BLUE;                         break;
         case SHOP:      targetColor = SKYBLUE;                      break;
+    }
+    switch (buildingType)
+    {
+        case ROCK:      this->actionId = "rock0";   break;
+        case CASTLE:    this->actionId = "castle0"; break;
+        case HALL:      this->actionId = "hall0";   break;
+        case SHOP:      this->actionId = "shop0";   break;
     }
 
     Vector3 targetColorHSL = ColorToHSV(targetColor);
@@ -115,16 +120,6 @@ bool Building::isSelected()
     return selected;
 }
 
-void Building::sell()
-{
-    sold = true;
-}
-
-bool Building::isSold()
-{
-    return sold;
-}
-
 Cylinder Building::getRallyPoint()
 {
     return rallyPoint;
@@ -133,26 +128,4 @@ Cylinder Building::getRallyPoint()
 void Building::setRallyPoint(Vector3 point)
 {
     rallyPoint.position = point;
-}
-
-AdvancementNode* Building::getAdvancement()
-{
-    return advancement;
-}
-
-void Building::promote(AdvancementNode* promotion)
-{
-    if (advancement) // on creation this will be nullptr
-    {
-        printf("'%s' got promoted to stage %d\n", advancement->id.base.c_str(), promotion->id.stage);
-
-        Vector3 targetColorHSV = ColorToHSV(targetColor);
-        Vector3 selectedColorHSV = ColorToHSV(selectedColor);
-        targetColor = ColorFromHSV(targetColorHSV.x, targetColorHSV.y, targetColorHSV.z * 0.8f);
-        selectedColor = ColorFromHSV(targetColorHSV.x, targetColorHSV.y, targetColorHSV.z * 0.8f * 0.8f);
-        cube.color = selected ? selectedColor : targetColor;
-    }
-
-    advancement = promotion;
-
 }

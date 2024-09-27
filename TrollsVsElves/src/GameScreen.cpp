@@ -3,6 +3,8 @@
 GameScreen::GameScreen(Vector2i screenSize)
 {
     this->screenSize = screenSize;
+    ActionsManager::get().loadRequirements("requirements.json");
+    ActionsManager::get().loadActions("actions.json");
 
     MapGenerator::get().generateFromFile("map/map.json");
     Vector2i gridSize = MapGenerator::get().getGridSize();
@@ -167,7 +169,7 @@ void GameScreen::update()
         }
     }
 
-    if (selectedBuilding && selectedBuilding->isSold()) // delete selectedBuilding and pop from buildings vector
+    if (selectedBuilding && selectedBuilding->sold) // delete selectedBuilding and pop from buildings vector
     {
         MapGenerator::get().removeObstacle(selectedBuilding->getCube());
         buildingManager->removeBuilding(selectedBuilding);
@@ -438,7 +440,7 @@ void GameScreen::handleRightMouseButton()
                     printf("entities > indices, should probably do something about this later\n"); // TODO: later
 
                 Entity* entity = nullptr;
-                bool checkForTroll = player->isTroll() && player->isSelected();
+                bool checkForTroll = player->playerType == PLAYER_TROLL && player->isSelected();
                 for (int i = 0; i < selectedEntities.size(); i++)
                 {
                     Vector3 pos = mapGenerator.indexToWorldPosition(neighboringIndices[i]);

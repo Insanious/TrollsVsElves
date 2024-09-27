@@ -10,6 +10,7 @@
 #include "Building.h"
 #include "Entity.h"
 #include "CameraManager.h"
+#include "ActionsManager.h"
 
 class Player; // forward declaration to get around circular depenedency
 
@@ -26,8 +27,7 @@ private:
 
     std::vector<Entity*> entities;
 
-    std::map<BuildingType, AdvancementTree*> advancementTrees;
-    std::unordered_map<std::string, int> unlockedAdvancements;
+    std::unordered_map<std::string, unsigned> unlockedActions;
 
     Player* player;
 
@@ -43,7 +43,7 @@ public:
 
     void draw();
     void drawBuildingUIButtons(Building* building, ImVec2 buttonSize, int nrOfButtons, int buttonsPerLine);
-    void checkKeyboardPresses(Building* building, std::vector<AdvancementNode*> children);
+    void resolveBuildingAction(Building* building, ActionNode& action);
     void update();
 
     void setPlayer(Player* player);
@@ -66,9 +66,10 @@ public:
     std::vector<Entity*> getEntities();
 
     void recruit(Building* building);
-    bool canPromoteTo(AdvancementNode* promotion);
-    void promote(Building* building, AdvancementNode* promotion);
-    void updateUnlockedAdvancementOfBase(std::string base);
+    bool canPromoteTo(std::string id);
+    void promote(Building* building, std::string id);
+
+    void sell(Building* building);
 };
 
 #endif

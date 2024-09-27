@@ -1,0 +1,24 @@
+{
+    "castle0":      { "name": "Castle",             "action": "build",      "children": ["castle1"] },
+    "castle1":      { "name": "Castle 1",           "action": "promote",    "children": ["castle2"] },
+    "castle2":      { "name": "Castle 2",           "action": "promote",    "children": ["castle3"] },
+    "castle3":      { "name": "Castle 3",           "action": "promote",    "children": [] },
+    "rock0":        { "name": "Rock",               "action": "build",      "children": ["rock1"] },
+    "rock1":        { "name": "Rock 1",             "action": "promote",    "children": ["rock2"] },
+    "rock2":        { "name": "Rock 2",             "action": "promote",    "children": ["rock3"] },
+    "rock3":        { "name": "Rock 3",             "action": "promote",    "children": ["rock4"] },
+    "rock4":        { "name": "Rock 4",             "action": "promote",    "children": [] },
+    "hall0":        { "name": "Hall",               "action": "build",      "children": ["hall1", "recruit0"] },
+    "hall1":        { "name": "Hall 1",             "action": "promote",    "children": ["hall1", "recruit0", "recruit1"] },
+    "recruit0":     { "name": "Recruit a kid",      "action": "recruit",    "children": [] },
+    "recruit1":     { "name": "Recruit a teenager", "action": "recruit",    "children": [] },
+    "cocaine":      { "name": "Cocaine",            "action": "buy",        "children": [] },
+    "blink":        { "name": "Blink",              "action": "spell",      "children": [] },
+
+    "elf":          { "name": "Elf",                "action": "",           "children": ["elf-build", "elf-spells"] },
+    "elf-build":    { "name": "Build",              "action": "promote",    "children": ["castle0", "rock0", "hall0"] },
+    "elf-spells":   { "name": "Spells",             "action": "promote",    "children": ["blink"] },
+
+    "troll":        { "name": "Troll",              "action": "",           "children": ["troll-spells"] },
+    "troll-spells": { "name": "Spells",             "action": "promote",    "children": ["blink"] }
+}

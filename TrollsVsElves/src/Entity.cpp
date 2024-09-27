@@ -79,9 +79,11 @@ void Entity::setPositions(std::vector<Vector3> positions)
     paths.insert(paths.end(), positions.begin(), positions.end());
 
     if (paths.size())
+    {
         targetMarker.position = { paths.back().x, 2.f, paths.back().z };
+        setState(RUNNING);
+    }
 
-    setState(RUNNING);
 }
 
 void Entity::setDefaultColor(Color color)

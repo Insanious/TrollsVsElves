@@ -2,7 +2,7 @@
 #define PLAYER_H
 
 #include "Entity.h"
-#include "AdvancementTree.h"
+#include "ActionsManager.h"
 
 #include <map>
 #include <functional>
@@ -15,26 +15,24 @@ class Player : public Entity
 {
 private:
     BuildingManager* buildingManager;
-    PlayerType playerType;
 
-    AdvancementTree* advancements;
-    AdvancementNode* currentAdvancements;
+    std::string actionId;
+    std::string originalActionId;
+    std::string previousActionId;
 
     std::vector<Item> items;
 
-    void checkKeyboardPresses(std::vector<AdvancementNode*> children);
-    void handleButtonPressLogic(AdvancementNode* node);
+    void resolveAction(ActionNode& node);
 
 public:
+    PlayerType playerType;
+
     Player() = delete;
     Player(Vector3 position, Vector3 speed, PlayerType playerType);
     ~Player();
 
     void setBuildingManager(BuildingManager* buildingManager);
     void tryBuyItem(Item item);
-
-    bool isElf();
-    bool isTroll();
 
     void draw();
     void drawUIButtons(ImVec2 buttonSize, int nrOfButtons, int buttonsPerLine);

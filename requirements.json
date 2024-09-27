@@ -1,0 +1,24 @@
+{
+    "castle0": [],
+    "castle1": ["castle0"],
+    "castle2": ["castle1"],
+    "castle3": ["castle2", "rock1"],
+
+    "rock0": [],
+    "rock1": ["rock0"],
+    "rock2": ["rock1", "castle0"],
+    "rock3": ["rock2", "castle1"],
+    "rock4": ["rock3", "castle2"],
+
+    "hall0": [],
+    "hall1": ["hall0"],
+
+    "recruit0": ["hall0"],
+    "recruit1": ["hall1"],
+
+    "shop0": [],
+
+    "cocaine": [],
+
+    "blink": []
+}

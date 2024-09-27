@@ -12,18 +12,18 @@ Player::Player(Vector3 position, Vector3 speed, PlayerType playerType)
             this->setCapsule(Capsule(2.f, 8.f));
             this->setDefaultColor(BLUE);
             this->setPosition(position);
-            advancements = new AdvancementTree("player-dependencies.json");
+            this->originalActionId = "elf";
+            this->actionId = this->originalActionId;
             break;
 
         case PLAYER_TROLL:
             this->setCapsule(Capsule(3.f, 12.f));
             this->setDefaultColor(RED);
             this->setPosition(position);
-            advancements = new AdvancementTree("troll-dependencies.json"); // TODO: later, create a proper troll-dependencies file
+            this->originalActionId = "troll";
+            this->actionId = this->originalActionId;
             break;
     }
-
-    currentAdvancements = advancements->getRoot();
 }
 
 Player::~Player() {}
@@ -35,7 +35,7 @@ void Player::setBuildingManager(BuildingManager* buildingManager)
 
 void Player::tryBuyItem(Item item)
 {
-    bool canBuyItem = isTroll();
+    bool canBuyItem = playerType == PLAYER_TROLL;
 
     printf("%s item called '%s'\n", canBuyItem ? "Purchased" : "Couldn't purchase", item.name.c_str());
     if (!canBuyItem)
@@ -46,16 +46,6 @@ void Player::tryBuyItem(Item item)
         setSpeed(Vector3Add(speed, { 10.f, 10.f, 10.f }));
 }
 
-bool Player::isElf()
-{
-    return playerType == PLAYER_ELF;
-}
-
-bool Player::isTroll()
-{
-    return playerType == PLAYER_TROLL;
-}
-
 void Player::draw()
 {
     Entity::draw();
@@ -63,33 +53,31 @@ void Player::draw()
 
 void Player::drawUIButtons(ImVec2 buttonSize, int nrOfButtons, int buttonsPerLine)
 {
-    std::vector<AdvancementNode*> children = currentAdvancements->children;
+    std::vector<ActionNode> children = ActionsManager::get().getActionChildren(actionId);
 
-    AdvancementNode fillerButton = AdvancementNode(IdNode("filler", 0), "filler", nullptr, {});
-    AdvancementNode backButton = AdvancementNode(IdNode("back", 0), "Back", nullptr, {});
+    ActionNode fillerButton = ActionNode("filler", "Filler", "filler", {});
+    ActionNode backButton = ActionNode("back", "Back", "back", {});
 
     int nrOfFillerButtons = nrOfButtons - children.size();
     for (int i = 0; i < nrOfFillerButtons - 1; i++)
-        children.push_back(&fillerButton);          // add filler buttons between actual buttons and back button
-
+        children.push_back(fillerButton);           // add filler buttons between actual buttons and back button
     if (nrOfFillerButtons)                          // add back button if possible
-        children.push_back(currentAdvancements->parent ? &backButton : &fillerButton);
-
+        children.push_back(actionId != originalActionId ? backButton : fillerButton);
 
     bool buttonWasPressed = false;
-    AdvancementNode* child = nullptr;
+    ActionNode child;
     for (int i = 0; i < children.size(); i += buttonsPerLine)
     {
         for (int j = 0; j < buttonsPerLine; j++)
         {
             child = children[i+j];
 
-            if (child->name == "filler") // draw invisible button, don't care if its pressed or not
-                ImGui::InvisibleButton(child->name.c_str(), buttonSize);
-            else if (ImGui::Button(child->name.c_str(), buttonSize))
+            if (child.id == "filler") // draw invisible button, don't care if its pressed or not
+                ImGui::InvisibleButton(child.name.c_str(), buttonSize);
+            else if (ImGui::Button(child.name.c_str(), buttonSize))
             {
                 buttonWasPressed = true;
-                handleButtonPressLogic(child);
+                resolveAction(child);
             }
 
             if (j != buttonsPerLine - 1) // apply on all except the last
@@ -97,8 +85,17 @@ void Player::drawUIButtons(ImVec2 buttonSize, int nrOfButtons, int buttonsPerLin
         }
     }
 
-    if (!buttonWasPressed)
-        checkKeyboardPresses(children);
+    if (!buttonWasPressed) // check if any button was clicked using number-key buttons
+    {
+        for (int i = 0; i < children.size(); i++)
+        {
+            if (IsKeyPressed((KeyboardKey)int(KEY_ONE) + i))
+            {
+                resolveAction(children[i]);
+                break;
+            }
+        }
+    }
 }
 
 void Player::update()
@@ -106,42 +103,28 @@ void Player::update()
     Entity::update();
 }
 
-void Player::checkKeyboardPresses(std::vector<AdvancementNode*> children)
-{
-    // check if any key between KEY_ONE -> KEY_ONE + children.size() was pressed
-    AdvancementNode* child = nullptr;
-    for (int i = 0; i < children.size(); i++)
-    {
-        child = children[i];
-        int keyNr = int(KEY_ONE) + i;
-        if (IsKeyPressed((KeyboardKey)keyNr))
-        {
-            handleButtonPressLogic(child);
-            break;
-        }
-    }
-}
-
 void Player::deselect()
 {
-    currentAdvancements = advancements->getRoot(); // reset tree to root if player gets deselected
+    actionId = originalActionId;
     Entity::deselect();
 }
 
-void Player::handleButtonPressLogic(AdvancementNode* node)
+void Player::resolveAction(ActionNode& node)
 {
-    if (node->id.base == "filler")
+    if (node.id == "filler")
         return;
-    else if (node->id.base == "back")
-        currentAdvancements = currentAdvancements->parent;
-    else if (node->id.base == "castle")
-        buildingManager->createNewGhostBuilding(CASTLE);
-    else if (node->id.base == "rock")
-        buildingManager->createNewGhostBuilding(ROCK);
-    else if (node->id.base == "hall")
-        buildingManager->createNewGhostBuilding(HALL);
-    else if (node->id.base == "blink")
+    else if (node.action == "back")
+        actionId = previousActionId; // HACK: big-time
+    else if (node.action == "build") {
+        if (node.id == "castle0")    buildingManager->createNewGhostBuilding(CASTLE);
+        else if (node.id == "rock0") buildingManager->createNewGhostBuilding(ROCK);
+        else if (node.id == "hall0") buildingManager->createNewGhostBuilding(HALL);
+        else if (node.id == "shop0") buildingManager->createNewGhostBuilding(SHOP);
+    }
+    else if (node.id == "blink")
         printf("Blink is not implemented\n"); // TODO: later
-    else
-        currentAdvancements = node;
+    else if (node.action == "promote") {
+        previousActionId = actionId;
+        actionId = node.id;
+    }
 }

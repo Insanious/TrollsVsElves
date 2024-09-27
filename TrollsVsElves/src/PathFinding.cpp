@@ -87,7 +87,7 @@ std::list<Vector2i> PathFinding::findPath(Vector2i start, Vector2i goal, const s
             neighborPositions[i].y = current.position.y + directions[i][1];
         }
 
-        for (Vector2i pos: neighborPositions)
+        for (Vector2i& pos: neighborPositions)
         {
             if (pos.x < 0 || pos.x >= maxX || pos.y < 0 || pos.y >= maxY    // out of bounds
                 || visited.find(pos) != visited.end()                       // already visited

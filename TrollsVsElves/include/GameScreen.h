@@ -10,6 +10,7 @@
 #include "Player.h"
 #include "CameraManager.h"
 #include "Resource.h"
+#include "ActionsManager.h"
 
 #include <chrono>
 #include <vector>

@@ -9,12 +9,10 @@ BuildingManager::BuildingManager(Vector3 defaultBuildingSize, Color defaultBuild
     ghostBuilding = nullptr;
     ghostBuildingIsColliding = false;
 
-    advancementTrees = {
-        { CASTLE, new AdvancementTree("castle-dependencies.json") },
-        { ROCK,   new AdvancementTree("rock-dependencies.json") },
-        { HALL,   new AdvancementTree("hall-dependencies.json") },
-        { SHOP,   new AdvancementTree("shop-dependencies.json") }, // TODO: later, create a proper shop-dependencies file
-    };
+    // make sure zeroth level buildings are always available to build
+    unlockedActions["castle0"] = 1;
+    unlockedActions["rock0"] = 1;
+    unlockedActions["hall0"] = 1;
 }
 
 BuildingManager::~BuildingManager()
@@ -53,19 +51,18 @@ void BuildingManager::draw()
 
 void BuildingManager::drawBuildingUIButtons(Building* building, ImVec2 buttonSize, int nrOfButtons, int buttonsPerLine)
 {
-    AdvancementNode* advancement = building->getAdvancement();
-    std::vector<AdvancementNode*> children = advancement->children;
+    std::vector<ActionNode> children = ActionsManager::get().getActionChildren(building->actionId);
 
-    AdvancementNode fillerButton = AdvancementNode(IdNode("filler", 0), "filler", nullptr, {});
-    AdvancementNode sellButton = AdvancementNode(IdNode("sell", 0), "Sell", nullptr, {});
+    ActionNode fillerButton = ActionNode("filler", "Filler", "filler", {});
+    ActionNode sellButton = ActionNode("sell", "Sell", "sell", {});
 
     int nrOfFillerButtons = nrOfButtons - children.size();
     for (int i = 0; i < nrOfFillerButtons - 1; i++)
-        children.push_back(&fillerButton);      // add filler buttons between actual buttons and sell button
+        children.push_back(fillerButton);           // add filler buttons between actual buttons and sell button
     if (nrOfFillerButtons)
-        children.push_back(&sellButton);        // add sellButton last so its the last button
+        children.push_back(sellButton);             // add sellButton last so its the last button
 
-    AdvancementNode* child = nullptr;
+    ActionNode child;
     bool buttonWasPressed = false;
     for (int i = 0; i < children.size(); i += buttonsPerLine)
     {
@@ -73,11 +70,11 @@ void BuildingManager::drawBuildingUIButtons(Building* building, ImVec2 buttonSiz
         {
             child = children[i+j];
 
-            if (child->name == "filler")
-                ImGui::InvisibleButton(child->name.c_str(), buttonSize);
+            if (child.id == "filler")
+                ImGui::InvisibleButton(child.name.c_str(), buttonSize);
             else
             {
-                if (canPromoteTo(child)) // push default colors
+                if (canPromoteTo(child.id)) // push default colors
                 {
                     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.26f, 0.59f, 0.98f, 0.40f});         // found in imgui_draw.cpp@201
                     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.26f, 0.59f, 0.98f, 1.00f});  // found in imgui_draw.cpp@202
@@ -90,17 +87,10 @@ void BuildingManager::drawBuildingUIButtons(Building* building, ImVec2 buttonSiz
                     ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.83f, 0.32f, 0.32f, 1.00f});
                 }
 
-                if (ImGui::Button(child->name.c_str(), buttonSize))
+                if (ImGui::Button(child.name.c_str(), buttonSize))
                 {
                     buttonWasPressed = true;
-                    if (child->id.base == "sell")
-                        building->sell();
-                    else if (child->id.base == "recruit")
-                        recruit(building);
-                    else if (child->id.base == "buy")
-                        player->tryBuyItem(Item(child->name));
-                    else if (canPromoteTo(child))
-                        promote(building, child);
+                    resolveBuildingAction(building, child);
                 }
 
                 ImGui::PopStyleColor(3); // remove pushed colors
@@ -111,33 +101,32 @@ void BuildingManager::drawBuildingUIButtons(Building* building, ImVec2 buttonSiz
         }
     }
 
-    if (!buttonWasPressed)
-        checkKeyboardPresses(building, children);
-}
-
-void BuildingManager::checkKeyboardPresses(Building* building, std::vector<AdvancementNode*> children)
-{
-    // check if any key between KEY_ONE -> KEY_ONE + children.size() was pressed
-    AdvancementNode* child = nullptr;
-    for (int i = 0; i < children.size(); i++)
+    if (!buttonWasPressed) // check if any button was clicked using number-key buttons
     {
-        child = children[i];
-        int keyNr = int(KEY_ONE) + i;
-        if (IsKeyPressed((KeyboardKey)keyNr))
+        for (int i = 0; i < children.size(); i++)
         {
-            if (child->id.base == "filler")
-                return;
-            else if (child->id.base == "sell")
-                building->sell();
-            else if (child->id.base == "recruit")
-                recruit(building);
-            else if (child->id.base == "buy")
-                player->tryBuyItem(Item(child->name));
-            else if (canPromoteTo(child))
-                promote(building, child);
-            break;
+            if (IsKeyPressed((KeyboardKey)int(KEY_ONE) + i))
+            {
+                resolveBuildingAction(building, children[i]);
+                break;
+            }
         }
     }
+}
+
+
+void BuildingManager::resolveBuildingAction(Building* building, ActionNode& node)
+{
+    if (node.id == "filler")
+        return;
+    else if (node.action == "sell")
+        building->sold = true;
+    else if (node.action == "recruit")
+        recruit(building);
+    else if (node.action == "buy")
+        player->tryBuyItem(Item(node.name));
+    else if (node.action == "promote" && canPromoteTo(node.id))
+        promote(building, node.id);
 }
 
 Building* BuildingManager::raycastToBuilding()
@@ -164,7 +153,10 @@ Building* BuildingManager::raycastToBuilding()
 void BuildingManager::removeBuilding(Building* building)
 {
     swapAndPop(buildings, building);
-    updateUnlockedAdvancementOfBase(building->getAdvancement()->id.base);
+
+    for (std::string& id: building->previousActionIds)
+        unlockedActions[id]--;
+    unlockedActions[building->actionId]--;
 
     delete building;
 }
@@ -275,7 +267,7 @@ bool BuildingManager::isColliding(const Container& buildings, Building* targetBu
 void BuildingManager::createDebugBuilding(Vector2i index, BuildingType buildingType)
 {
     Building* building = new Building(Cube(defaultBuildingSize), buildingType);
-    promote(building, advancementTrees[buildingType]->getRoot());
+    unlockedActions[building->actionId]++;
 
     MapGenerator& mapGenerator = MapGenerator::get();
     Vector3 pos = mapGenerator.indexToWorldPosition(index);
@@ -304,10 +296,7 @@ void BuildingManager::createNewGhostBuilding(BuildingType buildingType)
     if (ghostBuilding)
         delete ghostBuilding;
 
-    // advancement of new building starts from the root
     ghostBuilding = new Building(Cube(defaultBuildingSize), buildingType);
-    promote(ghostBuilding, advancementTrees[buildingType]->getRoot());
-
     updateGhostBuilding(); // sets position correctly
 }
 
@@ -324,6 +313,7 @@ void BuildingManager::scheduleGhostBuilding()
 {
     assert(ghostBuilding != nullptr);
 
+    unlockedActions[ghostBuilding->actionId]++;
     ghostBuilding->scheduleBuild();
     buildQueue.push_back(ghostBuilding);
     ghostBuilding = nullptr;
@@ -372,44 +362,21 @@ void BuildingManager::recruit(Building* building)
     entities.push_back(entity);
 }
 
-bool BuildingManager::canPromoteTo(AdvancementNode* promotion)
+bool BuildingManager::canPromoteTo(std::string id)
 {
-    auto isLocked = [this](IdNode dependency)
-    {
-        std::string base = dependency.base;
-        int stage = dependency.stage;
-        return unlockedAdvancements.find(base) == unlockedAdvancements.end() || unlockedAdvancements.at(base) < stage;
-    };
+    std::vector<std::string> requirements = ActionsManager::get().requirements[id];
+    for (const std::string& id: requirements)
+        if (unlockedActions[id] == 0) // defaults to 0 if it doesn't exist
+            return false;
 
-    bool hasAnyLockedDependency = std::any_of(promotion->dependencies.begin(), promotion->dependencies.end(), isLocked);
-    return !hasAnyLockedDependency;
+    return true;
 }
 
-void BuildingManager::promote(Building* building, AdvancementNode* promotion)
+void BuildingManager::promote(Building* building, std::string id)
 {
-    std::string base = promotion->id.base;
-    int stage = promotion->id.stage;
-    if (unlockedAdvancements.find(base) == unlockedAdvancements.end() || unlockedAdvancements.at(base) < stage)
-        unlockedAdvancements.insert_or_assign(base, stage);
+    printf("promote %s to %s\n", building->actionId.c_str(), id.c_str());
 
-    building->promote(promotion);
-}
-
-void BuildingManager::updateUnlockedAdvancementOfBase(std::string base)
-{
-    int currentStage = unlockedAdvancements.at(base);
-
-    int highestStage = -1;
-    IdNode idNode;
-    for (Building* other: buildings)
-    {
-        idNode = other->getAdvancement()->id;
-        if (idNode.base == base && (highestStage -1 || idNode.stage > highestStage))
-            highestStage = idNode.stage;
-    }
-
-    if (highestStage == -1)
-        unlockedAdvancements.erase(unlockedAdvancements.find(base));
-    else
-        unlockedAdvancements.insert_or_assign(base, highestStage);
+    unlockedActions[id]++;
+    building->previousActionIds.push_back(building->actionId);
+    building->actionId = id;
 }
