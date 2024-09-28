@@ -8,7 +8,6 @@
 #include "utils.h"
 #include "MapGenerator.h"
 #include "Building.h"
-#include "Entity.h"
 #include "CameraManager.h"
 #include "ActionsManager.h"
 #include "UIUtils.h"
@@ -25,8 +24,6 @@ private:
     std::deque<Building*> buildQueue;
     Building* ghostBuilding;
     bool ghostBuildingIsColliding;
-
-    std::vector<Entity*> entities;
 
     std::unordered_map<std::string, unsigned> unlockedActions;
 
@@ -62,9 +59,8 @@ public:
     Building* getGhostBuilding();
     bool ghostBuildingExists();
 
+    void select(Building* building);
     void deselect();
-
-    std::vector<Entity*> getEntities();
 
     void recruit(Building* building);
     bool canPromoteTo(std::string id);

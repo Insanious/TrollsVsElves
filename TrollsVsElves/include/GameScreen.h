@@ -7,7 +7,7 @@
 #include "MapGenerator.h"
 #include "Building.h"
 #include "BuildingManager.h"
-#include "Player.h"
+#include "PlayerManager.h"
 #include "CameraManager.h"
 #include "Resource.h"
 #include "ActionsManager.h"
@@ -33,11 +33,8 @@ class GameScreen: public BaseScreen
         Vector2i screenSize;
 
         BuildingManager* buildingManager;
-        std::vector<Entity*> selectedEntities;
-
+        PlayerManager* playerManager;
         std::vector<Resource*> resources;
-
-        Player* player;
 
         bool isGhostBuildingColliding = false;
 
@@ -48,7 +45,6 @@ class GameScreen: public BaseScreen
         std::chrono::steady_clock::time_point lastLeftMouseButtonClick;
 
         bool checkCollisionCapsuleRectangle(Capsule capsule, Rectangle rectangle);
-        bool checkCollisionCapsulePoint(Capsule capsule, Vector2 point);
         float calculateCircleRadius2D(Vector3 position, float radius);
 
     public:
@@ -67,14 +63,8 @@ class GameScreen: public BaseScreen
         RaycastHitType checkRaycastHitType();
         void handleLeftMouseButton();
         void handleRightMouseButton();
-        bool raycastToPlayer();
-        Entity* raycastToEntity();
         Resource* raycastToResource();
         RayCollision raycastToGround();
-
-        void clearAndDeselectAllSelectedEntities();
-
-        Vector3 calculateTargetPositionToCubeFromEntity(Entity* entity, Cube cube);
 
         void addResource(Vector3 position);
 };

@@ -25,9 +25,6 @@ BuildingManager::~BuildingManager()
 
     if (ghostBuilding)
         delete ghostBuilding;
-
-    for (int i = 0; i < entities.size(); i++)
-        delete entities[i];
 }
 
 void BuildingManager::draw()
@@ -45,9 +42,6 @@ void BuildingManager::draw()
         ghostBuilding->draw();
         cube.position = Vector3SubtractValue(cube.position, 0.1f); // revert change
     }
-
-    for (Entity* entity: entities)
-        entity->draw();
 }
 
 void BuildingManager::drawBuildingUIButtons(ImVec2 buttonSize, int nrOfButtons, int buttonsPerLine)
@@ -106,8 +100,8 @@ void BuildingManager::resolveBuildingAction(Building* building, ActionNode& node
         return;
     else if (node.action == "sell")
         building->sold = true;
-    else if (node.action == "recruit")
-        recruit(building);
+    else if (node.action == "recruit") // TODO: later // recruit(building);
+        printf("'recruit' action is not implemented\n");
     else if (node.action == "buy") // TODO: later // player->tryBuyItem(Item(node.name));
         printf("'buy' action is not implemented\n");
     else if (node.action == "promote" && canPromoteTo(node.id))
@@ -156,9 +150,6 @@ void BuildingManager::update()
 
     if (ghostBuilding)
         updateGhostBuilding();
-
-    for (Entity* entity: entities)
-        entity->update();
 
     if (selectedBuilding && selectedBuilding->sold) // delete selectedBuilding and pop from buildings vector
     {
@@ -316,8 +307,17 @@ bool BuildingManager::ghostBuildingExists()
     return ghostBuilding != nullptr;
 }
 
+void BuildingManager::select(Building* building)
+{
+    selectedBuilding = building;
+    selectedBuilding->select();
+}
+
 void BuildingManager::deselect()
 {
+    if (!selectedBuilding)
+        return;
+
     selectedBuilding->deselect();
     selectedBuilding = nullptr;
 }
@@ -325,11 +325,6 @@ void BuildingManager::deselect()
 bool BuildingManager::canScheduleGhostBuilding()
 {
     return !ghostBuildingIsColliding;
-}
-
-std::vector<Entity*> BuildingManager::getEntities()
-{
-    return entities;
 }
 
 void BuildingManager::recruit(Building* building)
@@ -347,12 +342,13 @@ void BuildingManager::recruit(Building* building)
     float ground = building->getCube().position.y;
     Vector3 pos = { neighborPosition.x, ground, neighborPosition.z };
     Vector3 speed = Vector3Scale(Vector3One(), 30);
-    Entity* entity = new Entity(pos, speed, BLACK, WORKER);
+    // TEMP: disabled
+    // Entity* entity = new Entity(pos, speed, BLACK, WORKER);
 
-    std::vector<Vector3> positions = mapGenerator.pathfindPositions(entity->getPosition(), building->getRallyPoint().position);
-    entity->setPositions(positions);
+    // std::vector<Vector3> positions = mapGenerator.pathfindPositions(entity->getPosition(), building->getRallyPoint().position);
+    // entity->setPositions(positions);
 
-    entities.push_back(entity);
+    // entities.push_back(entity);
 }
 
 bool BuildingManager::canPromoteTo(std::string id)
