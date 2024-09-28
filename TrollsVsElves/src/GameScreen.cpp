@@ -74,7 +74,8 @@ void GameScreen::draw()
             DrawRectangleRec(multiSelectionRectangle, { 0, 255, 0, 25 });
             DrawRectangleLinesEx(multiSelectionRectangle, 1.f, { 0, 255, 0, 50 });
 
-            std::vector<Entity*> entities = buildingManager->getEntities();
+            // std::vector<Entity*> entities = buildingManager->getEntities(); // TEMP
+            std::vector<Entity*> entities;
             entities.push_back(player);
 
             if (true) // set to true to draw all entities' capsule collision circles
@@ -250,7 +251,8 @@ void GameScreen::stopMultiSelection()
     isMultiSelecting = false;
 
     clearAndDeselectAllSelectedEntities();
-    std::vector<Entity*> entities = buildingManager->getEntities();
+    std::vector<Entity*> entities;
+    // std::vector<Entity*> entities = buildingManager->getEntities(); // TEMP
     entities.push_back(player); // add player to skip extra code to deal with him
 
     for (Entity* entity: entities)
@@ -350,25 +352,26 @@ void GameScreen::handleLeftMouseButton()
 
         case RAYCAST_HIT_TYPE_ENTITY:
         {
-            Entity* clickedEntity = raycastToEntity();
-            if (doubleclicked) // select all of the same type
-            {
-                std::vector<Entity*> entities = buildingManager->getEntities();
-                EntityType clickedEntityType = clickedEntity->getEntityType();
-                for (Entity* entity: entities)
-                {
-                    if (entity->getEntityType() == clickedEntityType)
-                    {
-                        selectedEntities.push_back(entity);
-                        entity->select();
-                    }
-                }
-            }
-            else
-            {
-                selectedEntities.push_back(clickedEntity);
-                clickedEntity->select();
-            }
+            // TEMP
+            // Entity* clickedEntity = raycastToEntity();
+            // if (doubleclicked) // select all of the same type
+            // {
+            //     std::vector<Entity*> entities = buildingManager->getEntities();
+            //     EntityType clickedEntityType = clickedEntity->getEntityType();
+            //     for (Entity* entity: entities)
+            //     {
+            //         if (entity->getEntityType() == clickedEntityType)
+            //         {
+            //             selectedEntities.push_back(entity);
+            //             entity->select();
+            //         }
+            //     }
+            // }
+            // else
+            // {
+            //     selectedEntities.push_back(clickedEntity);
+            //     clickedEntity->select();
+            // }
 
             break;
         }
