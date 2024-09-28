@@ -107,8 +107,8 @@ void BuildingManager::resolveBuildingAction(Building* building, ActionNode& node
         building->sold = true;
     else if (node.action == "recruit")
         recruit(building);
-    else if (node.action == "buy")
-        player->tryBuyItem(Item(node.name));
+    else if (node.action == "buy") // TODO: later // player->tryBuyItem(Item(node.name));
+        printf("'buy' action is not implemented\n");
     else if (node.action == "promote" && canPromoteTo(node.id))
         promote(building, node.id);
 }
@@ -158,11 +158,6 @@ void BuildingManager::update()
 
     for (Entity* entity: entities)
         entity->update();
-}
-
-void BuildingManager::setPlayer(Player* player)
-{
-    this->player = player;
 }
 
 Building* BuildingManager::yieldBuildQueue()
@@ -250,7 +245,7 @@ bool BuildingManager::isColliding(const Container& buildings, Building* targetBu
 
 void BuildingManager::createDebugBuilding(Vector2i index, BuildingType buildingType)
 {
-    Building* building = new Building(Cube(defaultBuildingSize), buildingType);
+    Building* building = new Building(Cube(defaultBuildingSize), buildingType, nullptr);
     unlockedActions[building->actionId]++;
 
     MapGenerator& mapGenerator = MapGenerator::get();
@@ -275,12 +270,12 @@ void BuildingManager::createDebugBuilding(Vector2i index, BuildingType buildingT
     yieldBuildQueue();
 }
 
-void BuildingManager::createNewGhostBuilding(BuildingType buildingType)
+void BuildingManager::createNewGhostBuilding(BuildingType buildingType, Player* player)
 {
     if (ghostBuilding)
         delete ghostBuilding;
 
-    ghostBuilding = new Building(Cube(defaultBuildingSize), buildingType);
+    ghostBuilding = new Building(Cube(defaultBuildingSize), buildingType, player);
     updateGhostBuilding(); // sets position correctly
 }
 

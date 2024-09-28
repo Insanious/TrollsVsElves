@@ -20,7 +20,6 @@ GameScreen::GameScreen(Vector2i screenSize)
     player = new Player(startPos, playerSpeed, PLAYER_ELF);
 
     player->setBuildingManager(buildingManager);
-    buildingManager->setPlayer(player);
 
     isMultiSelecting = false;
 

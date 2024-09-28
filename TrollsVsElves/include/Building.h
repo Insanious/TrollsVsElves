@@ -4,6 +4,8 @@
 #include "structs.h"
 #include "UIUtils.h"
 
+class Player; // forward declaration to get around circular depenedency
+
 enum BuildStage { GHOST = 0, SCHEDULED, IN_PROGRESS, FINISHED };
 enum BuildingType { CASTLE = 0, ROCK, HALL, SHOP };
 
@@ -26,13 +28,14 @@ private:
     Cylinder rallyPoint;
 
 public:
+    Player* owner;
     BuildingType buildingType;
     std::string actionId;
     std::vector<std::string> previousActionIds;
     bool sold;
 
     Building() = delete;
-    Building(Cube cube, BuildingType buildingType);
+    Building(Cube cube, BuildingType buildingType, Player* owner);
     ~Building();
 
     void draw();

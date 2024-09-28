@@ -30,8 +30,6 @@ private:
 
     std::unordered_map<std::string, unsigned> unlockedActions;
 
-    Player* player;
-
     void updateGhostBuilding();
 
     template<typename Container>
@@ -47,8 +45,6 @@ public:
     void resolveBuildingAction(Building* building, ActionNode& action);
     void update();
 
-    void setPlayer(Player* player);
-
     Building* raycastToBuilding();
     void removeBuilding(Building* building);
 
@@ -57,7 +53,7 @@ public:
     void clearBuildQueue();
 
     void createDebugBuilding(Vector2i index, BuildingType type);
-    void createNewGhostBuilding(BuildingType buildingType);
+    void createNewGhostBuilding(BuildingType buildingType, Player* player);
     void clearGhostBuilding();
     void scheduleGhostBuilding();
     bool canScheduleGhostBuilding();

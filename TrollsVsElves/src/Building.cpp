@@ -1,6 +1,7 @@
 #include "Building.h"
+#include "Player.h"
 
-Building::Building(Cube cube, BuildingType buildingType)
+Building::Building(Cube cube, BuildingType buildingType, Player* owner)
 {
     buildStage = GHOST;
 
@@ -9,6 +10,7 @@ Building::Building(Cube cube, BuildingType buildingType)
 
     this->cube = cube;
     this->buildingType = buildingType;
+    this->owner = owner;
     cube.color = ghostColor;
 
     selected = false;
