@@ -36,12 +36,14 @@ private:
     bool isColliding(const Container& buildings, Building* targetBuilding);
 
 public:
+    Building* selectedBuilding;
+
     BuildingManager() = delete;
     BuildingManager(Vector3 defaultBuildingSize, Color defaultBuildingColor);
     ~BuildingManager();
 
     void draw();
-    void drawBuildingUIButtons(Building* building, ImVec2 buttonSize, int nrOfButtons, int buttonsPerLine);
+    void drawBuildingUIButtons(ImVec2 buttonSize, int nrOfButtons, int buttonsPerLine);
     void resolveBuildingAction(Building* building, ActionNode& action);
     void update();
 
@@ -59,6 +61,8 @@ public:
     bool canScheduleGhostBuilding();
     Building* getGhostBuilding();
     bool ghostBuildingExists();
+
+    void deselect();
 
     std::vector<Entity*> getEntities();
 

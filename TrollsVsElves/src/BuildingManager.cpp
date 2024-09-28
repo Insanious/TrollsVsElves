@@ -6,6 +6,7 @@ BuildingManager::BuildingManager(Vector3 defaultBuildingSize, Color defaultBuild
     this->defaultBuildingSize = defaultBuildingSize;
     this->defaultBuildingColor = defaultBuildingColor;
 
+    selectedBuilding = nullptr;
     ghostBuilding = nullptr;
     ghostBuildingIsColliding = false;
 
@@ -49,9 +50,9 @@ void BuildingManager::draw()
         entity->draw();
 }
 
-void BuildingManager::drawBuildingUIButtons(Building* building, ImVec2 buttonSize, int nrOfButtons, int buttonsPerLine)
+void BuildingManager::drawBuildingUIButtons(ImVec2 buttonSize, int nrOfButtons, int buttonsPerLine)
 {
-    std::vector<ActionNode> children = ActionsManager::get().getActionChildren(building->actionId);
+    std::vector<ActionNode> children = ActionsManager::get().getActionChildren(selectedBuilding->actionId);
 
     ActionNode fillerButton = ActionNode("filler", "Filler", "filler", {});
     ActionNode sellButton = ActionNode("sell", "Sell", "sell", {});
@@ -78,7 +79,7 @@ void BuildingManager::drawBuildingUIButtons(Building* building, ImVec2 buttonSiz
                 if (ImGui::Button(child.name.c_str(), buttonSize))
                 {
                     buttonWasPressed = true;
-                    resolveBuildingAction(building, child);
+                    resolveBuildingAction(selectedBuilding, child);
                 }
 
                 ImGui::PopStyleColor(colors); // remove pushed colors
@@ -93,7 +94,7 @@ void BuildingManager::drawBuildingUIButtons(Building* building, ImVec2 buttonSiz
         for (int i = 0; i < children.size(); i++)
             if (IsKeyPressed((KeyboardKey)int(KEY_ONE) + i))
             {
-                resolveBuildingAction(building, children[i]);
+                resolveBuildingAction(selectedBuilding, children[i]);
                 break;
             }
 }
@@ -158,6 +159,13 @@ void BuildingManager::update()
 
     for (Entity* entity: entities)
         entity->update();
+
+    if (selectedBuilding && selectedBuilding->sold) // delete selectedBuilding and pop from buildings vector
+    {
+        MapGenerator::get().removeObstacle(selectedBuilding->getCube());
+        removeBuilding(selectedBuilding);
+        selectedBuilding = nullptr;
+    }
 }
 
 Building* BuildingManager::yieldBuildQueue()
@@ -306,6 +314,12 @@ Building* BuildingManager::getGhostBuilding()
 bool BuildingManager::ghostBuildingExists()
 {
     return ghostBuilding != nullptr;
+}
+
+void BuildingManager::deselect()
+{
+    selectedBuilding->deselect();
+    selectedBuilding = nullptr;
 }
 
 bool BuildingManager::canScheduleGhostBuilding()

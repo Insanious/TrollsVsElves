@@ -33,7 +33,6 @@ class GameScreen: public BaseScreen
         Vector2i screenSize;
 
         BuildingManager* buildingManager;
-        Building* selectedBuilding;
         std::vector<Entity*> selectedEntities;
 
         std::vector<Resource*> resources;

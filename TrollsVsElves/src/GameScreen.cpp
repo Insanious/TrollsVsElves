@@ -10,7 +10,6 @@ GameScreen::GameScreen(Vector2i screenSize)
     Vector2i gridSize = MapGenerator::get().getGridSize();
     Vector3 cubeSize = MapGenerator::get().getCubeSize();
 
-    selectedBuilding = nullptr;
     buildingManager = new BuildingManager({ cubeSize.x * 2, cubeSize.y, cubeSize.z * 2 }, BLANK);
 
     Vector3 startPos = { 0.f, cubeSize.y / 2, 0.f };
@@ -105,7 +104,7 @@ void GameScreen::draw()
 void GameScreen::drawUI()
 {
     bool playerSelectedAndNoOther = (selectedEntities.size() == 1 && player->isSelected());
-    bool drawWindow = (!selectedBuilding != !playerSelectedAndNoOther); // xor
+    bool drawWindow = (!buildingManager->selectedBuilding != !playerSelectedAndNoOther); // xor
     if (drawWindow)
     {
         bool bottomRightWindow = true;
@@ -138,8 +137,8 @@ void GameScreen::drawUI()
 
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, buttonPadding);
 
-        if (selectedBuilding)
-            buildingManager->drawBuildingUIButtons(selectedBuilding, buttonSize, nrOfButtons, buttonLayout.x);
+        if (buildingManager->selectedBuilding)
+            buildingManager->drawBuildingUIButtons(buttonSize, nrOfButtons, buttonLayout.x);
         else if (player->isSelected())
             player->drawUIButtons(buttonSize, nrOfButtons, buttonLayout.x);
 
@@ -167,13 +166,6 @@ void GameScreen::update()
             std::vector<Vector3> positions = MapGenerator::get().pathfindPositions(player->getPosition(), targetPosition);
             player->setPositions(positions);
         }
-    }
-
-    if (selectedBuilding && selectedBuilding->sold) // delete selectedBuilding and pop from buildings vector
-    {
-        MapGenerator::get().removeObstacle(selectedBuilding->getCube());
-        buildingManager->removeBuilding(selectedBuilding);
-        selectedBuilding = nullptr;
     }
 
     if (!isMultiSelecting)
@@ -325,12 +317,9 @@ void GameScreen::handleLeftMouseButton()
 
     RaycastHitType type = checkRaycastHitType();
 
-    // deselect selectedBuilding if not clicking a building or UI
-    if (selectedBuilding && type != RAYCAST_HIT_TYPE_UI)
-    {
-        selectedBuilding->deselect();
-        selectedBuilding = nullptr;
-    }
+    // deselect selectedBuilding if not clicking UI
+    if (buildingManager->selectedBuilding && type != RAYCAST_HIT_TYPE_UI)
+        buildingManager->deselect();
 
     // always clear selectedEntities if clicked player/entity/building
     if (type == RAYCAST_HIT_TYPE_PLAYER || type == RAYCAST_HIT_TYPE_ENTITY || type == RAYCAST_HIT_TYPE_BUILDING)
@@ -378,8 +367,8 @@ void GameScreen::handleLeftMouseButton()
 
         case RAYCAST_HIT_TYPE_BUILDING:
         {
-            selectedBuilding = buildingManager->raycastToBuilding();
-            selectedBuilding->select();
+            buildingManager->selectedBuilding = buildingManager->raycastToBuilding();
+            buildingManager->selectedBuilding->select();
             break;
         }
 
@@ -465,12 +454,12 @@ void GameScreen::handleRightMouseButton()
                 break;
             }
 
-            if (selectedBuilding)
+            if (buildingManager->selectedBuilding)
             {
                 Vector3 point = raycastToGround().point;
                 Vector2i index = mapGenerator.worldPositionToIndex(point);
                 Vector3 adjusted = mapGenerator.indexToWorldPosition(index);
-                selectedBuilding->setRallyPoint(adjusted); // TODO: later, this doesn't work for y-elevated buildings
+                buildingManager->selectedBuilding->setRallyPoint(adjusted); // TODO: later, this doesn't work for y-elevated buildings
 
                 break;
             }
