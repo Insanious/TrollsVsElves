@@ -74,10 +74,16 @@ void Player::drawUIButtons(ImVec2 buttonSize, int nrOfButtons, int buttonsPerLin
 
             if (child.id == "filler") // draw invisible button, don't care if its pressed or not
                 ImGui::InvisibleButton(child.name.c_str(), buttonSize);
-            else if (ImGui::Button(child.name.c_str(), buttonSize))
+            else
             {
-                buttonWasPressed = true;
-                resolveAction(child);
+                int colors = pushButtonEnabled();
+                if (ImGui::Button(child.name.c_str(), buttonSize))
+                {
+                    buttonWasPressed = true;
+                    resolveAction(child);
+                }
+
+                ImGui::PopStyleColor(colors);
             }
 
             if (j != buttonsPerLine - 1) // apply on all except the last
@@ -86,16 +92,12 @@ void Player::drawUIButtons(ImVec2 buttonSize, int nrOfButtons, int buttonsPerLin
     }
 
     if (!buttonWasPressed) // check if any button was clicked using number-key buttons
-    {
         for (int i = 0; i < children.size(); i++)
-        {
             if (IsKeyPressed((KeyboardKey)int(KEY_ONE) + i))
             {
                 resolveAction(children[i]);
                 break;
             }
-        }
-    }
 }
 
 void Player::update()
@@ -114,7 +116,7 @@ void Player::resolveAction(ActionNode& node)
     if (node.id == "filler")
         return;
     else if (node.action == "back")
-        actionId = previousActionId; // HACK: big-time
+        actionId = previousActionId;
     else if (node.action == "build") {
         if (node.id == "castle0")    buildingManager->createNewGhostBuilding(CASTLE);
         else if (node.id == "rock0") buildingManager->createNewGhostBuilding(ROCK);

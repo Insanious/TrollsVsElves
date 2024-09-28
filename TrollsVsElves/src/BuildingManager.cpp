@@ -74,26 +74,14 @@ void BuildingManager::drawBuildingUIButtons(Building* building, ImVec2 buttonSiz
                 ImGui::InvisibleButton(child.name.c_str(), buttonSize);
             else
             {
-                if (canPromoteTo(child.id)) // push default colors
-                {
-                    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.26f, 0.59f, 0.98f, 0.40f});         // found in imgui_draw.cpp@201
-                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.26f, 0.59f, 0.98f, 1.00f});  // found in imgui_draw.cpp@202
-                    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.06f, 0.53f, 0.98f, 1.00f});   // found in imgui_draw.cpp@203
-                }
-                else // push disabled colors
-                {
-                    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.83f, 0.32f, 0.32f, 0.4f});
-                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.83f, 0.32f, 0.32f, 0.7f});
-                    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.83f, 0.32f, 0.32f, 1.00f});
-                }
-
+                int colors = canPromoteTo(child.id) ? pushButtonEnabled() : pushButtonDisabled();
                 if (ImGui::Button(child.name.c_str(), buttonSize))
                 {
                     buttonWasPressed = true;
                     resolveBuildingAction(building, child);
                 }
 
-                ImGui::PopStyleColor(3); // remove pushed colors
+                ImGui::PopStyleColor(colors); // remove pushed colors
             }
 
             if (j != buttonsPerLine - 1) // apply on all except the last
@@ -102,16 +90,12 @@ void BuildingManager::drawBuildingUIButtons(Building* building, ImVec2 buttonSiz
     }
 
     if (!buttonWasPressed) // check if any button was clicked using number-key buttons
-    {
         for (int i = 0; i < children.size(); i++)
-        {
             if (IsKeyPressed((KeyboardKey)int(KEY_ONE) + i))
             {
                 resolveBuildingAction(building, children[i]);
                 break;
             }
-        }
-    }
 }
 
 

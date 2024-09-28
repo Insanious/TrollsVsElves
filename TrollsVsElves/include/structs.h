@@ -75,8 +75,7 @@ struct Capsule
 
     Capsule() {};
 
-    Capsule(float _radius, float _height)
-        : radius(_radius), height(_height) {};
+    Capsule(float _radius, float _height): radius(_radius), height(_height) {};
 };
 
 inline void drawCapsule(Capsule capsule)

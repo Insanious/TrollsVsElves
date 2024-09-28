@@ -7,8 +7,6 @@ ActionsManager::~ActionsManager() {}
 
 void ActionsManager::loadRequirements(std::string filename)
 {
-    printf("ActionsManager::loadRequirements(%s)\n", filename.c_str());
-
     Json::Value json = parseJsonFile(filename);
     for (const auto& id: json.getMemberNames())
     {
@@ -22,12 +20,9 @@ void ActionsManager::loadRequirements(std::string filename)
 
 void ActionsManager::loadActions(std::string filename)
 {
-    printf("ActionsManager::loadActions(%s)\n", filename.c_str());
-
     Json::Value json = parseJsonFile(filename);
     for (const auto& id: json.getMemberNames())
     {
-        printf("loaded %s\n", id.c_str());
         Json::Value& obj = json[id];
         std::string name = obj["name"].asString();
         std::string action = obj["action"].asString();

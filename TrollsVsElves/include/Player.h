@@ -3,6 +3,7 @@
 
 #include "Entity.h"
 #include "ActionsManager.h"
+#include "UIUtils.h"
 
 #include <map>
 #include <functional>

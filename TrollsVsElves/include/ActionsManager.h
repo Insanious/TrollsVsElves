@@ -5,7 +5,6 @@
 #include <vector>
 #include <unordered_map>
 #include "utils.h"
-#include "Building.h"
 
 struct ActionNode
 {

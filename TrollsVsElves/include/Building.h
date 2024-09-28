@@ -2,8 +2,7 @@
 #define BUILDING_H
 
 #include "structs.h"
-#include "imgui.h"
-#include "rlImGui.h"
+#include "UIUtils.h"
 
 enum BuildStage { GHOST = 0, SCHEDULED, IN_PROGRESS, FINISHED };
 enum BuildingType { CASTLE = 0, ROCK, HALL, SHOP };

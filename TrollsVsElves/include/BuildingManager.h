@@ -11,6 +11,7 @@
 #include "Entity.h"
 #include "CameraManager.h"
 #include "ActionsManager.h"
+#include "UIUtils.h"
 
 class Player; // forward declaration to get around circular depenedency
 
