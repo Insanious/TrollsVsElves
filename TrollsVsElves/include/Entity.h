@@ -50,10 +50,8 @@ public:
     void updateMovement();
 
     Vector3 getPosition();
-    Capsule getCapsule();
     void setPositions(std::vector<Vector3> positions);
     void setDefaultColor(Color color);
-    void setCapsule(Capsule capsule);
     void setPosition(Vector3 position);
     void setSpeed(Vector3 speed);
     bool hasReachedDestination();
