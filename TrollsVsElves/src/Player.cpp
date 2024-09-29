@@ -9,7 +9,7 @@ Player::Player(Vector3 position, Vector3 speed, PlayerType playerType)
     switch (playerType)
     {
         case PLAYER_ELF:
-            this->setCapsule(Capsule(2.f, 8.f));
+            this->capsule = Capsule(2.f, 8.f);
             this->setDefaultColor(BLUE);
             this->setPosition(position);
             this->originalActionId = "elf";
@@ -17,7 +17,7 @@ Player::Player(Vector3 position, Vector3 speed, PlayerType playerType)
             break;
 
         case PLAYER_TROLL:
-            this->setCapsule(Capsule(3.f, 12.f));
+            this->capsule = Capsule(3.f, 12.f);
             this->setDefaultColor(RED);
             this->setPosition(position);
             this->originalActionId = "troll";

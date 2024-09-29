@@ -107,3 +107,12 @@ struct Item
     Item() {};
     Item(std::string _name): name(_name) {};
 };
+
+struct Circle
+{
+    float radius;
+    Vector2 position;
+
+    Circle() {};
+    Circle(float _radius, Vector2 _position): radius(_radius), position(_position) {};
+};

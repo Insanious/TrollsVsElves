@@ -74,3 +74,20 @@ Vector2 CameraManager::getWorldToScreen(Vector3 position)
 {
     return GetWorldToScreen(position, camera);
 }
+
+float CameraManager::calculateCircleRadius2D(Vector3 position, float radius)
+{
+    Vector3 right = { cameraViewMatrix.m0, cameraViewMatrix.m1, cameraViewMatrix.m2 };
+    Vector3 rightScaled = Vector3Scale(right, radius);
+    Vector3 edgeOfCircle = Vector3Add(position, rightScaled);
+
+    return Vector2Distance(getWorldToScreen(position), getWorldToScreen(edgeOfCircle));
+}
+
+Circle CameraManager::convertSphereToCircle(Vector3 position, float radius)
+{
+    float radius2D = calculateCircleRadius2D(position, radius);
+    Vector2 position2D = getWorldToScreen(position);
+
+    return Circle({ radius2D, position2D });
+}

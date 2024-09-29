@@ -46,10 +46,9 @@ GameScreen::~GameScreen()
 
 void GameScreen::draw()
 {
-    Camera3D& camera3D = CameraManager::get().getCamera();
-    Camera2D& camera2D = CameraManager::get().getCamera2D();
+    CameraManager& cameraManager = CameraManager::get();
 
-    BeginMode3D(camera3D);
+    BeginMode3D(cameraManager.getCamera());
 
         MapGenerator::get().draw();
 
@@ -66,7 +65,7 @@ void GameScreen::draw()
 
     EndMode3D();
 
-    BeginMode2D(camera2D);
+    BeginMode2D(cameraManager.getCamera2D());
 
         if (isMultiSelecting)
         {
@@ -79,19 +78,15 @@ void GameScreen::draw()
             {
                 for (Player* player: players)
                 {
-                    Capsule cap = player->getCapsule();
+                    Capsule& capsule = player->capsule;
+                    Circle bottom = cameraManager.convertSphereToCircle(capsule.startPos, capsule.radius);
+                    Circle top = cameraManager.convertSphereToCircle(capsule.endPos, capsule.radius);
 
-                    Vector2 bottomCirclePosScreen = GetWorldToScreen(cap.startPos, camera3D);
-                    Vector2 topCirclePosScreen = GetWorldToScreen(cap.endPos, camera3D);
+                    DrawCircleV(bottom.position, bottom.radius, YELLOW);
+                    DrawCircleLinesV(bottom.position, bottom.radius, GRAY);
 
-                    float newBottomRadius = calculateCircleRadius2D(cap.startPos, cap.radius);
-                    float newTopRadius = calculateCircleRadius2D(cap.endPos, cap.radius);
-
-                    DrawCircleV(bottomCirclePosScreen, newBottomRadius, YELLOW);
-                    DrawCircleLinesV(bottomCirclePosScreen, newBottomRadius, GRAY);
-
-                    DrawCircleV(topCirclePosScreen, newTopRadius, YELLOW);
-                    DrawCircleLinesV(topCirclePosScreen, newTopRadius, GRAY);
+                    DrawCircleV(top.position, top.radius, YELLOW);
+                    DrawCircleLinesV(top.position, top.radius, GRAY);
                 }
             }
         }
@@ -168,36 +163,6 @@ void GameScreen::update()
         handleRightMouseButton();
 }
 
-float GameScreen::calculateCircleRadius2D(Vector3 position, float radius)
-{
-    Matrix viewMatrix = CameraManager::get().getCameraViewMatrix();
-
-    Vector3 right = { viewMatrix.m0, viewMatrix.m1, viewMatrix.m2 };
-    Vector3 rightScaled = Vector3Scale(right, radius);
-    Vector3 edgeOfCircle = Vector3Add(position, rightScaled);
-
-    return Vector2Distance(
-        CameraManager::get().getWorldToScreen(position),
-        CameraManager::get().getWorldToScreen(edgeOfCircle)
-    );
-}
-
-bool GameScreen::checkCollisionCapsuleRectangle(Capsule capsule, Rectangle rectangle)
-{
-    Vector2 bottomCirclePosScreen = CameraManager::get().getWorldToScreen(capsule.startPos);
-    Vector2 topCirclePosScreen = CameraManager::get().getWorldToScreen(capsule.endPos);
-
-    float newBottomRadius = calculateCircleRadius2D(capsule.startPos, capsule.radius);
-    float newTopRadius = calculateCircleRadius2D(capsule.endPos, capsule.radius);
-
-    // TODO: add collision against cylinder bounding box lines
-    if (CheckCollisionCircleRec(bottomCirclePosScreen, newBottomRadius, rectangle)  // check against bottom circle
-    ||  CheckCollisionCircleRec(topCirclePosScreen, newTopRadius, rectangle))       // check against top circle
-        return true;
-
-    return false;
-}
-
 void GameScreen::startMultiSelection()
 {
     isMultiSelecting = true;
@@ -209,11 +174,18 @@ void GameScreen::stopMultiSelection()
 {
     isMultiSelecting = false;
 
+    CameraManager& cameraManager = CameraManager::get();
     std::vector<Player*> players = playerManager->players;
 
     for (Player* player: players)
     {
-        if (checkCollisionCapsuleRectangle(player->getCapsule(), multiSelectionRectangle)) // entity is inside multiSelectionRectangle
+        Capsule& capsule = player->capsule;
+        Circle bottom = cameraManager.convertSphereToCircle(capsule.startPos, capsule.radius);
+        Circle top = cameraManager.convertSphereToCircle(capsule.endPos, capsule.radius);
+
+        // TODO: add collision against cylinder bounding box lines
+        if (CheckCollisionCircleRec(bottom.position, bottom.radius, multiSelectionRectangle)
+        ||  CheckCollisionCircleRec(top.position, top.radius, multiSelectionRectangle))
         {
             playerManager->deselect();
             playerManager->select(player);
@@ -318,7 +290,7 @@ void GameScreen::handleLeftMouseButton()
                 if (buildingsInQueue) // something is getting built, just schedule and leave player unchanged
                     break;
 
-                playerManager->pathfindEntityToCube(playerManager->selectedPlayer, ghost->getCube());
+                playerManager->pathfindPlayerToCube(playerManager->selectedPlayer, ghost->getCube());
                 break;
             }
 
@@ -347,15 +319,12 @@ void GameScreen::handleRightMouseButton()
                 buildingManager->clearGhostBuilding();
                 buildingManager->clearBuildQueue();
 
-                Vector3 goal = mapGenerator.raycastToGround()->position;
-                Vector2i goalIndex = mapGenerator.worldPositionToIndex(goal);
-                Vector3 pos = mapGenerator.indexToWorldPosition(goalIndex);
-
+                Vector3 pos = mapGenerator.worldPositionAdjusted(mapGenerator.raycastToGround()->position);
                 Player* player = playerManager->selectedPlayer;
 
                 std::vector<Vector3> positions = player->playerType == PLAYER_TROLL
                     ? mapGenerator.pathfindPositionsForTroll(player->getPosition(), pos)
-                    : mapGenerator.pathfindPositions(player->getPosition(), pos);
+                    : mapGenerator.pathfindPositionsForElf(player->getPosition(), pos);
                 player->setPositions(positions);
                 player->detach();
 
@@ -364,9 +333,7 @@ void GameScreen::handleRightMouseButton()
 
             if (buildingManager->selectedBuilding)
             {
-                Vector3 point = raycastToGround().point;
-                Vector2i index = mapGenerator.worldPositionToIndex(point);
-                Vector3 adjusted = mapGenerator.indexToWorldPosition(index);
+                Vector3 adjusted = mapGenerator.worldPositionAdjusted(raycastToGround().point);
                 buildingManager->selectedBuilding->setRallyPoint(adjusted); // TODO: later, this doesn't work for y-elevated buildings
 
                 break;

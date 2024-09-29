@@ -24,11 +24,10 @@ public:
     void select(Player* player);
     void deselect();
 
-    Vector3 calculateTargetPositionToCubeFromEntity(Entity* entity, Cube cube);
+    Vector3 calculateTargetPositionToCubeFromPlayer(Player* player, Cube cube);
     bool checkCollisionCapsulePoint(Capsule capsule, Vector2 point);
-    float calculateCircleRadius2D(Vector3 position, float radius);
 
-    void pathfindEntityToCube(Entity* entity, Cube cube);
+    void pathfindPlayerToCube(Player* player, Cube cube);
 
     Player* raycastToPlayer();
 };

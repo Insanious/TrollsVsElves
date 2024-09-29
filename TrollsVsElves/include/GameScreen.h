@@ -44,9 +44,6 @@ class GameScreen: public BaseScreen
 
         std::chrono::steady_clock::time_point lastLeftMouseButtonClick;
 
-        bool checkCollisionCapsuleRectangle(Capsule capsule, Rectangle rectangle);
-        float calculateCircleRadius2D(Vector3 position, float radius);
-
     public:
         GameScreen() = delete;
         GameScreen(Vector2i screenSize);

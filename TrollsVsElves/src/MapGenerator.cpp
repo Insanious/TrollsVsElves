@@ -198,6 +198,12 @@ Vector3 MapGenerator::indexToWorldPosition(Vector2i index)
     };
 }
 
+Vector3 MapGenerator::worldPositionAdjusted(Vector3 position)
+{
+    Vector2i index = worldPositionToIndex(position);
+    return indexToWorldPosition(index);
+}
+
 std::vector<Vector2i> MapGenerator::getCubeIndices(Cube cube)
 {
     // this should NOT be simplified to (halfX = maxX / 2) since (3 / 2 = 1) and (3 - (3/2) = 2)
@@ -262,7 +268,7 @@ void MapGenerator::colorTiles(std::list<Vector2i> indices)
         grid[index.y * gridSize.x + index.x]->color = RED;
 }
 
-std::vector<Vector3> MapGenerator::pathfindPositions(Vector3 start, Vector3 goal)
+std::vector<Vector3> MapGenerator::pathfindPositionsForElf(Vector3 start, Vector3 goal)
 {
     Vector2i startIndex = worldPositionToIndex(start);
     Vector2i goalIndex = worldPositionToIndex(goal);

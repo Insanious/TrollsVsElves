@@ -28,6 +28,9 @@ public:
     Matrix getCameraViewMatrix();
     Ray getMouseRay();
     Vector2 getWorldToScreen(Vector3 position);
+
+    float calculateCircleRadius2D(Vector3 position, float radius);
+    Circle convertSphereToCircle(Vector3 position, float radius);
 };
 
 #endif

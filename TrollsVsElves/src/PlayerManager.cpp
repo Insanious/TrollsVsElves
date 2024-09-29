@@ -34,7 +34,7 @@ void PlayerManager::update()
 
             building = buildingManager->buildQueueFront();
             if (building) // if more in queue, walk to the next target
-                pathfindEntityToCube(player, building->getCube());
+                pathfindPlayerToCube(player, building->getCube());
         }
     }
 }
@@ -60,11 +60,11 @@ void PlayerManager::deselect()
     selectedPlayer = nullptr;
 }
 
-Vector3 PlayerManager::calculateTargetPositionToCubeFromEntity(Entity* entity, Cube cube)
+Vector3 PlayerManager::calculateTargetPositionToCubeFromPlayer(Player* player, Cube cube)
 {
     MapGenerator& mapGenerator = MapGenerator::get();
     std::vector<Vector2i> indices = mapGenerator.getNeighboringIndices(cube);
-    Vector3 entityPosition = entity->getPosition();
+    Vector3 entityPosition = player->getPosition();
 
     std::vector<Vector3> positions;
     Vector3 position;
@@ -88,46 +88,32 @@ Vector3 PlayerManager::calculateTargetPositionToCubeFromEntity(Entity* entity, C
 
 bool PlayerManager::checkCollisionCapsulePoint(Capsule capsule, Vector2 point)
 {
-    Vector2 bottomCirclePosScreen = CameraManager::get().getWorldToScreen(capsule.startPos);
-    Vector2 topCirclePosScreen = CameraManager::get().getWorldToScreen(capsule.endPos);
+    CameraManager& cameraManager = CameraManager::get();
 
-    float newBottomRadius = calculateCircleRadius2D(capsule.startPos, capsule.radius);
-    float newTopRadius = calculateCircleRadius2D(capsule.endPos, capsule.radius);
+    Circle bottom = cameraManager.convertSphereToCircle(capsule.startPos, capsule.radius);
+    Circle top = cameraManager.convertSphereToCircle(capsule.endPos, capsule.radius);
+
+    bool collisionBottomCircle = CheckCollisionPointCircle(point, bottom.position, bottom.radius);
+    bool collisionTopCircle = CheckCollisionPointCircle(point, top.position, top.radius);
 
     // TODO: add collision against cylinder bounding box
-    if (CheckCollisionPointCircle(point, bottomCirclePosScreen, newBottomRadius)  // check against bottom circle
-    ||  CheckCollisionPointCircle(point, topCirclePosScreen, newTopRadius))       // check against top circle
-        return true;
-
-    return false;
+    return collisionBottomCircle || collisionTopCircle;
 }
 
-float PlayerManager::calculateCircleRadius2D(Vector3 position, float radius)
+void PlayerManager::pathfindPlayerToCube(Player* player, Cube cube)
 {
-    Matrix viewMatrix = CameraManager::get().getCameraViewMatrix();
-
-    Vector3 right = { viewMatrix.m0, viewMatrix.m1, viewMatrix.m2 };
-    Vector3 rightScaled = Vector3Scale(right, radius);
-    Vector3 edgeOfCircle = Vector3Add(position, rightScaled);
-
-    return Vector2Distance(
-        CameraManager::get().getWorldToScreen(position),
-        CameraManager::get().getWorldToScreen(edgeOfCircle)
-    );
-}
-
-void PlayerManager::pathfindEntityToCube(Entity* entity, Cube cube)
-{
-    Vector3 targetPosition = calculateTargetPositionToCubeFromEntity(entity, cube);
-    std::vector<Vector3> positions = MapGenerator::get().pathfindPositions(entity->getPosition(), targetPosition);
-    entity->setPositions(positions);
+    Vector3 targetPosition = calculateTargetPositionToCubeFromPlayer(player, cube);
+    std::vector<Vector3> positions = player->playerType == PLAYER_TROLL
+        ? MapGenerator::get().pathfindPositionsForTroll(player->getPosition(), targetPosition)
+        : MapGenerator::get().pathfindPositionsForElf(player->getPosition(), targetPosition);
+    player->setPositions(positions);
 }
 
 Player* PlayerManager::raycastToPlayer()
 {
     Vector2 mousePos = GetMousePosition();
     for (Player* player: players)
-        if (checkCollisionCapsulePoint(player->getCapsule(), mousePos))
+        if (checkCollisionCapsulePoint(player->capsule, mousePos))
             return player;
 
     return nullptr;

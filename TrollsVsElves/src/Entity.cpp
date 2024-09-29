@@ -68,11 +68,6 @@ Vector3 Entity::getPosition()
     return capsule.endPos;
 }
 
-Capsule Entity::getCapsule()
-{
-    return capsule;
-}
-
 void Entity::setPositions(std::vector<Vector3> positions)
 {
     paths.clear();
@@ -93,11 +88,6 @@ void Entity::setDefaultColor(Color color)
     selectedColor = ColorFromHSV(defaultColorHSL.x, defaultColorHSL.y, defaultColorHSL.z - 0.2f);
 
     this->capsule.color = defaultColor;
-}
-
-void Entity::setCapsule(Capsule capsule)
-{
-    this->capsule = capsule;
 }
 
 void Entity::setPosition(Vector3 position)

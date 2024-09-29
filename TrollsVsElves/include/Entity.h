@@ -19,7 +19,6 @@ class Entity
 {
 protected:
     EntityType entityType;
-    Capsule capsule;
     Color defaultColor;
     Color selectedColor;
 
@@ -40,6 +39,8 @@ protected:
     Resource* attachedResource;
 
 public:
+    Capsule capsule;
+
     Entity() = delete;
     Entity(Vector3 position, Vector3 speed, Color defaultColor, EntityType entityType);
     ~Entity();

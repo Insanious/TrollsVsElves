@@ -52,12 +52,13 @@ public:
 
     Vector2i worldPositionToIndex(Vector3 position);
     Vector3 indexToWorldPosition(Vector2i index);
+    Vector3 worldPositionAdjusted(Vector3 position);
     std::vector<Vector2i> getCubeIndices(Cube cube);
     std::vector<Vector2i> getNeighboringIndices(std::vector<Vector2i> indices);
     std::vector<Vector2i> getNeighboringIndices(Cube cube);
 
     void colorTiles(std::list<Vector2i> indices);
-    std::vector<Vector3> pathfindPositions(Vector3 start, Vector3 goal);
+    std::vector<Vector3> pathfindPositionsForElf(Vector3 start, Vector3 goal);
     std::vector<Vector3> pathfindPositionsForTroll(Vector3 start, Vector3 goal);
 };
 
