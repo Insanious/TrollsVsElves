@@ -42,7 +42,7 @@ public:
     Capsule capsule;
 
     Entity() = delete;
-    Entity(Vector3 position, Vector3 speed, Color defaultColor, EntityType entityType);
+    Entity(Vector3 position, Color defaultColor, EntityType entityType);
     ~Entity();
 
     void draw();
@@ -51,6 +51,7 @@ public:
 
     Vector3 getPosition();
     void setPositions(std::vector<Vector3> positions);
+    void correctPath(std::vector<Vector3> path);
     void setDefaultColor(Color color);
     void setPosition(Vector3 position);
     void setSpeed(Vector3 speed);

@@ -38,9 +38,9 @@ project (baseName)
     }
     files {"**.c", "**.cpp", "**.h", "**.hpp"}
 
-    includedirs { "./" }
-    includedirs { "src" }
-    includedirs { "include" }
+    includedirs { "./", "src", "include", "../extras/RakNet/Source" }
+    libdirs { "../extras/RakNet/Lib/Lib/LibStatic" }
+    links { "RakNetLibStatic", "pthread" }
 
     link_raylib()
     link_to("jsoncpp")

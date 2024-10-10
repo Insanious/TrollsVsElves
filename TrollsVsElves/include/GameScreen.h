@@ -11,6 +11,7 @@
 #include "CameraManager.h"
 #include "Resource.h"
 #include "ActionsManager.h"
+#include "ThreadSafeMessageQueue.h"
 
 #include <chrono>
 #include <vector>
@@ -32,8 +33,6 @@ class GameScreen: public BaseScreen
     private:
         Vector2i screenSize;
 
-        BuildingManager* buildingManager;
-        PlayerManager* playerManager;
         std::vector<Resource*> resources;
 
         bool isGhostBuildingColliding = false;
@@ -45,6 +44,10 @@ class GameScreen: public BaseScreen
         std::chrono::steady_clock::time_point lastLeftMouseButtonClick;
 
     public:
+        BuildingManager* buildingManager;
+        PlayerManager* playerManager;
+        ThreadSafeMessageQueue messageQueue;
+
         GameScreen() = delete;
         GameScreen(Vector2i screenSize);
         ~GameScreen();

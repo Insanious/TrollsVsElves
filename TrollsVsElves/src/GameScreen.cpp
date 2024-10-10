@@ -1,8 +1,10 @@
 #include "GameScreen.h"
+#include "NetworkClient.h"
 
 GameScreen::GameScreen(Vector2i screenSize)
 {
     this->screenSize = screenSize;
+
     ActionsManager::get().loadRequirements("requirements.json");
     ActionsManager::get().loadActions("actions.json");
 
@@ -15,10 +17,11 @@ GameScreen::GameScreen(Vector2i screenSize)
     Vector3 startPos = { 0.f, cubeSize.y / 2, 0.f };
     startPos.x = gridSize.x / 2 * cubeSize.x - cubeSize.x; // spawn in corner
     startPos.z = gridSize.y / 2 * cubeSize.z - cubeSize.z; // spawn in corner
-    Vector3 playerSpeed = Vector3Scale(Vector3One(), 40);
+    // Vector3 playerSpeed = Vector3Scale(Vector3One(), 40);
+    printVector3("startPos", startPos);
 
     playerManager = new PlayerManager(buildingManager);
-    playerManager->addPlayer(new Player(startPos, playerSpeed, PLAYER_ELF));
+    // playerManager->addPlayer(new Player(startPos, playerSpeed, PLAYER_ELF));
 
     isMultiSelecting = false;
 
@@ -142,6 +145,10 @@ void GameScreen::drawUI()
 
 void GameScreen::update()
 {
+    Task task;
+    while (messageQueue.pop(task))
+        task();
+
     CameraManager::get().update();
     buildingManager->update();
     playerManager->update();
@@ -308,6 +315,7 @@ void GameScreen::handleLeftMouseButton()
 void GameScreen::handleRightMouseButton()
 {
     MapGenerator& mapGenerator = MapGenerator::get();
+    NetworkClient& networkClient = NetworkClient::get();
     RaycastHitType type = checkRaycastHitType();
 
     switch (type)
@@ -322,11 +330,13 @@ void GameScreen::handleRightMouseButton()
                 Vector3 pos = mapGenerator.worldPositionAdjusted(mapGenerator.raycastToGround()->position);
                 Player* player = playerManager->selectedPlayer;
 
-                std::vector<Vector3> positions = player->playerType == PLAYER_TROLL
-                    ? mapGenerator.pathfindPositionsForTroll(player->getPosition(), pos)
-                    : mapGenerator.pathfindPositionsForElf(player->getPosition(), pos);
-                player->setPositions(positions);
-                player->detach();
+                playerManager->pathfindPlayerToPosition(player, pos);
+
+                if (networkClient.isClient())
+                {
+                    Client* client = networkClient.getClient();
+                    client->messageQueue.push([client, player, pos]() { client->sendPlayerRMBRequest(player, pos); });
+                }
 
                 break;
             }

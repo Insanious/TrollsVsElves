@@ -13,6 +13,7 @@ private:
 public:
     std::vector<Player*> players;
     Player* selectedPlayer;
+    Player* clientPlayer;
 
     PlayerManager() = delete;
     PlayerManager(BuildingManager* buildingManager);
@@ -28,8 +29,10 @@ public:
     bool checkCollisionCapsulePoint(Capsule capsule, Vector2 point);
 
     void pathfindPlayerToCube(Player* player, Cube cube);
+    std::vector<Vector3> pathfindPlayerToPosition(Player* player, Vector3 position);
 
     Player* raycastToPlayer();
+    Player* getPlayerWithNetworkID(RakNet::NetworkID networkID);
 };
 
 #endif

@@ -1,6 +1,6 @@
 #include "Entity.h"
 
-Entity::Entity(Vector3 position, Vector3 speed, Color defaultColor, EntityType entityType)
+Entity::Entity(Vector3 position, Color defaultColor, EntityType entityType)
 {
     state = IDLE;
     previousState = IDLE;
@@ -11,13 +11,13 @@ Entity::Entity(Vector3 position, Vector3 speed, Color defaultColor, EntityType e
 
     targetMarker = Cylinder(Vector3Zero(), 4.f, 0.1f, 8, { 255, 255, 255, 30 });
 
-    this->speed = speed;
     this->entityType = entityType;
 
     this->defaultTargetMargin = Vector3Length(Vector3Scale(speed, 1/60.f)); // speed divided FPS
 
     setPosition(position);
     setDefaultColor(defaultColor);
+    setSpeed(Vector3Scale(Vector3One(), 40));
 }
 
 Entity::~Entity() {}
@@ -65,7 +65,7 @@ void Entity::updateMovement()
 
 Vector3 Entity::getPosition()
 {
-    return capsule.endPos;
+    return capsule.startPos;
 }
 
 void Entity::setPositions(std::vector<Vector3> positions)
@@ -78,7 +78,12 @@ void Entity::setPositions(std::vector<Vector3> positions)
         targetMarker.position = { paths.back().x, 2.f, paths.back().z };
         setState(RUNNING);
     }
+}
 
+void Entity::correctPath(std::vector<Vector3> path)
+{
+    // TODO: do some actual correction logic here
+    setPositions(path);
 }
 
 void Entity::setDefaultColor(Color color)

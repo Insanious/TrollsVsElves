@@ -5,6 +5,8 @@
 #include "ActionsManager.h"
 #include "UIUtils.h"
 
+#include "NetworkIDObject.h"
+
 #include <map>
 #include <functional>
 
@@ -12,7 +14,7 @@ class BuildingManager; // forward declaration to get around circular depenedency
 
 enum PlayerType { PLAYER_ELF, PLAYER_TROLL };
 
-class Player : public Entity
+class Player : public Entity, public RakNet::NetworkIDObject
 {
 private:
     BuildingManager* buildingManager;
@@ -29,7 +31,7 @@ public:
     PlayerType playerType;
 
     Player() = delete;
-    Player(Vector3 position, Vector3 speed, PlayerType playerType);
+    Player(Vector3 position, PlayerType playerType);
     ~Player();
 
     void setBuildingManager(BuildingManager* buildingManager);

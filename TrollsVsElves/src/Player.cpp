@@ -1,8 +1,8 @@
 #include "Player.h"
 #include "BuildingManager.h"
 
-Player::Player(Vector3 position, Vector3 speed, PlayerType playerType)
-    : Entity(position, speed, BLANK, PLAYER)
+Player::Player(Vector3 position, PlayerType playerType)
+    : Entity(position, BLANK, PLAYER)
 {
     this->playerType = playerType;
 

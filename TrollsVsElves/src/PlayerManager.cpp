@@ -34,7 +34,10 @@ void PlayerManager::update()
 
             building = buildingManager->buildQueueFront();
             if (building) // if more in queue, walk to the next target
-                pathfindPlayerToCube(player, building->getCube());
+            {
+                Vector3 pos = calculateTargetPositionToCubeFromPlayer(player, building->getCube());
+                pathfindPlayerToPosition(player, pos);
+            }
         }
     }
 }
@@ -109,11 +112,31 @@ void PlayerManager::pathfindPlayerToCube(Player* player, Cube cube)
     player->setPositions(positions);
 }
 
+std::vector<Vector3> PlayerManager::pathfindPlayerToPosition(Player* player, Vector3 position)
+{
+    std::vector<Vector3> positions = player->playerType == PLAYER_TROLL
+        ? MapGenerator::get().pathfindPositionsForTroll(player->getPosition(), position)
+        : MapGenerator::get().pathfindPositionsForElf(player->getPosition(), position);
+    player->setPositions(positions);
+    player->detach();
+
+    return positions;
+}
+
 Player* PlayerManager::raycastToPlayer()
 {
     Vector2 mousePos = GetMousePosition();
     for (Player* player: players)
         if (checkCollisionCapsulePoint(player->capsule, mousePos))
+            return player;
+
+    return nullptr;
+}
+
+Player* PlayerManager::getPlayerWithNetworkID(RakNet::NetworkID networkID)
+{
+    for (Player* player: players)
+        if (networkID == player->GetNetworkID())
             return player;
 
     return nullptr;
