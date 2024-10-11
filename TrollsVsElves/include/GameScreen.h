@@ -9,7 +9,6 @@
 #include "BuildingManager.h"
 #include "PlayerManager.h"
 #include "CameraManager.h"
-#include "Resource.h"
 #include "ActionsManager.h"
 #include "ThreadSafeMessageQueue.h"
 
@@ -23,7 +22,6 @@ enum RaycastHitType {
     RAYCAST_HIT_TYPE_PLAYER,
     RAYCAST_HIT_TYPE_ENTITY,
     RAYCAST_HIT_TYPE_BUILDING,
-    RAYCAST_HIT_TYPE_RESOURCE,
     RAYCAST_HIT_TYPE_GROUND,
     RAYCAST_HIT_TYPE_OUT_OF_BOUNDS
 };
@@ -32,8 +30,6 @@ class GameScreen: public BaseScreen
 {
     private:
         Vector2i screenSize;
-
-        std::vector<Resource*> resources;
 
         bool isGhostBuildingColliding = false;
 
@@ -63,10 +59,7 @@ class GameScreen: public BaseScreen
         RaycastHitType checkRaycastHitType();
         void handleLeftMouseButton();
         void handleRightMouseButton();
-        Resource* raycastToResource();
         RayCollision raycastToGround();
-
-        void addResource(Vector3 position);
 };
 
 #endif

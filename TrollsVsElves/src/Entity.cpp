@@ -6,8 +6,6 @@ Entity::Entity(Vector3 position, Color defaultColor, EntityType entityType)
     previousState = IDLE;
     selected = false;
     reachedDestination = false;
-    attachedBuilding = nullptr;
-    attachedResource = nullptr;
 
     targetMarker = Cylinder(Vector3Zero(), 4.f, 0.1f, 8, { 255, 255, 255, 30 });
 
@@ -127,13 +125,11 @@ void Entity::setState(State newState)
         {
             case IDLE:      stateString = "IDLE";       break;
             case RUNNING:   stateString = "RUNNING";    break;
-            case ATTACHED:  stateString = "ATTACHED";   break;
         }
         switch (previousState)
         {
             case IDLE:      previousStateString = "IDLE";       break;
             case RUNNING:   previousStateString = "RUNNING";    break;
-            case ATTACHED:  previousStateString = "ATTACHED";   break;
         }
         printf("newState, previousState: %s, %s\n", stateString.c_str(), previousStateString.c_str());
     }
@@ -164,24 +160,6 @@ void Entity::deselect()
 bool Entity::isSelected()
 {
     return selected;
-}
-
-void Entity::attach(Building* building)
-{
-    attachedBuilding = building;
-    setState(ATTACHED);
-}
-
-void Entity::attach(Resource* resource)
-{
-    attachedResource = resource;
-    setState(ATTACHED);
-}
-
-void Entity::detach()
-{
-    attachedBuilding = nullptr;
-    attachedResource = nullptr;
 }
 
 EntityType Entity::getEntityType()

@@ -27,14 +27,6 @@ GameScreen::GameScreen(Vector2i screenSize)
 
     lastLeftMouseButtonClick = std::chrono::steady_clock::now();
 
-    // add some "trees"
-    Vector2 halfGridSize = { gridSize.x/2 * cubeSize.x, gridSize.y/2 * cubeSize.y };
-    for (int z = gridSize.y/2; z < gridSize.y - gridSize.y/8; z++)
-    {
-        Vector3 pos = { -halfGridSize.x, 0.f, cubeSize.z * z - halfGridSize.y, };
-        addResource(pos);
-    }
-
     buildingManager->createDebugBuilding({ 15, 15 }, ROCK);
 }
 
@@ -54,9 +46,6 @@ void GameScreen::draw()
     BeginMode3D(cameraManager.getCamera());
 
         MapGenerator::get().draw();
-
-        for (Resource* resource: resources)
-            resource->draw();
 
         if (buildingManager)
             buildingManager->draw();
@@ -236,9 +225,6 @@ RaycastHitType GameScreen::checkRaycastHitType()
     if (playerManager->raycastToPlayer())
         return RAYCAST_HIT_TYPE_PLAYER;
 
-    if (raycastToResource())
-        return RAYCAST_HIT_TYPE_RESOURCE;
-
     if (buildingManager->raycastToBuilding())
         return RAYCAST_HIT_TYPE_BUILDING;
 
@@ -353,33 +339,11 @@ void GameScreen::handleRightMouseButton()
         }
 
         case RAYCAST_HIT_TYPE_BUILDING:         // TEMP: do nothing
-        case RAYCAST_HIT_TYPE_RESOURCE:         // TEMP: do nothing
         case RAYCAST_HIT_TYPE_UI:               // do nothing
         case RAYCAST_HIT_TYPE_PLAYER:           // do nothing
         case RAYCAST_HIT_TYPE_OUT_OF_BOUNDS:    // do nothing
             break;
     }
-}
-
-Resource* GameScreen::raycastToResource()
-{
-    Ray ray = CameraManager::get().getMouseRay();
-    float closestCollisionDistance = std::numeric_limits<float>::infinity();
-    Resource* nearestResource = nullptr;
-
-    for (Resource* resource: resources)
-    {
-        Cube cube = resource->getCube();
-        RayCollision collision = GetRayCollisionBox(ray, getCubeBoundingBox(cube));
-
-        if (collision.hit && collision.distance < closestCollisionDistance)
-        {
-            closestCollisionDistance = collision.distance;
-            nearestResource = resource;
-        }
-    }
-
-    return nearestResource;
 }
 
 RayCollision GameScreen::raycastToGround()
@@ -394,15 +358,4 @@ RayCollision GameScreen::raycastToGround()
         {  max, ground,  max },
         {  max, ground, -max }
     );
-}
-
-void GameScreen::addResource(Vector3 position)
-{
-    Vector3 size = { 2.f, 20.f, 2.f };
-    Vector3 adjustedPosition = { position.x, position.y + size.y/2, position.z };
-
-    Cube cube = { adjustedPosition, size, BLANK };
-    Resource* resource = new Resource(cube);
-    MapGenerator::get().addObstacle(cube);
-    resources.push_back(resource);
 }

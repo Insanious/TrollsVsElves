@@ -118,7 +118,6 @@ std::vector<Vector3> PlayerManager::pathfindPlayerToPosition(Player* player, Vec
         ? MapGenerator::get().pathfindPositionsForTroll(player->getPosition(), position)
         : MapGenerator::get().pathfindPositionsForElf(player->getPosition(), position);
     player->setPositions(positions);
-    player->detach();
 
     return positions;
 }

@@ -6,13 +6,8 @@
 #include "utils.h"
 #include "structs.h"
 #include "Building.h"
-#include "Resource.h"
 
-enum State {
-    IDLE,
-    RUNNING,
-    ATTACHED
-};
+enum State { IDLE, RUNNING };
 enum EntityType { PLAYER, WORKER };
 
 class Entity
@@ -34,9 +29,6 @@ protected:
 
     Cylinder targetMarker;
     std::deque<Vector3> paths;
-
-    Building* attachedBuilding;
-    Resource* attachedResource;
 
 public:
     Capsule capsule;
@@ -64,10 +56,6 @@ public:
     void select();
     virtual void deselect();
     bool isSelected();
-
-    void attach(Building* building);
-    void attach(Resource* resource);
-    void detach();
 
     EntityType getEntityType();
 };
