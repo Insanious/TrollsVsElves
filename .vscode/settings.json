@@ -91,6 +91,7 @@
         "scoped_allocator": "cpp",
         "shared_mutex": "cpp",
         "typeindex": "cpp",
-        "stacktrace": "cpp"
+        "stacktrace": "cpp",
+        "cassert": "cpp"
     }
 }

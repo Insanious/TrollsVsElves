@@ -4,13 +4,12 @@
 #include "BuildingManager.h"
 #include "Player.h"
 #include "utils.h"
+#include "constants.h"
 
-class PlayerManager
+struct PlayerManager
 {
-private:
     BuildingManager* buildingManager;
 
-public:
     std::vector<Player*> players;
     Player* selectedPlayer;
     Player* clientPlayer;

@@ -15,8 +15,6 @@
 #include "GameScreen.h"
 #include "ThreadSafeMessageQueue.h"
 
-const int MAX_CLIENTS = 4;
-
 enum GameMessages
 {
     ID_SPAWN_PLAYER             = ID_USER_PACKET_ENUM,
@@ -30,7 +28,7 @@ struct SpawnPlayerRequest
     Vector3 position;
     PlayerType type;
     RakNet::NetworkID networkId;
-    bool isOwner;
+    uint64_t ownerGuid;
 
     void serialize(bool writeToBitstream, RakNet::BitStream *bs)
     {
@@ -40,7 +38,7 @@ struct SpawnPlayerRequest
         bs->Serialize(writeToBitstream, position.z);
         bs->Serialize(writeToBitstream, type);
         bs->Serialize(writeToBitstream, networkId);
-        bs->Serialize(writeToBitstream, isOwner);
+        bs->Serialize(writeToBitstream, ownerGuid);
     }
 
     void print()
@@ -50,7 +48,7 @@ struct SpawnPlayerRequest
         printf("position: %f, %f, %f\n", position.x, position.y, position.z);
         printf("type: %d\n", type);
         printf("networkId: %" PRIu64 "\n", networkId);
-        printf("isOwner: %d\n", (int)isOwner);
+        printf("ownerGuid: %" PRIu64 "\n", ownerGuid);
     }
 };
 
@@ -107,8 +105,6 @@ struct PlayerPathCorrection
             printf("position: %f, %f, %f\n", position.x, position.y, position.z);
     }
 };
-
-// class GameScreen; // forward declaration to get around circular depenedency
 
 enum NetworkType { NONE = 0, SERVER, CLIENT };
 

@@ -4,6 +4,7 @@ PlayerManager::PlayerManager(BuildingManager* buildingManager)
 {
     this->buildingManager = buildingManager;
     selectedPlayer = nullptr;
+    players.reserve(constants::MAX_PLAYERS);
 }
 
 PlayerManager::~PlayerManager()

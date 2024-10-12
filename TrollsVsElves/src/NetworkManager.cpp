@@ -15,8 +15,8 @@ NetworkManager::NetworkManager(NetworkType networkType, size_t port, GameScreen*
 
         case SERVER:
             socketDescriptor = RakNet::SocketDescriptor(port, 0);
-            rakPeerInterface->Startup(MAX_CLIENTS, &socketDescriptor, 1, 10);
-            rakPeerInterface->SetMaximumIncomingConnections(MAX_CLIENTS);
+            rakPeerInterface->Startup(constants::MAX_PLAYERS, &socketDescriptor, 1, 10);
+            rakPeerInterface->SetMaximumIncomingConnections(constants::MAX_PLAYERS);
             this->serverGuid = rakPeerInterface->GetGuidFromSystemAddress(RakNet::UNASSIGNED_SYSTEM_ADDRESS);
             break;
 
@@ -127,10 +127,10 @@ void NetworkManager::handleNewIncomingConnection(RakNet::Packet* packet)
         .position   = position,
         .type       = type,
         .networkId  = newPlayer->GetNetworkID(),
-        .isOwner    = true
+        .ownerGuid  = packet->guid.g
     };
 
-    // broadcast new players to all clients
+    // broadcast new player to all clients
     RakNet::BitStream bsOut;
     spawnPlayer.serialize(true, &bsOut);
     rakPeerInterface->Send(&bsOut, HIGH_PRIORITY, RELIABLE_ORDERED, 0, RakNet::UNASSIGNED_SYSTEM_ADDRESS, true, 0);
@@ -141,10 +141,10 @@ void NetworkManager::handleNewIncomingConnection(RakNet::Packet* packet)
         bsOut.Reset();
         spawnPlayer = {
             .packetType = packetType,
-            .position = player->getPosition(),
-            .type = player->playerType,
-            .networkId = player->GetNetworkID(),
-            .isOwner = false
+            .position   = player->getPosition(),
+            .type       = player->playerType,
+            .networkId  = player->GetNetworkID(),
+            .ownerGuid  = 0,
         };
         spawnPlayer.serialize(true, &bsOut);
         rakPeerInterface->Send(&bsOut, HIGH_PRIORITY, RELIABLE_ORDERED, 0, packet->guid, false, 0);
@@ -166,13 +166,13 @@ void NetworkManager::handleSpawnPlayer(RakNet::Packet* packet)
 
     Player* player = new Player(spawnPlayer.position, spawnPlayer.type);
     player->SetNetworkID(spawnPlayer.networkId);
+    RakNet::RakNetGUID guid = rakPeerInterface->GetGuidFromSystemAddress(RakNet::UNASSIGNED_SYSTEM_ADDRESS);
+    bool isOwner = (spawnPlayer.ownerGuid != 0) && (guid.g == spawnPlayer.ownerGuid);
 
-    gameScreen->messageQueue.push([this, player, spawnPlayer]() {
+    gameScreen->messageQueue.push([this, player, spawnPlayer, isOwner]() {
         this->gameScreen->playerManager->addPlayer(player);
-        if (spawnPlayer.isOwner) {
-            printf("is owner!\n");
+        if (isOwner)
             this->gameScreen->playerManager->clientPlayer = player;
-        }
     });
 }
 

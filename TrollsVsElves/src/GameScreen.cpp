@@ -309,13 +309,13 @@ void GameScreen::handleRightMouseButton()
     {
         case RAYCAST_HIT_TYPE_GROUND:
         {
-            if (playerManager->selectedPlayer)
+            if (playerManager->clientPlayer->selected) // only allow moving client owned player
             {
                 buildingManager->clearGhostBuilding();
                 buildingManager->clearBuildQueue();
 
                 Vector3 pos = mapGenerator.worldPositionAdjusted(mapGenerator.raycastToGround()->position);
-                Player* player = playerManager->selectedPlayer;
+                Player* player = playerManager->clientPlayer;
 
                 playerManager->pathfindPlayerToPosition(player, pos);
 
