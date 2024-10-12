@@ -1,11 +1,12 @@
-#ifndef NETWORK_INTERFACE_H
-#define NETWORK_INTERFACE_H
+#ifndef NETWORK_MANAGER_H
+#define NETWORK_MANAGER_H
 
-#include "GameMessages.h"
+#include "MessageIdentifiers.h"
 #include "BitStream.h"
 #include "RakNetTypes.h"
 #include "NetworkIDManager.h"
 #include "RakPeerInterface.h"
+#include "RakPeer.h"
 
 #include <thread>
 #include <atomic>
@@ -13,6 +14,15 @@
 
 #include "GameScreen.h"
 #include "ThreadSafeMessageQueue.h"
+
+const int MAX_CLIENTS = 4;
+
+enum GameMessages
+{
+    ID_SPAWN_PLAYER             = ID_USER_PACKET_ENUM,
+    ID_PLAYER_RMB_REQUEST       = ID_USER_PACKET_ENUM + 1,
+    ID_PLAYER_PATH_CORRECTION   = ID_USER_PACKET_ENUM + 2
+};
 
 struct SpawnPlayerRequest
 {
@@ -98,25 +108,39 @@ struct PlayerPathCorrection
     }
 };
 
-enum NetworkType { SERVER = 0, CLIENT };
+// class GameScreen; // forward declaration to get around circular depenedency
 
-class NetworkInterface
+enum NetworkType { NONE = 0, SERVER, CLIENT };
+
+struct NetworkManager
 {
-public:
     RakNet::RakPeerInterface* rakPeerInterface;
     RakNet::SocketDescriptor socketDescriptor;
     RakNet::NetworkIDManager networkIDManager;
+    RakNet::RakNetGUID serverGuid;
 
-    NetworkType type;
+    NetworkType networkType = NetworkType::NONE;
     std::atomic<bool> running = true;
+    GameScreen* gameScreen = nullptr;
     ThreadSafeMessageQueue messageQueue;
 
-    NetworkInterface() {}
-    ~NetworkInterface() {}
+    NetworkManager() = delete;
+    NetworkManager(NetworkType networkType, size_t port, GameScreen* gameScreen);
+    ~NetworkManager() {}
 
-    virtual void listen() {}
+    bool isClient() { return networkType == NetworkType::CLIENT; }
     unsigned char getPacketIdentifier(RakNet::Packet* packet);
     std::string getPacketName(RakNet::Packet* packet);
+    void listen();
+
+    void handleNewIncomingConnection(RakNet::Packet* packet);
+    void handleSpawnPlayer(RakNet::Packet* packet);
+
+    void handlePlayerPathCorrection(RakNet::Packet* packet);
+    void sendPlayerPathCorrection(Player* player, std::vector<Vector3> path);
+
+    void handlePlayerRMBRequest(RakNet::Packet* packet);
+    void sendPlayerRMBRequest(Player* player, Vector3 position);
 };
 
 #endif

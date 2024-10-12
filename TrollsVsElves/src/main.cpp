@@ -3,12 +3,7 @@
 #include "rlImGui.h"
 #include "BaseScreen.h"
 #include "GameScreen.h"
-#include "NetworkClient.h"
-
-#include "RakPeerInterface.h"
-#include "MessageIdentifiers.h"
-#include "BitStream.h"
-#include "RakNetTypes.h"
+#include "NetworkManager.h"
 
 #include <functional>
 #include <string>
@@ -18,9 +13,8 @@
 
 // Define constants for network communication
 const int SERVER_PORT = 60000;
-const int MAX_CLIENTS = 4;
 
-NetworkType parseArguments(int argc, char* argv[])
+NetworkType parseNetworkType(int argc, char* argv[])
 {
     if (argc != 2) {
         printf("needs exactly 1 argument\n");
@@ -28,32 +22,34 @@ NetworkType parseArguments(int argc, char* argv[])
     }
 
     std::string type = std::string(argv[1]);
-    if (type == "server") return SERVER;
-    if (type == "client") return CLIENT;
+    if (type == "server")   return SERVER;
+    if (type == "client")   return CLIENT;
+    if (type == "none")     return NONE;
 
-    printf("expected either 'server' or 'client' as argument\n");
+    printf("expected either 'server', 'client' or 'none' as argument\n");
     exit(0);
 };
 
 int main(int argc, char* argv[])
 {
-    NetworkType type = parseArguments(argc, argv);
+    NetworkType type = parseNetworkType(argc, argv);
+    bool isSinglePlayer = type == NONE;
 
-    Vector2i screenSize = { 1280, 800 };
-    GameScreen* gameScreen = new GameScreen(screenSize);
+    Vector2i screenSize = {
+        640 * (1 + (int)isSinglePlayer),
+        400 * (1 + (int)isSinglePlayer)
+    };
+    GameScreen* gameScreen = new GameScreen(screenSize, isSinglePlayer);
 
-    NetworkInterface* interface = type == SERVER
-        ? (NetworkInterface*)new Server(SERVER_PORT, MAX_CLIENTS, gameScreen)
-        : (NetworkInterface*)new Client(SERVER_PORT, gameScreen);
-
-    NetworkClient::get().setNetworkInterface(interface); // Set singleton network client to be used inside game
+    NetworkManager networkManager(type, SERVER_PORT, gameScreen);
+    gameScreen->networkManager = &networkManager;
 
     SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_VSYNC_HINT | FLAG_WINDOW_RESIZABLE);
-    InitWindow(screenSize.x, screenSize.y, "Hello Raylib");
+    InitWindow(screenSize.x, screenSize.y, type == SERVER ? "server" : "client");
     SetTargetFPS(60);
     rlImGuiSetup(true);
 
-    std::thread networkThread = std::thread([interface]() { interface->listen(); });
+    std::thread networkThread = std::thread([&networkManager]() { networkManager.listen(); });
 
     while (!WindowShouldClose())
     {
@@ -61,7 +57,6 @@ int main(int argc, char* argv[])
 
         BeginDrawing();
             ClearBackground(RAYWHITE);
-
             rlImGuiBegin();
 
             gameScreen->draw();
@@ -71,7 +66,7 @@ int main(int argc, char* argv[])
         EndDrawing();
     }
 
-    interface->running = false;
+    networkManager.running = false;
     if (networkThread.joinable())
         networkThread.join();
 

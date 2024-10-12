@@ -1,9 +1,10 @@
 #include "GameScreen.h"
-#include "NetworkClient.h"
+#include "NetworkManager.h"
 
-GameScreen::GameScreen(Vector2i screenSize)
+GameScreen::GameScreen(Vector2i screenSize, bool isSinglePlayer)
 {
     this->screenSize = screenSize;
+    this->networkManager = nullptr;
 
     ActionsManager::get().loadRequirements("requirements.json");
     ActionsManager::get().loadActions("actions.json");
@@ -14,12 +15,14 @@ GameScreen::GameScreen(Vector2i screenSize)
 
     buildingManager = new BuildingManager({ cubeSize.x * 2, cubeSize.y, cubeSize.z * 2 }, BLANK);
 
-    Vector3 startPos = { 0.f, cubeSize.y / 2, 0.f };
-    startPos.x = gridSize.x / 2 * cubeSize.x - cubeSize.x; // spawn in corner
-    startPos.z = gridSize.y / 2 * cubeSize.z - cubeSize.z; // spawn in corner
-
     playerManager = new PlayerManager(buildingManager);
-    playerManager->addPlayer(new Player(startPos, PLAYER_ELF));
+    if (isSinglePlayer)
+    {
+        Vector3 startPos = { 0.f, cubeSize.y / 2, 0.f };
+        startPos.x = gridSize.x / 2 * cubeSize.x - cubeSize.x; // spawn in corner
+        startPos.z = gridSize.y / 2 * cubeSize.z - cubeSize.z; // spawn in corner
+        playerManager->addPlayer(new Player(startPos, PLAYER_ELF));
+    }
 
     isMultiSelecting = false;
 
@@ -300,7 +303,6 @@ void GameScreen::handleLeftMouseButton()
 void GameScreen::handleRightMouseButton()
 {
     MapGenerator& mapGenerator = MapGenerator::get();
-    NetworkClient& networkClient = NetworkClient::get();
     RaycastHitType type = checkRaycastHitType();
 
     switch (type)
@@ -317,10 +319,11 @@ void GameScreen::handleRightMouseButton()
 
                 playerManager->pathfindPlayerToPosition(player, pos);
 
-                if (networkClient.isClient())
+                if (networkManager->isClient())
                 {
-                    Client* client = networkClient.getClient();
-                    client->messageQueue.push([client, player, pos]() { client->sendPlayerRMBRequest(player, pos); });
+                    networkManager->messageQueue.push(
+                        [this, player, pos]() { this->networkManager->sendPlayerRMBRequest(player, pos); }
+                    );
                 }
 
                 break;

@@ -52,7 +52,7 @@ void Building::draw()
 
 void Building::scheduleBuild()
 {
-    assert(buildStage == GHOST); // sanity check
+    assert(buildStage == GHOST);
 
     buildStage = SCHEDULED;
     cube.color = inProgressColor;
@@ -61,14 +61,14 @@ void Building::scheduleBuild()
 
 void Building::startBuild()
 {
-    assert(buildStage == SCHEDULED); // sanity check
+    assert(buildStage == SCHEDULED);
 
     buildStage = IN_PROGRESS;
 }
 
 void Building::finishBuild()
 {
-    assert(buildStage == IN_PROGRESS); // sanity check
+    assert(buildStage == IN_PROGRESS);
 
     cube.color = selected ? selectedColor : targetColor;
     buildTimer = 0.f;

@@ -162,7 +162,7 @@ void BuildingManager::updateBuildings(std::vector<Building*>& buildings)
         if (building->buildStage == BuildStage::IN_PROGRESS)
         {
             building->buildTimer += dt;
-            float adjusted = building->buildTimer/building->buildTime;
+            float adjusted = building->buildTimer / building->buildTime;
             building->cube.color = lerpColor(building->inProgressColor, building->targetColor, adjusted);
 
             if (building->buildTimer >= building->buildTime)

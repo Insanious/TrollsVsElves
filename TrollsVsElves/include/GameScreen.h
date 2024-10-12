@@ -26,6 +26,8 @@ enum RaycastHitType {
     RAYCAST_HIT_TYPE_OUT_OF_BOUNDS
 };
 
+class NetworkManager; // forward declaration to get around circular depenedency
+
 class GameScreen: public BaseScreen
 {
     private:
@@ -42,10 +44,11 @@ class GameScreen: public BaseScreen
     public:
         BuildingManager* buildingManager;
         PlayerManager* playerManager;
+        NetworkManager* networkManager;
         ThreadSafeMessageQueue messageQueue;
 
         GameScreen() = delete;
-        GameScreen(Vector2i screenSize);
+        GameScreen(Vector2i screenSize, bool isSinglePlayer);
         ~GameScreen();
 
         void draw();
