@@ -43,6 +43,7 @@ public:
     void drawBuildingUIButtons(ImVec2 buttonSize, int nrOfButtons, int buttonsPerLine);
     void resolveBuildingAction(Building* building, ActionNode& action);
     void update();
+    void updateBuildings(std::vector<Building*>& buildings);
 
     Building* raycastToBuilding();
     void removeBuilding(Building* building);
@@ -65,8 +66,6 @@ public:
     void recruit(Building* building);
     bool canPromoteTo(std::string id);
     void promote(Building* building, std::string id);
-
-    void sell(Building* building);
 };
 
 #endif

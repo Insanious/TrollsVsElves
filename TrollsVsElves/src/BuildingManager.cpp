@@ -37,7 +37,7 @@ void BuildingManager::draw()
 
     if (ghostBuilding)
     {
-        Cube& cube = ghostBuilding->getCube();
+        Cube& cube = ghostBuilding->cube;
         cube.position = Vector3AddValue(cube.position, 0.1f); // prevents z-fighting that occurs when buildings overlap
         ghostBuilding->draw();
         cube.position = Vector3SubtractValue(cube.position, 0.1f); // revert change
@@ -116,8 +116,7 @@ Building* BuildingManager::raycastToBuilding()
 
     for (Building* building: buildings)
     {
-        Cube cube = building->getCube();
-        RayCollision collision = GetRayCollisionBox(ray, getCubeBoundingBox(cube));
+        RayCollision collision = GetRayCollisionBox(ray, getCubeBoundingBox(building->cube));
 
         if (collision.hit && collision.distance < closestCollisionDistance)
         {
@@ -142,20 +141,33 @@ void BuildingManager::removeBuilding(Building* building)
 
 void BuildingManager::update()
 {
-    for (Building* building: buildings)
-        building->update();
-
-    for (Building* building: buildQueue)
-        building->update();
+    updateBuildings(buildings);
 
     if (ghostBuilding)
         updateGhostBuilding();
 
     if (selectedBuilding && selectedBuilding->sold) // delete selectedBuilding and pop from buildings vector
     {
-        MapGenerator::get().removeObstacle(selectedBuilding->getCube());
+        MapGenerator::get().removeObstacle(selectedBuilding->cube);
         removeBuilding(selectedBuilding);
         selectedBuilding = nullptr;
+    }
+}
+
+void BuildingManager::updateBuildings(std::vector<Building*>& buildings)
+{
+    float dt = GetFrameTime();
+    for (Building* building: buildings)
+    {
+        if (building->buildStage == BuildStage::IN_PROGRESS)
+        {
+            building->buildTimer += dt;
+            float adjusted = building->buildTimer/building->buildTime;
+            building->cube.color = lerpColor(building->inProgressColor, building->targetColor, adjusted);
+
+            if (building->buildTimer >= building->buildTime)
+                building->finishBuild();
+        }
     }
 }
 
@@ -165,7 +177,7 @@ Building* BuildingManager::yieldBuildQueue()
 
     Building* building = buildQueue.front();
     buildQueue.pop_front();
-    building->build();
+    building->startBuild();
     buildings.push_back(building);
 
     return building;
@@ -224,19 +236,19 @@ void BuildingManager::updateGhostBuilding()
     };
     Vector3 final = Vector3Add(snapped, offset);
 
-    ghostBuilding->setPosition(final);
+    ghostBuilding->cube.position = final;
 
     ghostBuildingIsColliding = (isColliding(buildings, ghostBuilding) || isColliding(buildQueue, ghostBuilding));
-    ghostBuilding->getCube().color = ghostBuildingIsColliding ? RED : ghostBuilding->getGhostColor();
+    ghostBuilding->cube.color = ghostBuildingIsColliding ? RED : ghostBuilding->ghostColor;
 }
 
 template<typename Container>
 bool BuildingManager::isColliding(const Container& buildings, Building* targetBuilding)
 {
-    BoundingBox targetBoundingBox = getCubeBoundingBox(targetBuilding->getCube(), 0.8f);
+    BoundingBox targetBoundingBox = getCubeBoundingBox(targetBuilding->cube, 0.8f);
 
     for (Building* building: buildings)
-        if (CheckCollisionBoxes(targetBoundingBox, getCubeBoundingBox(building->getCube())))
+        if (CheckCollisionBoxes(targetBoundingBox, getCubeBoundingBox(building->cube)))
             return true;
 
     return false;
@@ -261,12 +273,13 @@ void BuildingManager::createDebugBuilding(Vector2i index, BuildingType buildingT
         (cubeSize.z - defaultBuildingSize.z) / 2.0f,
     };
 
-    building->setPosition(Vector3Add(snapped, offset));
-    mapGenerator.addObstacle(building->getCube());
+    building->cube.position = Vector3Add(snapped, offset);
+    mapGenerator.addObstacle(building->cube);
 
     building->scheduleBuild();
-    buildQueue.push_back(building);
-    yieldBuildQueue();
+    building->startBuild();
+    building->finishBuild();
+    buildings.push_back(building);
 }
 
 void BuildingManager::createNewGhostBuilding(BuildingType buildingType, Player* player)
@@ -331,7 +344,7 @@ void BuildingManager::recruit(Building* building)
 {
     MapGenerator& mapGenerator = MapGenerator::get();
 
-    std::vector<Vector2i> neighboringIndices = mapGenerator.getNeighboringIndices(building->getCube());
+    std::vector<Vector2i> neighboringIndices = mapGenerator.getNeighboringIndices(building->cube);
     if (!neighboringIndices.size()) // no valid neighboring tiles
     {
         printf("Found no neighboring tiles, should probably do something about this later\n"); // TODO: later
@@ -339,7 +352,7 @@ void BuildingManager::recruit(Building* building)
     }
 
     Vector3 neighborPosition = mapGenerator.indexToWorldPosition(neighboringIndices[0]);
-    float ground = building->getCube().position.y;
+    float ground = building->cube.position.y;
     Vector3 pos = { neighborPosition.x, ground, neighborPosition.z };
     Vector3 speed = Vector3Scale(Vector3One(), 30);
     // TEMP: disabled

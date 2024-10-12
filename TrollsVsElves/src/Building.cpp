@@ -50,23 +50,6 @@ void Building::draw()
         drawCylinder(rallyPoint);
 }
 
-void Building::update()
-{
-    if (buildStage == IN_PROGRESS)
-    {
-        buildTimer += GetFrameTime();
-        float adjusted = buildTimer/buildTime;
-        cube.color = lerpColor(inProgressColor, targetColor, adjusted);
-
-        if (buildTimer >= buildTime)
-        {
-            cube.color = selected ? selectedColor : targetColor;
-            buildTimer = 0.f;
-            buildStage = FINISHED;
-        }
-    }
-}
-
 void Building::scheduleBuild()
 {
     assert(buildStage == GHOST); // sanity check
@@ -76,31 +59,20 @@ void Building::scheduleBuild()
     rallyPoint.position = { cube.position.x, cube.position.y, cube.position.z };
 }
 
-void Building::build()
+void Building::startBuild()
 {
     assert(buildStage == SCHEDULED); // sanity check
 
     buildStage = IN_PROGRESS;
 }
 
-void Building::setPosition(Vector3 position)
+void Building::finishBuild()
 {
-    cube.position = position;
-}
+    assert(buildStage == IN_PROGRESS); // sanity check
 
-Vector3 Building::getPosition()
-{
-    return cube.position;
-}
-
-Cube& Building::getCube()
-{
-    return cube;
-}
-
-Color Building::getGhostColor()
-{
-    return ghostColor;
+    cube.color = selected ? selectedColor : targetColor;
+    buildTimer = 0.f;
+    buildStage = FINISHED;
 }
 
 void Building::select()
@@ -115,19 +87,4 @@ void Building::deselect()
     selected = false;
     if (buildStage != IN_PROGRESS)
         cube.color = targetColor;
-}
-
-bool Building::isSelected()
-{
-    return selected;
-}
-
-Cylinder Building::getRallyPoint()
-{
-    return rallyPoint;
-}
-
-void Building::setRallyPoint(Vector3 point)
-{
-    rallyPoint.position = point;
 }

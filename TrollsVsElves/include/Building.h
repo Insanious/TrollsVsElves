@@ -9,9 +9,8 @@ class Player; // forward declaration to get around circular depenedency
 enum BuildStage { GHOST = 0, SCHEDULED, IN_PROGRESS, FINISHED };
 enum BuildingType { CASTLE = 0, ROCK, HALL, SHOP };
 
-class Building
+struct Building
 {
-private:
     Cube cube;
     BuildStage buildStage;
 
@@ -27,7 +26,6 @@ private:
 
     Cylinder rallyPoint;
 
-public:
     Player* owner;
     BuildingType buildingType;
     std::string actionId;
@@ -39,22 +37,13 @@ public:
     ~Building();
 
     void draw();
-    void update();
 
     void scheduleBuild();
-    void build();
-
-    void setPosition(Vector3 position);
-    Vector3 getPosition();
-    Cube& getCube();
-    Color getGhostColor();
+    void startBuild();
+    void finishBuild();
 
     void select();
     void deselect();
-    bool isSelected();
-
-    Cylinder getRallyPoint();
-    void setRallyPoint(Vector3 point);
 };
 
 #endif

@@ -17,11 +17,9 @@ GameScreen::GameScreen(Vector2i screenSize)
     Vector3 startPos = { 0.f, cubeSize.y / 2, 0.f };
     startPos.x = gridSize.x / 2 * cubeSize.x - cubeSize.x; // spawn in corner
     startPos.z = gridSize.y / 2 * cubeSize.z - cubeSize.z; // spawn in corner
-    // Vector3 playerSpeed = Vector3Scale(Vector3One(), 40);
-    printVector3("startPos", startPos);
 
     playerManager = new PlayerManager(buildingManager);
-    // playerManager->addPlayer(new Player(startPos, playerSpeed, PLAYER_ELF));
+    playerManager->addPlayer(new Player(startPos, PLAYER_ELF));
 
     isMultiSelecting = false;
 
@@ -283,7 +281,8 @@ void GameScreen::handleLeftMouseButton()
                 if (buildingsInQueue) // something is getting built, just schedule and leave player unchanged
                     break;
 
-                playerManager->pathfindPlayerToCube(playerManager->selectedPlayer, ghost->getCube());
+                playerManager->selectedPlayer->hasReachedDestination(); // TEMP: zero out this one-shot flag
+                playerManager->pathfindPlayerToCube(playerManager->selectedPlayer, ghost->cube);
                 break;
             }
 
@@ -330,7 +329,7 @@ void GameScreen::handleRightMouseButton()
             if (buildingManager->selectedBuilding)
             {
                 Vector3 adjusted = mapGenerator.worldPositionAdjusted(raycastToGround().point);
-                buildingManager->selectedBuilding->setRallyPoint(adjusted); // TODO: later, this doesn't work for y-elevated buildings
+                buildingManager->selectedBuilding->rallyPoint.position = adjusted; // TODO: later, this doesn't work for y-elevated buildings
 
                 break;
             }

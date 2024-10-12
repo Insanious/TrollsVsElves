@@ -30,12 +30,12 @@ void PlayerManager::update()
         if (player->hasReachedDestination())
         {
             Building* building = buildingManager->yieldBuildQueue();
-            MapGenerator::get().addObstacle(building->getCube());
+            MapGenerator::get().addObstacle(building->cube);
 
             building = buildingManager->buildQueueFront();
             if (building) // if more in queue, walk to the next target
             {
-                Vector3 pos = calculateTargetPositionToCubeFromPlayer(player, building->getCube());
+                Vector3 pos = calculateTargetPositionToCubeFromPlayer(player, building->cube);
                 pathfindPlayerToPosition(player, pos);
             }
         }
