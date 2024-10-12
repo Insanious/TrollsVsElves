@@ -43,7 +43,6 @@ struct Entity
     void setDefaultColor(Color color);
     void setPosition(Vector3 position);
     void setSpeed(Vector3 speed);
-    bool hasReachedDestination();
 
     void setState(State newState);
 

@@ -105,13 +105,6 @@ void Entity::setSpeed(Vector3 speed)
     this->defaultTargetMargin = Vector3Length(Vector3Scale(speed, 1/60.f)); // speed divided by frametime
 }
 
-bool Entity::hasReachedDestination()
-{
-    bool value = reachedDestination;
-    reachedDestination = false; // one-shot read true
-    return value;
-}
-
 void Entity::setState(State newState)
 {
     previousState = state;

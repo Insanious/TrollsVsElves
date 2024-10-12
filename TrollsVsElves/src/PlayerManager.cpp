@@ -27,7 +27,7 @@ void PlayerManager::update()
     if (buildingManager->buildQueueFront()) // something is getting built
     {
         Player* player = building->owner;
-        if (player->hasReachedDestination())
+        if (player->reachedDestination)
         {
             Building* building = buildingManager->yieldBuildQueue();
             MapGenerator::get().addObstacle(building->cube);

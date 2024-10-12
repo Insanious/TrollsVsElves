@@ -281,7 +281,7 @@ void GameScreen::handleLeftMouseButton()
                 if (buildingsInQueue) // something is getting built, just schedule and leave player unchanged
                     break;
 
-                playerManager->selectedPlayer->hasReachedDestination(); // TEMP: zero out this one-shot flag
+                playerManager->selectedPlayer->reachedDestination = false;
                 playerManager->pathfindPlayerToCube(playerManager->selectedPlayer, ghost->cube);
                 break;
             }
