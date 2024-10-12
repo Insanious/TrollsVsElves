@@ -118,10 +118,10 @@ void Player::resolveAction(ActionNode& node)
     else if (node.action == "back")
         actionId = previousActionId;
     else if (node.action == "build") {
-        if (node.id == "castle0")    buildingManager->createNewGhostBuilding(CASTLE, this);
-        else if (node.id == "rock0") buildingManager->createNewGhostBuilding(ROCK, this);
-        else if (node.id == "hall0") buildingManager->createNewGhostBuilding(HALL, this);
-        else if (node.id == "shop0") buildingManager->createNewGhostBuilding(SHOP, this);
+        if (node.id == "castle0")    building_manager_create_ghost_building(buildingManager, CASTLE, this);
+        else if (node.id == "rock0") building_manager_create_ghost_building(buildingManager, ROCK, this);
+        else if (node.id == "hall0") building_manager_create_ghost_building(buildingManager, HALL, this);
+        else if (node.id == "shop0") building_manager_create_ghost_building(buildingManager, SHOP, this);
     }
     else if (node.id == "blink")
         printf("Blink is not implemented\n"); // TODO: later

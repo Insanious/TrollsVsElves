@@ -40,7 +40,7 @@ class GameScreen: public BaseScreen
         std::chrono::steady_clock::time_point lastLeftMouseButtonClick;
 
     public:
-        BuildingManager* buildingManager;
+        BuildingManager buildingManager;
         PlayerManager* playerManager;
         ThreadSafeMessageQueue messageQueue;
 

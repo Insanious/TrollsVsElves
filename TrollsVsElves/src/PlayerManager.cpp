@@ -23,19 +23,19 @@ void PlayerManager::update()
     for (Player* player: players)
         player->update();
 
-    Building* building = buildingManager->buildQueueFront();
-    if (buildingManager->buildQueueFront()) // something is getting built
+    if (!building_manager_queue_empty(buildingManager))
     {
+        Building* building = building_manager_queue_front(buildingManager);
         Player* player = building->owner;
         if (player->hasReachedDestination())
         {
-            Building* building = buildingManager->yieldBuildQueue();
-            MapGenerator::get().addObstacle(building->getCube());
+            Building* building = building_manager_yield_queue(buildingManager);
+            MapGenerator::get().addObstacle(building->cube);
 
-            building = buildingManager->buildQueueFront();
+            building = building_manager_queue_front(buildingManager);
             if (building) // if more in queue, walk to the next target
             {
-                Vector3 pos = calculateTargetPositionToCubeFromPlayer(player, building->getCube());
+                Vector3 pos = calculateTargetPositionToCubeFromPlayer(player, building->cube);
                 pathfindPlayerToPosition(player, pos);
             }
         }

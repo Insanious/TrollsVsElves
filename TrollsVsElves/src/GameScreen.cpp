@@ -12,29 +12,24 @@ GameScreen::GameScreen(Vector2i screenSize)
     Vector2i gridSize = MapGenerator::get().getGridSize();
     Vector3 cubeSize = MapGenerator::get().getCubeSize();
 
-    buildingManager = new BuildingManager({ cubeSize.x * 2, cubeSize.y, cubeSize.z * 2 }, BLANK);
+    building_manager_init(&buildingManager, { cubeSize.x * 2, cubeSize.y, cubeSize.z * 2 }, BLANK);
 
     Vector3 startPos = { 0.f, cubeSize.y / 2, 0.f };
     startPos.x = gridSize.x / 2 * cubeSize.x - cubeSize.x; // spawn in corner
     startPos.z = gridSize.y / 2 * cubeSize.z - cubeSize.z; // spawn in corner
-    // Vector3 playerSpeed = Vector3Scale(Vector3One(), 40);
-    printVector3("startPos", startPos);
 
-    playerManager = new PlayerManager(buildingManager);
-    // playerManager->addPlayer(new Player(startPos, playerSpeed, PLAYER_ELF));
+    playerManager = new PlayerManager(&buildingManager);
+    playerManager->addPlayer(new Player(startPos, PLAYER_ELF));
 
     isMultiSelecting = false;
 
     lastLeftMouseButtonClick = std::chrono::steady_clock::now();
 
-    buildingManager->createDebugBuilding({ 15, 15 }, ROCK);
+    building_manager_create_debug_building(&buildingManager, { 15, 15 }, ROCK);
 }
 
 GameScreen::~GameScreen()
 {
-    if (buildingManager)
-        delete buildingManager;
-
     if (playerManager)
         delete playerManager;
 }
@@ -47,8 +42,7 @@ void GameScreen::draw()
 
         MapGenerator::get().draw();
 
-        if (buildingManager)
-            buildingManager->draw();
+        building_manager_draw(&buildingManager);
 
         if (playerManager)
             playerManager->draw();
@@ -88,7 +82,7 @@ void GameScreen::draw()
 
 void GameScreen::drawUI()
 {
-    bool drawWindow = (!buildingManager->selectedBuilding != !playerManager->selectedPlayer); // xor
+    bool drawWindow = (!building_manager_get_selected_building(&buildingManager) != !playerManager->selectedPlayer); // xor
     if (drawWindow)
     {
         bool bottomRightWindow = true;
@@ -121,8 +115,8 @@ void GameScreen::drawUI()
 
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, buttonPadding);
 
-        if (buildingManager->selectedBuilding)
-            buildingManager->drawBuildingUIButtons(buttonSize, nrOfButtons, buttonLayout.x);
+        if (building_manager_get_selected_building(&buildingManager))
+            building_manager_draw_ui_buttons(&buildingManager, buttonSize, nrOfButtons, buttonLayout.x);
         else if (playerManager->selectedPlayer)
             playerManager->selectedPlayer->drawUIButtons(buttonSize, nrOfButtons, buttonLayout.x);
 
@@ -139,7 +133,7 @@ void GameScreen::update()
         task();
 
     CameraManager::get().update();
-    buildingManager->update();
+    building_manager_update(&buildingManager);
     playerManager->update();
 
     if (!isMultiSelecting)
@@ -225,7 +219,7 @@ RaycastHitType GameScreen::checkRaycastHitType()
     if (playerManager->raycastToPlayer())
         return RAYCAST_HIT_TYPE_PLAYER;
 
-    if (buildingManager->raycastToBuilding())
+    if (building_manager_raycast(&buildingManager))
         return RAYCAST_HIT_TYPE_BUILDING;
 
     if (MapGenerator::get().raycastToGround())
@@ -244,8 +238,8 @@ void GameScreen::handleLeftMouseButton()
     RaycastHitType type = checkRaycastHitType();
 
     // deselect selectedBuilding if not clicking UI
-    if (buildingManager->selectedBuilding && type != RAYCAST_HIT_TYPE_UI)
-        buildingManager->deselect();
+    if (building_manager_get_selected_building(&buildingManager) && type != RAYCAST_HIT_TYPE_UI)
+        building_manager_deselect(&buildingManager);
 
     // always clear selectedEntities if clicked player/entity/building
     if (playerManager->selectedPlayer && type != RAYCAST_HIT_TYPE_UI && type != RAYCAST_HIT_TYPE_GROUND)
@@ -266,24 +260,24 @@ void GameScreen::handleLeftMouseButton()
 
         case RAYCAST_HIT_TYPE_BUILDING:
         {
-            buildingManager->select(buildingManager->raycastToBuilding());
+            building_manager_select(&buildingManager, building_manager_raycast(&buildingManager));
             break;
         }
 
         case RAYCAST_HIT_TYPE_GROUND:
         {
-            if (playerManager->selectedPlayer && buildingManager->ghostBuildingExists())
+            if (playerManager->selectedPlayer && building_manager_ghost_building_exists(&buildingManager))
             {
-                if (!buildingManager->canScheduleGhostBuilding()) // can't schedule ghostbuilding
+                if (!building_manager_can_schedule_ghost_building(&buildingManager)) // can't schedule ghostbuilding
                     break;
 
-                Building* ghost = buildingManager->getGhostBuilding();
-                bool buildingsInQueue = buildingManager->buildQueueFront() != nullptr;
-                buildingManager->scheduleGhostBuilding();
+                Building* ghost = building_manager_get_ghost_building(&buildingManager);
+                bool buildingsInQueue = !buildingManager.buildQueue.empty();
+                building_manager_schedule_ghost_building(&buildingManager);
                 if (buildingsInQueue) // something is getting built, just schedule and leave player unchanged
                     break;
 
-                playerManager->pathfindPlayerToCube(playerManager->selectedPlayer, ghost->getCube());
+                playerManager->pathfindPlayerToCube(playerManager->selectedPlayer, ghost->cube);
                 break;
             }
 
@@ -310,8 +304,8 @@ void GameScreen::handleRightMouseButton()
         {
             if (playerManager->selectedPlayer)
             {
-                buildingManager->clearGhostBuilding();
-                buildingManager->clearBuildQueue();
+                building_manager_clear_ghost_building(&buildingManager);
+                building_manager_clear_queue(&buildingManager);
 
                 Vector3 pos = mapGenerator.worldPositionAdjusted(mapGenerator.raycastToGround()->position);
                 Player* player = playerManager->selectedPlayer;
@@ -327,10 +321,10 @@ void GameScreen::handleRightMouseButton()
                 break;
             }
 
-            if (buildingManager->selectedBuilding)
+            if (building_manager_get_selected_building(&buildingManager))
             {
                 Vector3 adjusted = mapGenerator.worldPositionAdjusted(raycastToGround().point);
-                buildingManager->selectedBuilding->setRallyPoint(adjusted); // TODO: later, this doesn't work for y-elevated buildings
+                building_manager_get_selected_building(&buildingManager)->rallyPoint.position = adjusted; // TODO: later, this doesn't work for y-elevated buildings
 
                 break;
             }
