@@ -16,6 +16,7 @@
 #include <vector>
 #include <deque>
 #include <map>
+#include <variant>
 
 enum RaycastHitType {
     RAYCAST_HIT_TYPE_UI = 0,
@@ -26,7 +27,13 @@ enum RaycastHitType {
     RAYCAST_HIT_TYPE_OUT_OF_BOUNDS
 };
 
-class NetworkManager; // forward declaration to get around circular depenedency
+struct RayCollisionObject
+{
+    RaycastHitType type;
+    std::variant<std::monostate, Player*, Entity*, Building*, Cube*> object;
+};
+
+struct NetworkManager; // forward declaration to get around circular depenedency
 
 class GameScreen: public BaseScreen
 {
@@ -59,10 +66,9 @@ class GameScreen: public BaseScreen
         void stopMultiSelection();
         void updateMultiSelection();
 
-        RaycastHitType checkRaycastHitType();
+        RayCollisionObject raycastWorld();
         void handleLeftMouseButton();
         void handleRightMouseButton();
-        RayCollision raycastToGround();
 };
 
 #endif

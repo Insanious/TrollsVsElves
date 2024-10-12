@@ -21,7 +21,9 @@ GameScreen::GameScreen(Vector2i screenSize, bool isSinglePlayer)
         Vector3 startPos = { 0.f, cubeSize.y / 2, 0.f };
         startPos.x = gridSize.x / 2 * cubeSize.x - cubeSize.x; // spawn in corner
         startPos.z = gridSize.y / 2 * cubeSize.z - cubeSize.z; // spawn in corner
-        playerManager->addPlayer(new Player(startPos, PLAYER_ELF));
+        Player* player = new Player(startPos, PLAYER_ELF);
+        playerManager->addPlayer(player);
+        playerManager->clientPlayer = player;
     }
 
     isMultiSelecting = false;
@@ -218,21 +220,22 @@ void GameScreen::updateMultiSelection()
     }
 }
 
-RaycastHitType GameScreen::checkRaycastHitType()
+RayCollisionObject GameScreen::raycastWorld()
 {
+    std::variant<std::monostate, Player*, Entity*, Building*, Cube*> variant;
     if (ImGui::GetIO().WantCaptureMouse)
-        return RAYCAST_HIT_TYPE_UI;
+        return RayCollisionObject{ RAYCAST_HIT_TYPE_UI };
 
-    if (playerManager->raycastToPlayer())
-        return RAYCAST_HIT_TYPE_PLAYER;
+    if (Player* player = playerManager->raycastToPlayer())
+        return RayCollisionObject{ RAYCAST_HIT_TYPE_PLAYER, (variant = player) };
 
-    if (buildingManager->raycastToBuilding())
-        return RAYCAST_HIT_TYPE_BUILDING;
+    if (Building* building = buildingManager->raycastToBuilding())
+        return RayCollisionObject{ RAYCAST_HIT_TYPE_BUILDING, (variant = building) };
 
-    if (MapGenerator::get().raycastToGround())
-        return RAYCAST_HIT_TYPE_GROUND;
+    if (Cube* cube = MapGenerator::get().raycastToGround())
+        return RayCollisionObject{ RAYCAST_HIT_TYPE_GROUND, (variant = cube) };
 
-    return RAYCAST_HIT_TYPE_OUT_OF_BOUNDS;
+    return RayCollisionObject{ RAYCAST_HIT_TYPE_OUT_OF_BOUNDS };
 }
 
 void GameScreen::handleLeftMouseButton()
@@ -242,7 +245,8 @@ void GameScreen::handleLeftMouseButton()
     bool doubleclicked = elapsedTime.count() < 0.2f;
     lastLeftMouseButtonClick = now;
 
-    RaycastHitType type = checkRaycastHitType();
+    RayCollisionObject raycastHit = raycastWorld();
+    RaycastHitType type = raycastHit.type;
 
     // deselect selectedBuilding if not clicking UI
     if (buildingManager->selectedBuilding && type != RAYCAST_HIT_TYPE_UI)
@@ -262,18 +266,16 @@ void GameScreen::handleLeftMouseButton()
             break;
 
         case RAYCAST_HIT_TYPE_PLAYER:
-            playerManager->select(playerManager->raycastToPlayer());
+            playerManager->select(std::get<Player*>(raycastHit.object));
             break;
 
         case RAYCAST_HIT_TYPE_BUILDING:
-        {
-            buildingManager->select(buildingManager->raycastToBuilding());
+            buildingManager->select(std::get<Building*>(raycastHit.object));
             break;
-        }
 
         case RAYCAST_HIT_TYPE_GROUND:
         {
-            if (playerManager->selectedPlayer && buildingManager->ghostBuildingExists())
+            if (playerManager->clientPlayer->selected && buildingManager->ghostBuildingExists())
             {
                 if (!buildingManager->canScheduleGhostBuilding()) // can't schedule ghostbuilding
                     break;
@@ -284,8 +286,8 @@ void GameScreen::handleLeftMouseButton()
                 if (buildingsInQueue) // something is getting built, just schedule and leave player unchanged
                     break;
 
-                playerManager->selectedPlayer->reachedDestination = false;
-                playerManager->pathfindPlayerToCube(playerManager->selectedPlayer, ghost->cube);
+                playerManager->clientPlayer->reachedDestination = false;
+                playerManager->pathfindPlayerToCube(playerManager->clientPlayer, ghost->cube);
                 break;
             }
 
@@ -303,18 +305,19 @@ void GameScreen::handleLeftMouseButton()
 void GameScreen::handleRightMouseButton()
 {
     MapGenerator& mapGenerator = MapGenerator::get();
-    RaycastHitType type = checkRaycastHitType();
+    RayCollisionObject raycastHit = raycastWorld();
 
-    switch (type)
+    switch (raycastHit.type)
     {
         case RAYCAST_HIT_TYPE_GROUND:
         {
+            Cube* cube = std::get<Cube*>(raycastHit.object);
             if (playerManager->clientPlayer->selected) // only allow moving client owned player
             {
                 buildingManager->clearGhostBuilding();
                 buildingManager->clearBuildQueue();
 
-                Vector3 pos = mapGenerator.worldPositionAdjusted(mapGenerator.raycastToGround()->position);
+                Vector3 pos = mapGenerator.worldPositionAdjusted(cube->position);
                 Player* player = playerManager->clientPlayer;
 
                 playerManager->pathfindPlayerToPosition(player, pos);
@@ -331,8 +334,8 @@ void GameScreen::handleRightMouseButton()
 
             if (buildingManager->selectedBuilding)
             {
-                Vector3 adjusted = mapGenerator.worldPositionAdjusted(raycastToGround().point);
-                buildingManager->selectedBuilding->rallyPoint.position = adjusted; // TODO: later, this doesn't work for y-elevated buildings
+                Vector3 adjusted = mapGenerator.worldPositionAdjusted(cube->position);
+                buildingManager->selectedBuilding->rallyPoint.position = adjusted;
 
                 break;
             }
@@ -346,18 +349,4 @@ void GameScreen::handleRightMouseButton()
         case RAYCAST_HIT_TYPE_OUT_OF_BOUNDS:    // do nothing
             break;
     }
-}
-
-RayCollision GameScreen::raycastToGround()
-{
-    float ground = MapGenerator::get().getHeight();
-    const float max = 10000.f;
-    // Check mouse collision against a plane spanning from -max to max, with y the same as the ground level
-    return GetRayCollisionQuad(
-        CameraManager::get().getMouseRay(),
-        { -max, ground, -max },
-        { -max, ground,  max },
-        {  max, ground,  max },
-        {  max, ground, -max }
-    );
 }
