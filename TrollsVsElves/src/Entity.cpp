@@ -37,7 +37,7 @@ void Entity::update()
 
 void Entity::updateMovement()
 {
-    Vector3 target = paths.front();
+    Vector3 target = path.front();
     Vector3 direction = Vector3Subtract(target, capsule.startPos);
     Vector3 directionNormalized = Vector3Normalize(direction);
 
@@ -52,8 +52,8 @@ void Entity::updateMovement()
         capsule.startPos = { target.x, capsule.startPos.y, target.z };  // just tp to it
         capsule.endPos = { target.x, capsule.endPos.y, target.z };      // just tp to it
 
-        paths.pop_front(); // reached the end of this path
-        if (paths.empty())
+        path.pop_front(); // reached the end of this path
+        if (path.empty())
         {
             setState(IDLE);
             reachedDestination = true;
@@ -66,14 +66,14 @@ Vector3 Entity::getPosition()
     return capsule.startPos;
 }
 
-void Entity::setPositions(std::vector<Vector3> positions)
+void Entity::setPath(std::vector<Vector3> newPath)
 {
-    paths.clear();
-    paths.insert(paths.end(), positions.begin(), positions.end());
+    path.clear();
+    path.insert(path.end(), newPath.begin(), newPath.end());
 
-    if (paths.size())
+    if (path.size())
     {
-        targetMarker.position = { paths.back().x, 2.f, paths.back().z };
+        targetMarker.position = { path.back().x, 2.f, path.back().z };
         setState(RUNNING);
     }
 }
@@ -81,7 +81,7 @@ void Entity::setPositions(std::vector<Vector3> positions)
 void Entity::correctPath(std::vector<Vector3> path)
 {
     // TODO: do some actual correction logic here
-    setPositions(path);
+    setPath(path);
 }
 
 void Entity::setDefaultColor(Color color)
@@ -102,7 +102,7 @@ void Entity::setPosition(Vector3 position)
 void Entity::setSpeed(Vector3 speed)
 {
     this->speed = speed;
-    this->defaultTargetMargin = Vector3Length(Vector3Scale(speed, 1/60.f)); // speed divided FPS
+    this->defaultTargetMargin = Vector3Length(Vector3Scale(speed, 1/60.f)); // speed divided by frametime
 }
 
 bool Entity::hasReachedDestination()
@@ -135,16 +135,6 @@ void Entity::setState(State newState)
     }
 }
 
-State Entity::getState()
-{
-    return state;
-}
-
-State Entity::getPreviousState()
-{
-    return previousState;
-}
-
 void Entity::select()
 {
     selected = true;
@@ -155,14 +145,4 @@ void Entity::deselect()
 {
     selected = false;
     capsule.color = defaultColor;
-}
-
-bool Entity::isSelected()
-{
-    return selected;
-}
-
-EntityType Entity::getEntityType()
-{
-    return entityType;
 }

@@ -45,7 +45,7 @@ void PlayerManager::update()
 void PlayerManager::addPlayer(Player* player)
 {
     players.push_back(player);
-    player->setBuildingManager(buildingManager);
+    player->buildingManager = buildingManager;
 }
 
 void PlayerManager::select(Player* player)
@@ -106,20 +106,20 @@ bool PlayerManager::checkCollisionCapsulePoint(Capsule capsule, Vector2 point)
 void PlayerManager::pathfindPlayerToCube(Player* player, Cube cube)
 {
     Vector3 targetPosition = calculateTargetPositionToCubeFromPlayer(player, cube);
-    std::vector<Vector3> positions = player->playerType == PLAYER_TROLL
+    std::vector<Vector3> path = player->playerType == PLAYER_TROLL
         ? MapGenerator::get().pathfindPositionsForTroll(player->getPosition(), targetPosition)
         : MapGenerator::get().pathfindPositionsForElf(player->getPosition(), targetPosition);
-    player->setPositions(positions);
+    player->setPath(path);
 }
 
 std::vector<Vector3> PlayerManager::pathfindPlayerToPosition(Player* player, Vector3 position)
 {
-    std::vector<Vector3> positions = player->playerType == PLAYER_TROLL
+    std::vector<Vector3> path = player->playerType == PLAYER_TROLL
         ? MapGenerator::get().pathfindPositionsForTroll(player->getPosition(), position)
         : MapGenerator::get().pathfindPositionsForElf(player->getPosition(), position);
-    player->setPositions(positions);
+    player->setPath(path);
 
-    return positions;
+    return path;
 }
 
 Player* PlayerManager::raycastToPlayer()

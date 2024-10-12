@@ -11,40 +11,21 @@ Player::Player(Vector3 position, PlayerType playerType)
         case PLAYER_ELF:
             this->capsule = Capsule(2.f, 8.f);
             this->setDefaultColor(BLUE);
-            this->setPosition(position);
             this->originalActionId = "elf";
-            this->actionId = this->originalActionId;
             break;
 
         case PLAYER_TROLL:
             this->capsule = Capsule(3.f, 12.f);
             this->setDefaultColor(RED);
-            this->setPosition(position);
             this->originalActionId = "troll";
-            this->actionId = this->originalActionId;
             break;
     }
+
+    setPosition(position);
+    actionId = this->originalActionId;
 }
 
 Player::~Player() {}
-
-void Player::setBuildingManager(BuildingManager* buildingManager)
-{
-    this->buildingManager = buildingManager;
-}
-
-void Player::tryBuyItem(Item item)
-{
-    bool canBuyItem = playerType == PLAYER_TROLL;
-
-    printf("%s item called '%s'\n", canBuyItem ? "Purchased" : "Couldn't purchase", item.name.c_str());
-    if (!canBuyItem)
-        return;
-
-    items.push_back(item);
-    if (item.name == "Cocaine")
-        setSpeed(Vector3Add(speed, { 10.f, 10.f, 10.f }));
-}
 
 void Player::draw()
 {

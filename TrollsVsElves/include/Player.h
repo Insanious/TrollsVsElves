@@ -14,28 +14,21 @@ class BuildingManager; // forward declaration to get around circular depenedency
 
 enum PlayerType { PLAYER_ELF, PLAYER_TROLL };
 
-class Player : public Entity, public RakNet::NetworkIDObject
+struct Player : public Entity, public RakNet::NetworkIDObject
 {
-private:
     BuildingManager* buildingManager;
 
     std::string actionId;
     std::string originalActionId;
     std::string previousActionId;
 
-    std::vector<Item> items;
-
-    void resolveAction(ActionNode& node);
-
-public:
     PlayerType playerType;
 
     Player() = delete;
     Player(Vector3 position, PlayerType playerType);
     ~Player();
 
-    void setBuildingManager(BuildingManager* buildingManager);
-    void tryBuyItem(Item item);
+    void resolveAction(ActionNode& node);
 
     void draw();
     void drawUIButtons(ImVec2 buttonSize, int nrOfButtons, int buttonsPerLine);

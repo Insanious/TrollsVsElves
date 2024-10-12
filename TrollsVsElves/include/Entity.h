@@ -10,9 +10,11 @@
 enum State { IDLE, RUNNING };
 enum EntityType { PLAYER, WORKER };
 
-class Entity
+struct Entity
 {
-protected:
+    Capsule capsule;
+    Cylinder targetMarker;
+
     EntityType entityType;
     Color defaultColor;
     Color selectedColor;
@@ -22,16 +24,10 @@ protected:
 
     Vector3 speed;
     bool reachedDestination;
-
     float defaultTargetMargin;
+    std::deque<Vector3> path;
 
     bool selected;
-
-    Cylinder targetMarker;
-    std::deque<Vector3> paths;
-
-public:
-    Capsule capsule;
 
     Entity() = delete;
     Entity(Vector3 position, Color defaultColor, EntityType entityType);
@@ -42,7 +38,7 @@ public:
     void updateMovement();
 
     Vector3 getPosition();
-    void setPositions(std::vector<Vector3> positions);
+    void setPath(std::vector<Vector3> newPath);
     void correctPath(std::vector<Vector3> path);
     void setDefaultColor(Color color);
     void setPosition(Vector3 position);
@@ -50,14 +46,9 @@ public:
     bool hasReachedDestination();
 
     void setState(State newState);
-    State getState();
-    State getPreviousState();
 
     void select();
     virtual void deselect();
-    bool isSelected();
-
-    EntityType getEntityType();
 };
 
 #endif
