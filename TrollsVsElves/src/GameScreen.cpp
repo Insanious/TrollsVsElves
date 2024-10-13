@@ -9,13 +9,14 @@ GameScreen::GameScreen(Vector2i screenSize, bool isSinglePlayer)
     ActionsManager::get().loadRequirements("requirements.json");
     ActionsManager::get().loadActions("actions.json");
 
-    MapGenerator::get().generateFromFile("map/map.json");
-    Vector2i gridSize = MapGenerator::get().getGridSize();
-    Vector3 cubeSize = MapGenerator::get().getCubeSize();
+    mapGenerator = new MapGenerator();
+    mapGenerator->generateFromFile("map/map.json");
+    Vector2i gridSize = mapGenerator->gridSize;
+    Vector3 cubeSize = mapGenerator->cubeSize;
 
-    buildingManager = new BuildingManager({ cubeSize.x * 2, cubeSize.y, cubeSize.z * 2 }, BLANK);
+    buildingManager = new BuildingManager({ cubeSize.x * 2, cubeSize.y, cubeSize.z * 2 }, BLANK, mapGenerator);
 
-    playerManager = new PlayerManager(buildingManager);
+    playerManager = new PlayerManager(buildingManager, mapGenerator);
     if (isSinglePlayer)
     {
         Vector3 startPos = { 0.f, cubeSize.y / 2, 0.f };
@@ -48,7 +49,7 @@ void GameScreen::draw()
 
     BeginMode3D(cameraManager.getCamera());
 
-        MapGenerator::get().draw();
+        mapGenerator->draw();
 
         if (buildingManager)
             buildingManager->draw();
@@ -232,7 +233,7 @@ RayCollisionObject GameScreen::raycastWorld()
     if (Building* building = buildingManager->raycastToBuilding())
         return RayCollisionObject{ RAYCAST_HIT_TYPE_BUILDING, (variant = building) };
 
-    if (Cube* cube = MapGenerator::get().raycastToGround())
+    if (Cube* cube = mapGenerator->raycastToGround())
         return RayCollisionObject{ RAYCAST_HIT_TYPE_GROUND, (variant = cube) };
 
     return RayCollisionObject{ RAYCAST_HIT_TYPE_OUT_OF_BOUNDS };
@@ -304,7 +305,6 @@ void GameScreen::handleLeftMouseButton()
 
 void GameScreen::handleRightMouseButton()
 {
-    MapGenerator& mapGenerator = MapGenerator::get();
     RayCollisionObject raycastHit = raycastWorld();
 
     switch (raycastHit.type)
@@ -317,7 +317,7 @@ void GameScreen::handleRightMouseButton()
                 buildingManager->clearGhostBuilding();
                 buildingManager->clearBuildQueue();
 
-                Vector3 pos = mapGenerator.worldPositionAdjusted(cube->position);
+                Vector3 pos = mapGenerator->worldPositionAdjusted(cube->position);
                 Player* player = playerManager->clientPlayer;
 
                 playerManager->pathfindPlayerToPosition(player, pos);
@@ -334,7 +334,7 @@ void GameScreen::handleRightMouseButton()
 
             if (buildingManager->selectedBuilding)
             {
-                Vector3 adjusted = mapGenerator.worldPositionAdjusted(cube->position);
+                Vector3 adjusted = mapGenerator->worldPositionAdjusted(cube->position);
                 buildingManager->selectedBuilding->rallyPoint.position = adjusted;
 
                 break;

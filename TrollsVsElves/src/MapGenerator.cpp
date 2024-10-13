@@ -2,65 +2,55 @@
 
 MapGenerator::MapGenerator()
 {
-    this->defaultCubeColor = DARKGRAY;
-    this->cubeSize = Vector3Scale(Vector3One(), 4.f);
-    this->height = 0.f;
+    defaultCubeColor = DARKGRAY;
+    cubeSize = Vector3Scale(Vector3One(), 4.f);
+    height = 0.f;
 }
 
-MapGenerator::~MapGenerator()
-{
-    for (int i = 0; i < grid.size(); i++)
-        delete grid[i];
-}
+MapGenerator::~MapGenerator() {}
 
 void MapGenerator::draw()
 {
-    for (Cube* cube: grid)
-        drawCube(*cube);
+    for (Cube& cube: grid)
+        drawCube(cube);
 }
 
 void MapGenerator::generateFromFile(std::string filename)
 {
     Json::Value json = parseJsonFile(filename);
 
-    this->gridSize = {
-        json["width"].asInt(),
-        json["height"].asInt()
-    };
+    gridSize = { json["width"].asInt(), json["height"].asInt() };
 
-    this->grid = std::vector<Cube*>(gridSize.y * gridSize.x, nullptr);
+    grid = std::vector<Cube>(gridSize.y * gridSize.x);
     obstacles = std::vector<std::vector<bool>>(gridSize.y, std::vector<bool>(gridSize.x, false));
-    actualObstacles = std::vector<std::vector<bool>>(gridSize.y, std::vector<bool>(gridSize.x, false));
+    elfObstacles = std::vector<std::vector<bool>>(gridSize.y, std::vector<bool>(gridSize.x, false));
     trollObstacles = std::vector<std::vector<bool>>(gridSize.y/2, std::vector<bool>(gridSize.x/2, false));
 
     Vector2 halfGridSize = { gridSize.x / 2 * cubeSize.x, gridSize.y / 2 * cubeSize.z };
     float groundHeight = height - cubeSize.y/2;
     float layerHeight = groundHeight;
-    Vector3 position;
-    int index, tile;
+    float px, py;
+    int x, y, index, type;
     for (Json::Value& layer: json["layers"])
     {
-        for (int y = 0; y < gridSize.y; y++)
+        for (y = 0; y < gridSize.y; y++)
         {
-            for (int x = 0; x < gridSize.x; x++)
+            for (x = 0; x < gridSize.x; x++)
             {
-                int index = y * gridSize.x + x;
-                int tile = layer["data"][index].asInt();
-                if (tile == 0) // empty tile
+                index = twoDimToOneDimIndex({ x, y });
+                type = layer["data"][index].asInt();
+                if (type == 0) // empty tile
                     continue;
 
-                position = {
-                    cubeSize.x * x - halfGridSize.x,
-                    layerHeight,
-                    cubeSize.z * y - halfGridSize.y
-                };
+                px = cubeSize.x * x - halfGridSize.x;
+                py = cubeSize.y * y - halfGridSize.y;
 
-                grid[index] = new Cube(position, cubeSize, defaultCubeColor);
+                grid[index] = Cube({ px, layerHeight, py }, cubeSize, defaultCubeColor);
 
-                if (tile == 34) // obstruction tile
+                if (type == 34) // obstruction tile
                 {
-                    grid[index]->position.y = groundHeight; // put it on the ground so it looks "normal"
-                    addObstacle(*grid[index]);
+                    grid[index].position.y = groundHeight; // put it on the ground so it looks "normal"
+                    addObstacle(grid[index]);
                 }
             }
         }
@@ -69,41 +59,12 @@ void MapGenerator::generateFromFile(std::string filename)
     }
 }
 
-void MapGenerator::addCube(Vector3 position, Vector3 size, Color color)
-{
-    grid.push_back(new Cube(position, size, color));
-}
-
-Vector3 MapGenerator::getCubeSize()
-{
-    return cubeSize;
-}
-
-Vector2i MapGenerator::getGridSize()
-{
-    return gridSize;
-}
-
-float MapGenerator::getHeight()
-{
-    return height;
-}
-
-std::vector<std::vector<bool>> MapGenerator::getActualObstacles()
-{
-    return actualObstacles;
-}
-
-std::vector<std::vector<bool>> MapGenerator::getTrollObstacles()
-{
-    return trollObstacles;
-}
-
 void MapGenerator::recalculateObstacles()
 {
-    // this is needed so the player doesn't walk between the edges of two buildings
+    // NOTE: this is needed so the player doesn't walk between the edges of two buildings.
+    // NOTE: this would be unnecessary if the buildings were cylinder-shaped instead of cube-shaped
     // check whether two edges are touching and if they are, fill in the gaps
-    std::copy(obstacles.begin(), obstacles.end(), actualObstacles.begin());
+    std::copy(obstacles.begin(), obstacles.end(), elfObstacles.begin());
     Vector2i topLeft;
     Vector2i topRight;
     Vector2i bottomLeft;
@@ -117,22 +78,22 @@ void MapGenerator::recalculateObstacles()
             bottomLeft     = { x + 0, y + 1 };
             bottomRight    = { x + 1, y + 1 };
 
-            if (actualObstacles[topLeft.y][topLeft.x]               // (0, 0 == true)
-                && !actualObstacles[topRight.y][topRight.x]         // (0, 1 == false)
-                && !actualObstacles[bottomLeft.y][bottomLeft.x]     // (1, 0 == false)
-                && actualObstacles[bottomRight.y][bottomRight.x])   // (1, 1 == true)
+            if (elfObstacles[topLeft.y][topLeft.x]               // (0, 0 == true)
+                && !elfObstacles[topRight.y][topRight.x]         // (0, 1 == false)
+                && !elfObstacles[bottomLeft.y][bottomLeft.x]     // (1, 0 == false)
+                && elfObstacles[bottomRight.y][bottomRight.x])   // (1, 1 == true)
             {
-                actualObstacles[topRight.y][topRight.x] = true;
-                actualObstacles[bottomLeft.y][bottomLeft.x] = true;
+                elfObstacles[topRight.y][topRight.x] = true;
+                elfObstacles[bottomLeft.y][bottomLeft.x] = true;
             }
 
-            else if (!actualObstacles[topLeft.y][topLeft.x]         // (0, 0 == false)
-                && actualObstacles[topRight.y][topRight.x]          // (0, 1 == true)
-                && actualObstacles[bottomLeft.y][bottomLeft.x]      // (1, 0 == true)
-                && !actualObstacles[bottomRight.y][bottomRight.x])  // (1, 1 == false)
+            else if (!elfObstacles[topLeft.y][topLeft.x]         // (0, 0 == false)
+                && elfObstacles[topRight.y][topRight.x]          // (0, 1 == true)
+                && elfObstacles[bottomLeft.y][bottomLeft.x]      // (1, 0 == true)
+                && !elfObstacles[bottomRight.y][bottomRight.x])  // (1, 1 == false)
             {
-                actualObstacles[topLeft.y][topLeft.x] = true;
-                actualObstacles[bottomRight.y][bottomRight.x] = true;
+                elfObstacles[topLeft.y][topLeft.x] = true;
+                elfObstacles[bottomRight.y][bottomRight.x] = true;
             }
         }
     }
@@ -167,6 +128,11 @@ void MapGenerator::removeObstacle(Cube cube)
     recalculateTrollObstacles();
 }
 
+int MapGenerator::twoDimToOneDimIndex(Vector2i index)
+{
+    return index.y * gridSize.x + index.x;
+}
+
 Vector2i MapGenerator::worldPositionToIndex(Vector3 position)
 {
     // shift position by half grid size to get positive values only, and add half cube size to correct for cube origin
@@ -184,7 +150,7 @@ Vector2i MapGenerator::worldPositionToIndex(Vector3 position)
 
 Vector3 MapGenerator::indexToWorldPosition(Vector2i index)
 {
-    Cube* cube = grid[index.y * gridSize.x + index.x];
+    Cube& cube = grid[twoDimToOneDimIndex(index)];
 
     Vector2i adjusted = {
         index.x - (gridSize.x/2),
@@ -193,7 +159,7 @@ Vector3 MapGenerator::indexToWorldPosition(Vector2i index)
 
     return {
         adjusted.x * cubeSize.x,
-        cube->position.y + cubeSize.y,
+        cube.position.y + cubeSize.y,
         adjusted.y * cubeSize.z,
     };
 }
@@ -204,35 +170,23 @@ Vector3 MapGenerator::worldPositionAdjusted(Vector3 position)
     return indexToWorldPosition(index);
 }
 
-std::vector<Vector2i> MapGenerator::getCubeIndices(Cube cube)
+std::vector<Vector2i> MapGenerator::getCubeIndices(Cube& cube)
 {
-    // this should NOT be simplified to (halfX = maxX / 2) since (3 / 2 = 1) and (3 - (3/2) = 2)
-    int maxX = cube.size.x / cubeSize.x;
-    int halfX = maxX - maxX / 2;
-    int maxY = cube.size.z / cubeSize.z;
-    int halfY = maxY - maxY / 2;
+    BoundingBox bb = getCubeBoundingBox(cube);
+    Vector2i bottomLeft = worldPositionToIndex(bb.min);
+    Vector2i topRight = worldPositionToIndex(bb.max);
 
     std::vector<Vector2i> indices;
-    if (maxX <= 1 && halfX <= 1 && maxY <= 1 && halfY <= 1)
-        return std::vector<Vector2i>(1, worldPositionToIndex(cube.position));
-
-    float posX, posZ;
-    for (int y = -halfY; y < halfY; y++)
-    {
-        for (int x = -halfX; x < halfX; x++)
-        {
-            posX = cube.position.x + (cubeSize.x * x);
-            posZ = cube.position.z + (cubeSize.z * y);
-            indices.push_back(worldPositionToIndex({ posX, 0.f, posZ }));
-        }
-    }
+    for (int y = bottomLeft.y; y < topRight.y; ++y)     // exclusive for a reason
+        for (int x = bottomLeft.x; x < topRight.x; ++x) // exclusive for a reason
+            indices.push_back({ x, y });
 
     return indices;
 }
 
 std::vector<Vector2i> MapGenerator::getNeighboringIndices(std::vector<Vector2i> indices)
 {
-    std::vector<Vector2i> directions = { { -1, 0}, { 1, 0}, { 0, -1}, { 0, 1}, { -1, -1}, { 1, 1}, { -1, 1}, { 1, -1} };
+    static const std::vector<Vector2i> directions = { { -1, 0}, { 1, 0}, { 0, -1}, { 0, 1}, { -1, -1}, { 1, 1}, { -1, 1}, { 1, -1} };
 
     Vector2i pos;
     std::vector<Vector2i> neighboringIndices;
@@ -262,10 +216,10 @@ std::vector<Vector2i> MapGenerator::getNeighboringIndices(Cube cube)
 
 void MapGenerator::colorTiles(std::list<Vector2i> indices)
 {
-    for (Cube* cube: grid)
-        cube->color = defaultCubeColor;
+    for (Cube& cube: grid)
+        cube.color = defaultCubeColor;
     for (Vector2i index: indices)
-        grid[index.y * gridSize.x + index.x]->color = RED;
+        grid[twoDimToOneDimIndex(index)].color = RED;
 }
 
 std::vector<Vector3> MapGenerator::pathfindPositionsForElf(Vector3 start, Vector3 goal)
@@ -273,7 +227,7 @@ std::vector<Vector3> MapGenerator::pathfindPositionsForElf(Vector3 start, Vector
     Vector2i startIndex = worldPositionToIndex(start);
     Vector2i goalIndex = worldPositionToIndex(goal);
 
-    std::list<Vector2i> paths = PathFinding::get().findPath(startIndex, goalIndex, getActualObstacles());
+    std::list<Vector2i> paths = AStar::findPath(startIndex, goalIndex, elfObstacles);
     std::vector<Vector3> positions;
 
     colorTiles(paths);
@@ -291,7 +245,7 @@ std::vector<Vector3> MapGenerator::pathfindPositionsForTroll(Vector3 start, Vect
 
     Vector2i startTrollIndex = { startIndex.x/2, startIndex.y/2 }; // half to account for troll obstacle map
     Vector2i goalTrollIndex = { goalIndex.x/2, goalIndex.y/2 }; // half to account for troll obstacle map
-    std::list<Vector2i> paths = PathFinding::get().findPath(startTrollIndex, goalTrollIndex, getTrollObstacles());
+    std::list<Vector2i> paths = AStar::findPath(startTrollIndex, goalTrollIndex, trollObstacles);
     std::vector<Vector3> positions;
 
     Vector3 pos;
@@ -324,14 +278,14 @@ Cube* MapGenerator::raycastToGround()
     float closestCollisionDistance = std::numeric_limits<float>::infinity();
     Cube* nearestCube = nullptr;
 
-    for (Cube* cube: grid)
+    for (Cube& cube: grid)
     {
-        RayCollision collision = GetRayCollisionBox(ray, getCubeBoundingBox(*cube));
+        RayCollision collision = GetRayCollisionBox(ray, getCubeBoundingBox(cube));
 
         if (collision.hit && collision.distance < closestCollisionDistance)
         {
             closestCollisionDistance = collision.distance;
-            nearestCube = cube;
+            nearestCube = &cube;
         }
     }
 

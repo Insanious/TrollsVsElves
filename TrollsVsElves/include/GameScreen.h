@@ -52,6 +52,7 @@ class GameScreen: public BaseScreen
         BuildingManager* buildingManager;
         PlayerManager* playerManager;
         NetworkManager* networkManager;
+        MapGenerator* mapGenerator;
         ThreadSafeMessageQueue messageQueue;
 
         GameScreen() = delete;

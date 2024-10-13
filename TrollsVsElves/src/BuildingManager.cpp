@@ -1,10 +1,11 @@
 #include "BuildingManager.h"
 #include "Player.h"
 
-BuildingManager::BuildingManager(Vector3 defaultBuildingSize, Color defaultBuildingColor)
+BuildingManager::BuildingManager(Vector3 defaultBuildingSize, Color defaultBuildingColor, MapGenerator* mapGenerator)
 {
     this->defaultBuildingSize = defaultBuildingSize;
     this->defaultBuildingColor = defaultBuildingColor;
+    this->mapGenerator = mapGenerator;
 
     selectedBuilding = nullptr;
     ghostBuilding = nullptr;
@@ -148,7 +149,7 @@ void BuildingManager::update()
 
     if (selectedBuilding && selectedBuilding->sold) // delete selectedBuilding and pop from buildings vector
     {
-        MapGenerator::get().removeObstacle(selectedBuilding->cube);
+        mapGenerator->removeObstacle(selectedBuilding->cube);
         removeBuilding(selectedBuilding);
         selectedBuilding = nullptr;
     }
@@ -199,13 +200,12 @@ void BuildingManager::clearBuildQueue()
 
 void BuildingManager::updateGhostBuilding()
 {
-
-    Cube* cubeHit = MapGenerator::get().raycastToGround();
+    Cube* cubeHit = mapGenerator->raycastToGround();
     if (!cubeHit)
         return;
 
-    Vector3 cubeSize = MapGenerator::get().getCubeSize();
-    float ground = MapGenerator::get().getHeight();
+    Vector3 cubeSize = mapGenerator->cubeSize;
+    float ground = mapGenerator->height;
     const float max = 10000.f;
     // Check mouse collision against a plane spanning from -max to max, with y the same as the cubeHit y-level
     RayCollision collision = GetRayCollisionQuad(
@@ -259,9 +259,8 @@ void BuildingManager::createDebugBuilding(Vector2i index, BuildingType buildingT
     Building* building = new Building(Cube(defaultBuildingSize), buildingType, nullptr);
     unlockedActions[building->actionId]++;
 
-    MapGenerator& mapGenerator = MapGenerator::get();
-    Vector3 pos = mapGenerator.indexToWorldPosition(index);
-    Vector3 cubeSize = mapGenerator.getCubeSize();
+    Vector3 pos = mapGenerator->indexToWorldPosition(index);
+    Vector3 cubeSize = mapGenerator->cubeSize;
     Vector3 snapped = {
         nearestIncrement(pos.x, cubeSize.x),
         pos.y, // don't need nearest here
@@ -274,7 +273,7 @@ void BuildingManager::createDebugBuilding(Vector2i index, BuildingType buildingT
     };
 
     building->cube.position = Vector3Add(snapped, offset);
-    mapGenerator.addObstacle(building->cube);
+    mapGenerator->addObstacle(building->cube);
 
     building->scheduleBuild();
     building->startBuild();
@@ -342,23 +341,21 @@ bool BuildingManager::canScheduleGhostBuilding()
 
 void BuildingManager::recruit(Building* building)
 {
-    MapGenerator& mapGenerator = MapGenerator::get();
-
-    std::vector<Vector2i> neighboringIndices = mapGenerator.getNeighboringIndices(building->cube);
+    std::vector<Vector2i> neighboringIndices = mapGenerator->getNeighboringIndices(building->cube);
     if (!neighboringIndices.size()) // no valid neighboring tiles
     {
         printf("Found no neighboring tiles, should probably do something about this later\n"); // TODO: later
         return;
     }
 
-    Vector3 neighborPosition = mapGenerator.indexToWorldPosition(neighboringIndices[0]);
+    Vector3 neighborPosition = mapGenerator->indexToWorldPosition(neighboringIndices[0]);
     float ground = building->cube.position.y;
     Vector3 pos = { neighborPosition.x, ground, neighborPosition.z };
     Vector3 speed = Vector3Scale(Vector3One(), 30);
     // TEMP: disabled
     // Entity* entity = new Entity(pos, speed, BLACK, WORKER);
 
-    // std::vector<Vector3> positions = mapGenerator.pathfindPositions(entity->getPosition(), building->getRallyPoint().position);
+    // std::vector<Vector3> positions = mapGenerator->pathfindPositions(entity->getPosition(), building->getRallyPoint().position);
     // entity->setPositions(positions);
 
     // entities.push_back(entity);

@@ -71,7 +71,15 @@ void Entity::setPath(std::vector<Vector3> newPath)
     path.clear();
     path.insert(path.end(), newPath.begin(), newPath.end());
 
-    if (path.size())
+    // TODO, WARNING
+    // When no path was found from the pathfinding this handling is incorrect,
+    // however this handling is correct when the player is standing at the desired position...
+    if (path.empty()) // was ordered to walk somewhere but was already there, destination has been reached good sir
+    {
+        setState(IDLE);
+        reachedDestination = true;
+    }
+    else
     {
         targetMarker.position = { path.back().x, 2.f, path.back().z };
         setState(RUNNING);

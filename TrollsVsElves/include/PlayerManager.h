@@ -9,13 +9,14 @@
 struct PlayerManager
 {
     BuildingManager* buildingManager;
+    MapGenerator* mapGenerator;
 
     std::vector<Player*> players;
     Player* selectedPlayer;
     Player* clientPlayer;
 
     PlayerManager() = delete;
-    PlayerManager(BuildingManager* buildingManager);
+    PlayerManager(BuildingManager* buildingManager, MapGenerator* mapGenerator);
     ~PlayerManager();
 
     void draw();

@@ -1,8 +1,10 @@
 #include "PlayerManager.h"
 
-PlayerManager::PlayerManager(BuildingManager* buildingManager)
+PlayerManager::PlayerManager(BuildingManager* buildingManager, MapGenerator* mapGenerator)
 {
     this->buildingManager = buildingManager;
+    this->mapGenerator = mapGenerator;
+
     selectedPlayer = nullptr;
     players.reserve(constants::MAX_PLAYERS);
 }
@@ -33,7 +35,7 @@ void PlayerManager::update()
             player->reachedDestination = false;
 
             Building* building = buildingManager->yieldBuildQueue();
-            MapGenerator::get().addObstacle(building->cube);
+            mapGenerator->addObstacle(building->cube);
 
             building = buildingManager->buildQueueFront();
             if (building) // if more in queue, walk to the next target
@@ -68,15 +70,14 @@ void PlayerManager::deselect()
 
 Vector3 PlayerManager::calculateTargetPositionToCubeFromPlayer(Player* player, Cube cube)
 {
-    MapGenerator& mapGenerator = MapGenerator::get();
-    std::vector<Vector2i> indices = mapGenerator.getNeighboringIndices(cube);
+    std::vector<Vector2i> indices = mapGenerator->getNeighboringIndices(cube);
     Vector3 entityPosition = player->getPosition();
 
     std::vector<Vector3> positions;
     Vector3 position;
     for (Vector2i index: indices)
     {
-        position = mapGenerator.indexToWorldPosition(index);
+        position = mapGenerator->indexToWorldPosition(index);
         if (position.x == entityPosition.x && position.z == entityPosition.z)
             return position;
 
@@ -110,16 +111,16 @@ void PlayerManager::pathfindPlayerToCube(Player* player, Cube cube)
 {
     Vector3 targetPosition = calculateTargetPositionToCubeFromPlayer(player, cube);
     std::vector<Vector3> path = player->playerType == PLAYER_TROLL
-        ? MapGenerator::get().pathfindPositionsForTroll(player->getPosition(), targetPosition)
-        : MapGenerator::get().pathfindPositionsForElf(player->getPosition(), targetPosition);
+        ? mapGenerator->pathfindPositionsForTroll(player->getPosition(), targetPosition)
+        : mapGenerator->pathfindPositionsForElf(player->getPosition(), targetPosition);
     player->setPath(path);
 }
 
 std::vector<Vector3> PlayerManager::pathfindPlayerToPosition(Player* player, Vector3 position)
 {
     std::vector<Vector3> path = player->playerType == PLAYER_TROLL
-        ? MapGenerator::get().pathfindPositionsForTroll(player->getPosition(), position)
-        : MapGenerator::get().pathfindPositionsForElf(player->getPosition(), position);
+        ? mapGenerator->pathfindPositionsForTroll(player->getPosition(), position)
+        : mapGenerator->pathfindPositionsForElf(player->getPosition(), position);
     player->setPath(path);
 
     return path;

@@ -25,6 +25,8 @@ private:
     Building* ghostBuilding;
     bool ghostBuildingIsColliding;
 
+    MapGenerator* mapGenerator;
+
     std::unordered_map<std::string, unsigned> unlockedActions;
 
     void updateGhostBuilding();
@@ -36,7 +38,7 @@ public:
     Building* selectedBuilding;
 
     BuildingManager() = delete;
-    BuildingManager(Vector3 defaultBuildingSize, Color defaultBuildingColor);
+    BuildingManager(Vector3 defaultBuildingSize, Color defaultBuildingColor, MapGenerator* mapGenerator);
     ~BuildingManager();
 
     void draw();
