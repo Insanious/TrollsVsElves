@@ -107,15 +107,6 @@ bool PlayerManager::checkCollisionCapsulePoint(Capsule capsule, Vector2 point)
     return collisionBottomCircle || collisionTopCircle;
 }
 
-void PlayerManager::pathfindPlayerToCube(Player* player, Cube cube)
-{
-    Vector3 targetPosition = calculateTargetPositionToCubeFromPlayer(player, cube);
-    std::vector<Vector3> path = player->playerType == PLAYER_TROLL
-        ? mapGenerator->pathfindPositionsForTroll(player->getPosition(), targetPosition)
-        : mapGenerator->pathfindPositionsForElf(player->getPosition(), targetPosition);
-    player->setPath(path);
-}
-
 std::vector<Vector3> PlayerManager::pathfindPlayerToPosition(Player* player, Vector3 position)
 {
     std::vector<Vector3> path = player->playerType == PLAYER_TROLL

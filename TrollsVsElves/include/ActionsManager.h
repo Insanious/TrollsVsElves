@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <functional>
 #include "utils.h"
 
 struct ActionNode
@@ -12,6 +13,9 @@ struct ActionNode
     std::string name;
     std::string action;
     std::vector<std::string> children;
+
+    bool promotable = false;
+    std::function<void()> callback;
 
     ActionNode():
         id(""),

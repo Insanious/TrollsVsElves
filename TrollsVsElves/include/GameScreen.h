@@ -5,6 +5,7 @@
 
 #include "BaseScreen.h"
 #include "MapGenerator.h"
+#include "UIManager.h"
 #include "BuildingManager.h"
 #include "PlayerManager.h"
 #include "CameraManager.h"
@@ -59,7 +60,6 @@ class GameScreen: public BaseScreen
         ~GameScreen();
 
         void draw();
-        void drawUI();
         void update();
 
         void startMultiSelection();

@@ -66,11 +66,13 @@ void NetworkManager::listen()
     unsigned char packetId;
     Task task;
 
-    while (running) {
+    while (running)
+    {
         while (messageQueue.pop(task))
             task();
 
-        while (packet = rakPeerInterface->Receive()) {
+        while (packet = rakPeerInterface->Receive())
+        {
             printf("packet: %s\n", getPacketName(packet).c_str());
             packetId = getPacketIdentifier(packet);
 
@@ -185,7 +187,8 @@ void NetworkManager::handlePlayerPathCorrection(RakNet::Packet* packet)
 
     gameScreen->messageQueue.push([this, playerPathCorrection]() {
         Player* player = this->gameScreen->playerManager->getPlayerWithNetworkID(playerPathCorrection.networkId);
-        if (!player) {
+        if (!player)
+        {
             printf("Unexpected error occured; player with networkId (%u) could not be found\n", playerPathCorrection.networkId);
             return;
         }
@@ -220,7 +223,8 @@ void NetworkManager::handlePlayerRMBRequest(RakNet::Packet* packet)
     // std::this_thread::sleep_for(std::chrono::milliseconds(400)); // artificial latency
     this->gameScreen->messageQueue.push([this, playerRMB]() {
         Player* player = this->gameScreen->playerManager->getPlayerWithNetworkID(playerRMB.networkId);
-        if (!player) {
+        if (!player)
+        {
             printf("Unexpected error occured; player with networkId (%u) could not be found\n", playerRMB.networkId);
             return;
         }

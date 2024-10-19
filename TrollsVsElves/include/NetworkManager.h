@@ -89,7 +89,8 @@ struct PlayerPathCorrection
         bs->Serialize(writeToBitstream, networkId);
         bs->Serialize(writeToBitstream, nrOfPaths);
         if (!writeToBitstream) path = std::vector<Vector3>(nrOfPaths, { 0 });
-        for (int i = 0; i < nrOfPaths; i++) {
+        for (int i = 0; i < nrOfPaths; i++)
+        {
             bs->Serialize(writeToBitstream, path[i].x);
             bs->Serialize(writeToBitstream, path[i].y);
             bs->Serialize(writeToBitstream, path[i].z);

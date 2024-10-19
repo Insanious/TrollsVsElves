@@ -10,7 +10,6 @@
 #include "MapGenerator.h"
 #include "CameraManager.h"
 #include "ActionsManager.h"
-#include "UIUtils.h"
 
 class Player; // forward declaration to get around circular depenedency
 
@@ -93,8 +92,6 @@ struct BuildingManager
     ~BuildingManager();
 
     void draw();
-    void drawBuildingUIButtons(ImVec2 buttonSize, int nrOfButtons, int buttonsPerLine);
-    void resolveBuildingAction(Building& building, ActionNode& action);
     void update();
 
     Building* raycastToBuilding();
@@ -115,6 +112,8 @@ struct BuildingManager
     void recruit(Building* building);
     bool canPromoteTo(std::string id);
     void promote(Building& building, std::string id);
+
+    std::vector<ActionNode> getActions(Building& building, int nrOfButton);
 };
 
 #endif

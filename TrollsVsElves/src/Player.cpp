@@ -32,7 +32,7 @@ void Player::draw()
     Entity::draw();
 }
 
-void Player::drawUIButtons(ImVec2 buttonSize, int nrOfButtons, int buttonsPerLine)
+std::vector<ActionNode> Player::getActions(int nrOfButtons)
 {
     std::vector<ActionNode> children = ActionsManager::get().getActionChildren(actionId);
 
@@ -45,40 +45,33 @@ void Player::drawUIButtons(ImVec2 buttonSize, int nrOfButtons, int buttonsPerLin
     if (nrOfFillerButtons)                          // add back button if possible
         children.push_back(actionId != originalActionId ? backButton : fillerButton);
 
-    bool buttonWasPressed = false;
-    ActionNode child;
-    for (int i = 0; i < children.size(); i += buttonsPerLine)
+    for (ActionNode& node: children)
     {
-        for (int j = 0; j < buttonsPerLine; j++)
+        node.promotable = true;
+        if (node.promotable)
         {
-            child = children[i+j];
-
-            if (child.id == "filler") // draw invisible button, don't care if its pressed or not
-                ImGui::InvisibleButton(child.name.c_str(), buttonSize);
-            else
+            if (node.id == "filler")
+                node.callback = []() {};
+            else if (node.action == "back")
+                node.callback = [this]() { this->actionId = this->previousActionId; };
+            else if (node.action == "build")
             {
-                int colors = pushButtonEnabled();
-                if (ImGui::Button(child.name.c_str(), buttonSize))
-                {
-                    buttonWasPressed = true;
-                    resolveAction(child);
-                }
-
-                ImGui::PopStyleColor(colors);
+                if (node.id == "castle0")       node.callback = [this] { this->buildingManager->createNewGhostBuilding(CASTLE, this); };
+                else if (node.id == "rock0")    node.callback = [this] { this->buildingManager->createNewGhostBuilding(ROCK, this); };
+                else if (node.id == "hall0")    node.callback = [this] { this->buildingManager->createNewGhostBuilding(HALL, this); };
+                else if (node.id == "shop0")    node.callback = [this] { this->buildingManager->createNewGhostBuilding(SHOP, this); };
             }
-
-            if (j != buttonsPerLine - 1) // apply on all except the last
-                ImGui::SameLine();
+            else if (node.id == "blink")
+                node.callback = []() { printf("Blink is not implemented\n"); };
+            else if (node.action == "promote")
+                node.callback = [this, node]() {
+                    this->previousActionId = this->actionId;
+                    this->actionId = node.id;
+                };
         }
     }
 
-    if (!buttonWasPressed) // check if any button was clicked using number-key buttons
-        for (int i = 0; i < children.size(); i++)
-            if (IsKeyPressed((KeyboardKey)int(KEY_ONE) + i))
-            {
-                resolveAction(children[i]);
-                break;
-            }
+    return children;
 }
 
 void Player::update()
@@ -90,24 +83,4 @@ void Player::deselect()
 {
     actionId = originalActionId;
     Entity::deselect();
-}
-
-void Player::resolveAction(ActionNode& node)
-{
-    if (node.id == "filler")
-        return;
-    else if (node.action == "back")
-        actionId = previousActionId;
-    else if (node.action == "build") {
-        if (node.id == "castle0")    buildingManager->createNewGhostBuilding(CASTLE, this);
-        else if (node.id == "rock0") buildingManager->createNewGhostBuilding(ROCK, this);
-        else if (node.id == "hall0") buildingManager->createNewGhostBuilding(HALL, this);
-        else if (node.id == "shop0") buildingManager->createNewGhostBuilding(SHOP, this);
-    }
-    else if (node.id == "blink")
-        printf("Blink is not implemented\n"); // TODO: later
-    else if (node.action == "promote") {
-        previousActionId = actionId;
-        actionId = node.id;
-    }
 }

@@ -30,9 +30,8 @@ void Entity::draw()
 
 void Entity::update()
 {
-    if (state == RUNNING) {
+    if (state == RUNNING)
         updateMovement();
-    }
 }
 
 void Entity::updateMovement()

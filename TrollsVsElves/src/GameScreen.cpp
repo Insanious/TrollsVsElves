@@ -57,7 +57,16 @@ void GameScreen::draw()
         if (playerManager)
             playerManager->draw();
 
-        drawUI();
+        bool shouldDrawActionWindow = (buildingManager->selectedIndex == -1 != !playerManager->selectedPlayer); // xor
+        if (shouldDrawActionWindow) // xor
+        {
+            size_t nrOfButtons = 4;
+            std::vector<ActionNode> actions = buildingManager->selectedIndex != -1
+                ? buildingManager->getActions(buildingManager->buildings[buildingManager->selectedIndex], nrOfButtons)
+                : playerManager->selectedPlayer->getActions(nrOfButtons);
+
+            UIManager::drawActionButtons(actions, screenSize);
+        }
 
     EndMode3D();
 
@@ -88,52 +97,6 @@ void GameScreen::draw()
         }
 
     EndMode2D();
-}
-
-void GameScreen::drawUI()
-{
-    bool drawWindow = (buildingManager->selectedIndex == -1 != !playerManager->selectedPlayer); // xor
-    if (drawWindow)
-    {
-        bool bottomRightWindow = true;
-        int bottomRightWindowFlags = 0;
-        bottomRightWindowFlags |= ImGuiWindowFlags_NoTitleBar;
-        bottomRightWindowFlags |= ImGuiWindowFlags_NoResize;
-        bottomRightWindowFlags |= ImGuiWindowFlags_NoMove;
-
-        ImVec2 windowSize(300, 200);
-        ImVec2 windowPos(
-            screenSize.x - windowSize.x,
-            screenSize.y - windowSize.y
-        );
-
-        ImVec2 windowPadding(8, 8);
-        ImVec2 buttonPadding(8, 8);
-        Vector2i buttonLayout = { 2, 2 }; // 2 columns, 2 rows
-        int nrOfButtons = buttonLayout.x * buttonLayout.y;
-        ImVec2 buttonSize(
-            (windowSize.x / float(buttonLayout.x)) - windowPadding.x - (buttonPadding.x / float(buttonLayout.x)),
-            (windowSize.y / float(buttonLayout.y)) - windowPadding.y - (buttonPadding.y / float(buttonLayout.y))
-        );
-
-        // Draw bottom right window
-        ImGui::SetNextWindowSize(windowSize);
-        ImGui::SetNextWindowPos(windowPos);
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, windowPadding);
-        ImGui::Begin("Bottom right window", &bottomRightWindow, bottomRightWindowFlags);
-        ImGui::PopStyleVar();
-
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, buttonPadding);
-
-        if (buildingManager->selectedIndex != -1)
-            buildingManager->drawBuildingUIButtons(buttonSize, nrOfButtons, buttonLayout.x);
-        else if (playerManager->selectedPlayer)
-            playerManager->selectedPlayer->drawUIButtons(buttonSize, nrOfButtons, buttonLayout.x);
-
-        ImGui::PopStyleVar();
-        ImGui::End();
-    }
-
 }
 
 void GameScreen::update()
@@ -287,8 +250,10 @@ void GameScreen::handleLeftMouseButton()
                 if (buildingsInQueue) // something is getting built, just schedule and leave player unchanged
                     break;
 
-                playerManager->clientPlayer->reachedDestination = false;
-                playerManager->pathfindPlayerToCube(playerManager->clientPlayer, ghost.cube);
+                Player* player = playerManager->clientPlayer;
+                player->reachedDestination = false;
+                Vector3 targetPosition = playerManager->calculateTargetPositionToCubeFromPlayer(player, ghost.cube);
+                playerManager->pathfindPlayerToPosition(player, targetPosition);
                 break;
             }
 

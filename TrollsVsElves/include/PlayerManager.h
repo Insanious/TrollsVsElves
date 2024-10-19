@@ -28,7 +28,6 @@ struct PlayerManager
     Vector3 calculateTargetPositionToCubeFromPlayer(Player* player, Cube cube);
     bool checkCollisionCapsulePoint(Capsule capsule, Vector2 point);
 
-    void pathfindPlayerToCube(Player* player, Cube cube);
     std::vector<Vector3> pathfindPlayerToPosition(Player* player, Vector3 position);
 
     Player* raycastToPlayer();

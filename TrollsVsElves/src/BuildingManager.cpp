@@ -42,72 +42,6 @@ void BuildingManager::draw()
     }
 }
 
-void BuildingManager::drawBuildingUIButtons(ImVec2 buttonSize, int nrOfButtons, int buttonsPerLine)
-{
-    assert(selectedIndex != -1 && selectedIndex < buildings.size());
-    Building& selectedBuilding = buildings[selectedIndex];
-    std::vector<ActionNode> children = ActionsManager::get().getActionChildren(selectedBuilding.actionId);
-
-    ActionNode fillerButton = ActionNode("filler", "Filler", "filler", {});
-    ActionNode sellButton = ActionNode("sell", "Sell", "sell", {});
-
-    int nrOfFillerButtons = nrOfButtons - children.size();
-    for (int i = 0; i < nrOfFillerButtons - 1; i++)
-        children.push_back(fillerButton);           // add filler buttons between actual buttons and sell button
-    if (nrOfFillerButtons)
-        children.push_back(sellButton);             // add sellButton last so its the last button
-
-    ActionNode child;
-    bool buttonWasPressed = false;
-    for (int i = 0; i < children.size(); i += buttonsPerLine)
-    {
-        for (int j = 0; j < buttonsPerLine; j++)
-        {
-            child = children[i+j];
-
-            if (child.id == "filler")
-                ImGui::InvisibleButton(child.name.c_str(), buttonSize);
-            else
-            {
-                int colors = canPromoteTo(child.id) ? pushButtonEnabled() : pushButtonDisabled();
-                if (ImGui::Button(child.name.c_str(), buttonSize))
-                {
-                    buttonWasPressed = true;
-                    resolveBuildingAction(selectedBuilding, child);
-                }
-
-                ImGui::PopStyleColor(colors); // remove pushed colors
-            }
-
-            if (j != buttonsPerLine - 1) // apply on all except the last
-                ImGui::SameLine();
-        }
-    }
-
-    if (!buttonWasPressed) // check if any button was clicked using number-key buttons
-        for (int i = 0; i < children.size(); i++)
-            if (IsKeyPressed((KeyboardKey)int(KEY_ONE) + i))
-            {
-                resolveBuildingAction(selectedBuilding, children[i]);
-                break;
-            }
-}
-
-
-void BuildingManager::resolveBuildingAction(Building& building, ActionNode& node)
-{
-    if (node.id == "filler")
-        return;
-    else if (node.action == "sell")
-        building.sold = true;
-    else if (node.action == "recruit") // TODO: later // recruit(building);
-        printf("'recruit' action is not implemented\n");
-    else if (node.action == "buy") // TODO: later // player->tryBuyItem(Item(node.name));
-        printf("'buy' action is not implemented\n");
-    else if (node.action == "promote" && canPromoteTo(node.id))
-        promote(building, node.id);
-}
-
 Building* BuildingManager::raycastToBuilding()
 {
     Ray ray = CameraManager::get().getMouseRay();
@@ -325,7 +259,7 @@ void BuildingManager::select(Building* building)
 {
     selectedIndex = -1;
     Cube& cube = building->cube;
-    for (size_t i = 0; i < buildings.size() && selectedIndex != -1; i++)
+    for (size_t i = 0; i < buildings.size() && selectedIndex == -1; i++)
         if (cube == buildings[i].cube)
             selectedIndex = i;
 
@@ -388,4 +322,38 @@ void BuildingManager::promote(Building& building, std::string id)
     unlockedActions[id]++;
     building.previousActionIds.push_back(building.actionId);
     building.actionId = id;
+}
+
+std::vector<ActionNode> BuildingManager::getActions(Building& building, int nrOfButtons)
+{
+    std::vector<ActionNode> children = ActionsManager::get().getActionChildren(building.actionId);
+
+    ActionNode fillerButton = ActionNode("filler", "Filler", "filler", {});
+    ActionNode sellButton = ActionNode("sell", "Sell", "sell", {});
+
+    int nrOfFillerButtons = nrOfButtons - children.size();
+    for (int i = 0; i < nrOfFillerButtons - 1; i++)
+        children.push_back(fillerButton);           // add filler buttons between actual buttons and sell button
+    if (nrOfFillerButtons)
+        children.push_back(sellButton);             // add sellButton last so its the last button
+
+    for (ActionNode& node: children)
+    {
+        node.promotable = canPromoteTo(node.id);
+        if (node.id == "filler")
+            node.callback = []() {};
+        else if (node.action == "sell")
+            node.callback = [&building]() { building.sold = true; };
+        else if (node.action == "recruit")
+            node.callback = []() { printf("'recruit' action is not implemented\n"); };
+        else if (node.action == "buy")
+            node.callback = []() { printf("'buy' action is not implemented\n"); };
+        else if (node.action == "promote")
+        {
+            if (node.promotable)    node.callback = [this, &building, node]() { this->promote(building, node.id); };
+            else                    node.callback = []() {};
+        }
+    }
+
+    return children;
 }

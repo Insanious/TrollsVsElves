@@ -16,7 +16,8 @@ const int SERVER_PORT = 60000;
 
 NetworkType parseNetworkType(int argc, char* argv[])
 {
-    if (argc != 2) {
+    if (argc != 2)
+    {
         printf("needs exactly 1 argument\n");
         exit(0);
     }

@@ -3,7 +3,6 @@
 
 #include "Entity.h"
 #include "ActionsManager.h"
-#include "UIUtils.h"
 
 #include "NetworkIDObject.h"
 
@@ -28,10 +27,8 @@ struct Player : public Entity, public RakNet::NetworkIDObject
     Player(Vector3 position, PlayerType playerType);
     ~Player();
 
-    void resolveAction(ActionNode& node);
-
     void draw();
-    void drawUIButtons(ImVec2 buttonSize, int nrOfButtons, int buttonsPerLine);
+    std::vector<ActionNode> getActions(int nrOfButtons);
     void update();
 
     void deselect() override;
