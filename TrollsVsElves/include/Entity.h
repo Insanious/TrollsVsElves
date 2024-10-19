@@ -5,7 +5,6 @@
 
 #include "utils.h"
 #include "structs.h"
-#include "Building.h"
 
 enum State { IDLE, RUNNING };
 enum EntityType { PLAYER, WORKER };

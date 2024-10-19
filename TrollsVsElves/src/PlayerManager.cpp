@@ -27,7 +27,7 @@ void PlayerManager::update()
         player->update();
 
     Building* building = buildingManager->buildQueueFront();
-    if (buildingManager->buildQueueFront()) // something is getting built
+    if (building) // something is getting built
     {
         Player* player = building->owner;
         if (player->reachedDestination)

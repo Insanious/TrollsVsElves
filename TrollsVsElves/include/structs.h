@@ -19,6 +19,10 @@ struct Cube
 
     Cube(Vector3 _position, Vector3 _size, Color _color)
         : position(_position), size(_size), color(_color) {};
+
+    bool operator==(const Cube& rhs) const {
+        return Vector3Equals(this->position, rhs.position) && Vector3Equals(this->size, rhs.size);
+    }
 };
 
 inline BoundingBox getCubeBoundingBox(Cube cube, float scale = 1.0f)

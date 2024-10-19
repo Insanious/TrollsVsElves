@@ -5,7 +5,6 @@
 
 #include "BaseScreen.h"
 #include "MapGenerator.h"
-#include "Building.h"
 #include "BuildingManager.h"
 #include "PlayerManager.h"
 #include "CameraManager.h"

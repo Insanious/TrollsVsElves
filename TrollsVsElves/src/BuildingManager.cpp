@@ -7,9 +7,10 @@ BuildingManager::BuildingManager(Vector3 defaultBuildingSize, Color defaultBuild
     this->defaultBuildingColor = defaultBuildingColor;
     this->mapGenerator = mapGenerator;
 
-    selectedBuilding = nullptr;
-    ghostBuilding = nullptr;
-    ghostBuildingIsColliding = false;
+    buildings.reserve(100);
+
+    ghost.reset();
+    selectedIndex = -1;
 
     // make sure zeroth level buildings are always available to build
     unlockedActions["castle0"] = 1;
@@ -17,37 +18,35 @@ BuildingManager::BuildingManager(Vector3 defaultBuildingSize, Color defaultBuild
     unlockedActions["hall0"] = 1;
 }
 
-BuildingManager::~BuildingManager()
-{
-    for (int i = 0; i < buildings.size(); i++)
-        delete buildings[i];
-
-    clearBuildQueue();
-
-    if (ghostBuilding)
-        delete ghostBuilding;
-}
+BuildingManager::~BuildingManager() {}
 
 void BuildingManager::draw()
 {
-    for (Building* building: buildings)
-        building->draw();
-
-    for (Building* building: buildQueue)
-        building->draw();
-
-    if (ghostBuilding)
+    for (size_t i = 0; i < buildings.size(); i++)
     {
-        Cube& cube = ghostBuilding->cube;
+        drawCube(buildings[i].cube);
+        if (i == selectedIndex && !Vector3Equals(buildings[i].rallyPoint.position, buildings[i].cube.position))
+            drawCylinder(buildings[i].rallyPoint);
+    }
+
+    for (Building& building: buildQueue)
+        drawCube(building.cube);
+
+    if (ghost.exists())
+    {
+        Building& ghostBuilding = ghost.get();
+        Cube& cube = ghostBuilding.cube;
         cube.position = Vector3AddValue(cube.position, 0.1f); // prevents z-fighting that occurs when buildings overlap
-        ghostBuilding->draw();
+        drawCube(cube);
         cube.position = Vector3SubtractValue(cube.position, 0.1f); // revert change
     }
 }
 
 void BuildingManager::drawBuildingUIButtons(ImVec2 buttonSize, int nrOfButtons, int buttonsPerLine)
 {
-    std::vector<ActionNode> children = ActionsManager::get().getActionChildren(selectedBuilding->actionId);
+    assert(selectedIndex != -1 && selectedIndex < buildings.size());
+    Building& selectedBuilding = buildings[selectedIndex];
+    std::vector<ActionNode> children = ActionsManager::get().getActionChildren(selectedBuilding.actionId);
 
     ActionNode fillerButton = ActionNode("filler", "Filler", "filler", {});
     ActionNode sellButton = ActionNode("sell", "Sell", "sell", {});
@@ -95,12 +94,12 @@ void BuildingManager::drawBuildingUIButtons(ImVec2 buttonSize, int nrOfButtons, 
 }
 
 
-void BuildingManager::resolveBuildingAction(Building* building, ActionNode& node)
+void BuildingManager::resolveBuildingAction(Building& building, ActionNode& node)
 {
     if (node.id == "filler")
         return;
     else if (node.action == "sell")
-        building->sold = true;
+        building.sold = true;
     else if (node.action == "recruit") // TODO: later // recruit(building);
         printf("'recruit' action is not implemented\n");
     else if (node.action == "buy") // TODO: later // player->tryBuyItem(Item(node.name));
@@ -115,91 +114,92 @@ Building* BuildingManager::raycastToBuilding()
     float closestCollisionDistance = std::numeric_limits<float>::infinity();
     Building* nearestBuilding = nullptr;
 
-    for (Building* building: buildings)
+    for (Building& building: buildings)
     {
-        RayCollision collision = GetRayCollisionBox(ray, getCubeBoundingBox(building->cube));
+        RayCollision collision = GetRayCollisionBox(ray, getCubeBoundingBox(building.cube));
 
         if (collision.hit && collision.distance < closestCollisionDistance)
         {
             closestCollisionDistance = collision.distance;
-            nearestBuilding = building;
+            nearestBuilding = &building;
         }
     }
 
     return nearestBuilding;
 }
 
-void BuildingManager::removeBuilding(Building* building)
+void BuildingManager::removeBuilding(size_t index)
 {
-    swapAndPop(buildings, building);
+    assert(index < buildings.size());
 
-    for (std::string& id: building->previousActionIds)
+    Building& building = buildings[index];
+
+    for (std::string& id: building.previousActionIds)
         unlockedActions[id]--;
-    unlockedActions[building->actionId]--;
+    unlockedActions[building.actionId]--;
 
-    delete building;
+    std::swap(buildings[index], buildings[buildings.size() - 1]);
+    buildings.pop_back();
 }
 
 void BuildingManager::update()
 {
-    updateBuildings(buildings);
-
-    if (ghostBuilding)
-        updateGhostBuilding();
-
-    if (selectedBuilding && selectedBuilding->sold) // delete selectedBuilding and pop from buildings vector
-    {
-        mapGenerator->removeObstacle(selectedBuilding->cube);
-        removeBuilding(selectedBuilding);
-        selectedBuilding = nullptr;
-    }
-}
-
-void BuildingManager::updateBuildings(std::vector<Building*>& buildings)
-{
     float dt = GetFrameTime();
-    for (Building* building: buildings)
+    for (size_t i = 0; i < buildings.size(); i++)
     {
-        if (building->buildStage == BuildStage::IN_PROGRESS)
+        Building& building = buildings[i];
+        if (building.buildStage == BuildStage::IN_PROGRESS)
         {
-            building->buildTimer += dt;
-            float adjusted = building->buildTimer / building->buildTime;
-            building->cube.color = lerpColor(building->inProgressColor, building->targetColor, adjusted);
+            building.buildTimer += dt;
+            float adjusted = building.buildTimer / building.buildTime;
+            building.cube.color = lerpColor(building.inProgressColor, building.targetColor, adjusted);
 
-            if (building->buildTimer >= building->buildTime)
-                building->finishBuild();
+            if (building.buildTimer >= building.buildTime)
+                progressBuilding(building, FINISHED);
+        }
+
+        if (building.sold)
+        {
+            if (i == selectedIndex)
+                selectedIndex = -1;
+
+            mapGenerator->removeObstacle(building.cube);
+            removeBuilding(i);
+            i--;
         }
     }
+
+    if (ghost.exists())
+        updateGhostBuilding();
 }
 
 Building* BuildingManager::yieldBuildQueue()
 {
     assert(buildQueue.size() != 0);
 
-    Building* building = buildQueue.front();
+    Building& building = buildQueue.front();
     buildQueue.pop_front();
-    building->startBuild();
+    progressBuilding(building, IN_PROGRESS);
     buildings.push_back(building);
 
-    return building;
+    return &buildings.back();
 }
 
 Building* BuildingManager::buildQueueFront()
 {
-    return buildQueue.size() ? buildQueue.front() : nullptr;
+    return buildQueue.size() ? &buildQueue.front() : nullptr;
 }
 
 void BuildingManager::clearBuildQueue()
 {
     while(buildQueue.size())
-    {
-        delete buildQueue.back();
         buildQueue.pop_back();
-    }
 }
 
 void BuildingManager::updateGhostBuilding()
 {
+    assert(ghost.exists());
+
     Cube* cubeHit = mapGenerator->raycastToGround();
     if (!cubeHit)
         return;
@@ -218,6 +218,7 @@ void BuildingManager::updateGhostBuilding()
 
     assert(collision.hit == true); // sanity check
 
+    // TODO: shouldn't this be based off the size of the ghost building instead of the defaultBuildingSize?
     // should be edge of cube or middle of cube depending on building size multiple of a cube
     float cubeOffset = (int(defaultBuildingSize.x / cubeSize.x)) % 2 == 0
         ? cubeSize.y / 2
@@ -236,10 +237,10 @@ void BuildingManager::updateGhostBuilding()
     };
     Vector3 final = Vector3Add(snapped, offset);
 
-    ghostBuilding->cube.position = final;
-
-    ghostBuildingIsColliding = (isColliding(buildings, ghostBuilding) || isColliding(buildQueue, ghostBuilding));
-    ghostBuilding->cube.color = ghostBuildingIsColliding ? RED : ghostBuilding->ghostColor;
+    Building& ghostBuilding = ghost.get();
+    ghostBuilding.cube.position = final;
+    ghost.isColliding = (isColliding(buildings, &ghostBuilding) || isColliding(buildQueue, &ghostBuilding));
+    ghostBuilding.cube.color = ghost.isColliding ? RED : ghostBuilding.ghostColor;
 }
 
 template<typename Container>
@@ -247,8 +248,8 @@ bool BuildingManager::isColliding(const Container& buildings, Building* targetBu
 {
     BoundingBox targetBoundingBox = getCubeBoundingBox(targetBuilding->cube, 0.8f);
 
-    for (Building* building: buildings)
-        if (CheckCollisionBoxes(targetBoundingBox, getCubeBoundingBox(building->cube)))
+    for (const Building& building: buildings)
+        if (CheckCollisionBoxes(targetBoundingBox, getCubeBoundingBox(building.cube)))
             return true;
 
     return false;
@@ -256,8 +257,8 @@ bool BuildingManager::isColliding(const Container& buildings, Building* targetBu
 
 void BuildingManager::createDebugBuilding(Vector2i index, BuildingType buildingType)
 {
-    Building* building = new Building(Cube(defaultBuildingSize), buildingType, nullptr);
-    unlockedActions[building->actionId]++;
+    Building building = Building(Cube(defaultBuildingSize), buildingType, nullptr);
+    unlockedActions[building.actionId]++;
 
     Vector3 pos = mapGenerator->indexToWorldPosition(index);
     Vector3 cubeSize = mapGenerator->cubeSize;
@@ -272,71 +273,80 @@ void BuildingManager::createDebugBuilding(Vector2i index, BuildingType buildingT
         (cubeSize.z - defaultBuildingSize.z) / 2.0f,
     };
 
-    building->cube.position = Vector3Add(snapped, offset);
-    mapGenerator->addObstacle(building->cube);
+    building.cube.position = Vector3Add(snapped, offset);
+    mapGenerator->addObstacle(building.cube);
 
-    building->scheduleBuild();
-    building->startBuild();
-    building->finishBuild();
+    progressBuilding(building, FINISHED);
     buildings.push_back(building);
 }
 
 void BuildingManager::createNewGhostBuilding(BuildingType buildingType, Player* player)
 {
-    if (ghostBuilding)
-        delete ghostBuilding;
-
-    ghostBuilding = new Building(Cube(defaultBuildingSize), buildingType, player);
-    updateGhostBuilding(); // sets position correctly
-}
-
-void BuildingManager::clearGhostBuilding()
-{
-    if (ghostBuilding)
-    {
-        delete ghostBuilding;
-        ghostBuilding = nullptr;
-    }
+    ghost.set(Building(Cube(defaultBuildingSize), buildingType, player));
+    updateGhostBuilding(); // sets position, and color correctly
 }
 
 void BuildingManager::scheduleGhostBuilding()
 {
-    assert(ghostBuilding != nullptr);
+    assert(ghost.exists());
 
-    unlockedActions[ghostBuilding->actionId]++;
-    ghostBuilding->scheduleBuild();
+    Building& ghostBuilding = ghost.get();
+    unlockedActions[ghostBuilding.actionId]++;
+    progressBuilding(ghostBuilding, SCHEDULED);
     buildQueue.push_back(ghostBuilding);
-    ghostBuilding = nullptr;
+
+    ghost.reset();
 }
 
-Building* BuildingManager::getGhostBuilding()
+void BuildingManager::progressBuilding(Building& building, BuildStage stage)
 {
-    return ghostBuilding;
-}
+    assert(building.buildStage != FINISHED || stage != GHOST); // SANITY
 
-bool BuildingManager::ghostBuildingExists()
-{
-    return ghostBuilding != nullptr;
+    if (building.buildStage == GHOST)
+        building.rallyPoint.position = building.cube.position;
+
+    switch(stage)
+    {
+        case GHOST: break;
+        case SCHEDULED:
+            building.cube.color = building.inProgressColor;
+            break;
+        case IN_PROGRESS: break;
+        case FINISHED:
+            building.cube.color = building.selected ? building.selectedColor : building.targetColor;
+            building.buildTimer = 0.f;
+            break;
+    }
+
+    building.buildStage = stage;
 }
 
 void BuildingManager::select(Building* building)
 {
-    selectedBuilding = building;
-    selectedBuilding->select();
+    selectedIndex = -1;
+    Cube& cube = building->cube;
+    for (size_t i = 0; i < buildings.size() && selectedIndex != -1; i++)
+        if (cube == buildings[i].cube)
+            selectedIndex = i;
+
+    assert(selectedIndex != -1); // SANITY
+
+    Building& selectedBuilding = buildings[selectedIndex];
+    selectedBuilding.selected = true;
+    if (selectedBuilding.buildStage != IN_PROGRESS)
+        selectedBuilding.cube.color = selectedBuilding.selectedColor;
 }
 
 void BuildingManager::deselect()
 {
-    if (!selectedBuilding)
+    if (selectedIndex == -1)
         return;
 
-    selectedBuilding->deselect();
-    selectedBuilding = nullptr;
-}
-
-bool BuildingManager::canScheduleGhostBuilding()
-{
-    return !ghostBuildingIsColliding;
+    Building& building = buildings[selectedIndex];
+    building.selected = false;
+    if (building.buildStage != IN_PROGRESS)
+        building.cube.color = building.targetColor;
+    selectedIndex = -1;
 }
 
 void BuildingManager::recruit(Building* building)
@@ -371,11 +381,11 @@ bool BuildingManager::canPromoteTo(std::string id)
     return true;
 }
 
-void BuildingManager::promote(Building* building, std::string id)
+void BuildingManager::promote(Building& building, std::string id)
 {
-    printf("promote %s to %s\n", building->actionId.c_str(), id.c_str());
+    printf("promote %s to %s\n", building.actionId.c_str(), id.c_str());
 
     unlockedActions[id]++;
-    building->previousActionIds.push_back(building->actionId);
-    building->actionId = id;
+    building.previousActionIds.push_back(building.actionId);
+    building.actionId = id;
 }

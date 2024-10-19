@@ -22,8 +22,9 @@ CameraManager::CameraManager()
 
 void CameraManager::update()
 {
+    float dt = GetFrameTime();
     // Camera panning
-    float cameraPan = 2.0f;
+    float cameraPan = 150.0f * dt;
 
     if (IsKeyDown(KEY_A))      CameraMoveRight(&camera, -cameraPan, true);
     else if (IsKeyDown(KEY_D)) CameraMoveRight(&camera, cameraPan, true);
@@ -34,7 +35,7 @@ void CameraManager::update()
     // Camera zooming
     float maxDistance = 120.f;
     float minDistance = 10.f;
-    float scrollAmount = 1.f;
+    float scrollAmount = 100.f * dt;
     float scroll = -GetMouseWheelMove(); // inverted for a reason
     if (scroll)
     {

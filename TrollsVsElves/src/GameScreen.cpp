@@ -92,7 +92,7 @@ void GameScreen::draw()
 
 void GameScreen::drawUI()
 {
-    bool drawWindow = (!buildingManager->selectedBuilding != !playerManager->selectedPlayer); // xor
+    bool drawWindow = (buildingManager->selectedIndex == -1 != !playerManager->selectedPlayer); // xor
     if (drawWindow)
     {
         bool bottomRightWindow = true;
@@ -125,7 +125,7 @@ void GameScreen::drawUI()
 
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, buttonPadding);
 
-        if (buildingManager->selectedBuilding)
+        if (buildingManager->selectedIndex != -1)
             buildingManager->drawBuildingUIButtons(buttonSize, nrOfButtons, buttonLayout.x);
         else if (playerManager->selectedPlayer)
             playerManager->selectedPlayer->drawUIButtons(buttonSize, nrOfButtons, buttonLayout.x);
@@ -250,7 +250,7 @@ void GameScreen::handleLeftMouseButton()
     RaycastHitType type = raycastHit.type;
 
     // deselect selectedBuilding if not clicking UI
-    if (buildingManager->selectedBuilding && type != RAYCAST_HIT_TYPE_UI)
+    if (buildingManager->selectedIndex != -1 && type != RAYCAST_HIT_TYPE_UI)
         buildingManager->deselect();
 
     // always clear selectedEntities if clicked player/entity/building
@@ -276,19 +276,19 @@ void GameScreen::handleLeftMouseButton()
 
         case RAYCAST_HIT_TYPE_GROUND:
         {
-            if (playerManager->clientPlayer->selected && buildingManager->ghostBuildingExists())
+            if (playerManager->clientPlayer->selected && buildingManager->ghost.exists())
             {
-                if (!buildingManager->canScheduleGhostBuilding()) // can't schedule ghostbuilding
+                if (buildingManager->ghost.isColliding) // can't schedule ghostbuilding
                     break;
 
-                Building* ghost = buildingManager->getGhostBuilding();
+                Building& ghost = buildingManager->ghost.get();
                 bool buildingsInQueue = buildingManager->buildQueueFront() != nullptr;
                 buildingManager->scheduleGhostBuilding();
                 if (buildingsInQueue) // something is getting built, just schedule and leave player unchanged
                     break;
 
                 playerManager->clientPlayer->reachedDestination = false;
-                playerManager->pathfindPlayerToCube(playerManager->clientPlayer, ghost->cube);
+                playerManager->pathfindPlayerToCube(playerManager->clientPlayer, ghost.cube);
                 break;
             }
 
@@ -314,7 +314,7 @@ void GameScreen::handleRightMouseButton()
             Cube* cube = std::get<Cube*>(raycastHit.object);
             if (playerManager->clientPlayer->selected) // only allow moving client owned player
             {
-                buildingManager->clearGhostBuilding();
+                buildingManager->ghost.reset();
                 buildingManager->clearBuildQueue();
 
                 Vector3 pos = mapGenerator->worldPositionAdjusted(cube->position);
@@ -332,10 +332,10 @@ void GameScreen::handleRightMouseButton()
                 break;
             }
 
-            if (buildingManager->selectedBuilding)
+            if (buildingManager->selectedIndex != -1)
             {
                 Vector3 adjusted = mapGenerator->worldPositionAdjusted(cube->position);
-                buildingManager->selectedBuilding->rallyPoint.position = adjusted;
+                buildingManager->buildings[buildingManager->selectedIndex].rallyPoint.position = adjusted;
 
                 break;
             }

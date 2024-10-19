@@ -44,9 +44,10 @@ int main(int argc, char* argv[])
     NetworkManager networkManager(type, SERVER_PORT, gameScreen);
     gameScreen->networkManager = &networkManager;
 
-    SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_VSYNC_HINT | FLAG_WINDOW_RESIZABLE);
+    // SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_VSYNC_HINT | FLAG_WINDOW_RESIZABLE);
+    SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE);
     InitWindow(screenSize.x, screenSize.y, type == SERVER ? "server" : "client");
-    SetTargetFPS(60);
+    // SetTargetFPS(60);
     rlImGuiSetup(true);
 
     std::thread networkThread = std::thread([&networkManager]() { networkManager.listen(); });
